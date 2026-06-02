@@ -33,3 +33,14 @@ downloads/
 .vscode/
 .idea/
 .DS_Store
+
+# Claude / AI assistant — local working files, never commit
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+plan.md
+handoff.md
+scratch.md
+notes.md
+*.plan.md
+*.handoff.md
