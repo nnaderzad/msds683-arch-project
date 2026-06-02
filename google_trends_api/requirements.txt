@@ -1,0 +1,5 @@
+# music-demand Google Trends POC dependencies.
+# Verified working together on Python 3.11 (conda env: music-demand) on 2026-06.
+# pytrends has historically broken on new pandas; this pandas pin is the tested combo.
+pytrends==4.9.2
+pandas==3.0.3

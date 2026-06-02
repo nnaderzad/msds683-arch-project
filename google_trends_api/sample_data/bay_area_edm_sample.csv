@@ -1,0 +1,43 @@
+extract_ts_utc,artist,query,category,geo_name,geo_code,dma,date,granularity,interest,is_partial
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-08,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-15,weekly,14,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-22,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-29,weekly,12,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-05,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-12,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-19,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-26,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-03,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-10,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-17,weekly,0,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-24,weekly,11,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-31,weekly,19,False
+2026-06-02T07:25:17+00:00,Skrillex,Skrillex,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-06-07,weekly,12,True
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-08,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-15,weekly,14,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-22,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-29,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-05,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-12,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-19,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-26,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-03,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-10,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-17,weekly,0,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-24,weekly,14,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-31,weekly,14,False
+2026-06-02T07:25:17+00:00,Calvin Harris,Calvin Harris,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-06-07,weekly,0,True
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-08,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-15,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-22,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-03-29,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-05,weekly,14,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-12,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-19,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-04-26,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-03,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-10,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-17,weekly,0,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-24,weekly,6,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-05-31,weekly,8,False
+2026-06-02T07:25:17+00:00,Deadmau5,Deadmau5,edm,San Francisco-Oakland-San Jose,US-CA-807,807,2026-06-07,weekly,4,True
