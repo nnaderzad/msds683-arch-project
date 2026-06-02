@@ -1,0 +1,16 @@
+# Local state — contains resource IDs and could contain sensitive values
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Variable files may contain project IDs you don't want public; commit only the .example
+terraform.tfvars
+*.auto.tfvars
+
+# Provider plugins (the .terraform.lock.hcl file IS committed — pins provider versions for the team)
+.terraform/
+
+# Plan files
+*.tfplan
+crash.log
+crash.*.log

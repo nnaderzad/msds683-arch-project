@@ -1,0 +1,35 @@
+# Secrets — never commit
+.env
+.env.*
+*.key
+*.pem
+service-account*.json
+credentials*.json
+
+# Terraform — local state + plugins (the terraform/ subdir has its own .gitignore too)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/terraform.tfvars
+**/*.auto.tfvars
+**/*.tfplan
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Data — large local files shouldn't go in git (use GCS instead)
+data/
+downloads/
+*.parquet
+*.csv.gz
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
