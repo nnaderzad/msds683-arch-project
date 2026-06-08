@@ -173,8 +173,53 @@ Nested under `_embedded.attractions`:
 - `name`: Artist or performer name.
 - `url`: Ticketmaster attraction URL.
 - `classifications`: Classification metadata for the attraction.
+- `externalLinks`: Links to the artist's profiles on other platforms (see key finding below).
 
 Ticketmaster calls artists and performers `attractions`. These fields can become an artist/performer dimension table and can later be joined to Spotify.
+
+### KEY FINDING: attractions carry external streaming IDs (our cross-source join keys)
+
+Each attraction includes an `externalLinks` object that contains the artist's
+**direct identifiers on other platforms** — including their **Spotify artist ID**
+and **YouTube channel URL**. Example from the live data (Conway the Machine):
+
+```jsonc
+"_embedded": {
+  "attractions": [
+    {
+      "name": "Conway the Machine",
+      "id": "K8vZ917b0l7",
+      "externalLinks": {
+        "youtube":     [{ "url": "https://www.youtube.com/user/ConwayGreed" }],
+        "spotify":     [{ "url": "https://open.spotify.com/artist/67gqUXxHedeUGDTxwBzdjS" }],
+        "musicbrainz": [{ "id":  "a633ebb5-b81a-400f-b5df-0e625ea81fe9" }],
+        "itunes":      [{ "url": "https://music.apple.com/ca/artist/conway-the-machine/924551002" }],
+        "twitter":     [{ "url": "https://twitter.com/WHOISCONWAY" }],
+        "facebook":    [{ "url": "https://www.facebook.com/WhoIsConway/" }],
+        "instagram":   [{ "url": "https://www.instagram.com/whoisconway/" }]
+      }
+    }
+  ]
+}
+```
+
+**Why this matters for our architecture:**
+
+- It gives us a **reliable join key** between the Ticketmaster event anchor and our
+  enrichment sources. We can parse the **Spotify artist ID** out of the spotify URL
+  and capture the **YouTube channel** directly, instead of fuzzy-matching on artist
+  name.
+- This **solves the artist-matching problem** our YouTube POC hit, where a name search
+  sometimes resolved to the wrong auto-generated `"- Topic"` channel (e.g. Fred again..
+  showing 469 subscribers). With the channel coming straight from Ticketmaster, the
+  enrichment join is exact, not guessed.
+- In the data model, these become attributes on `dim_artist` (e.g. `spotify_artist_id`,
+  `youtube_channel_url`, `musicbrainz_id`), and they are how the YouTube / Google Trends
+  signals attach to each event.
+
+**Caveat:** `externalLinks` is only present for attractions where Ticketmaster has the
+data, and only for events that name an attraction at all (~79% of events in our live
+test). For events with no attraction or no links, we fall back to name-based matching.
 
 ### Classification fields
 

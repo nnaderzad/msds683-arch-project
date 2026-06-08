@@ -1,0 +1,18 @@
+# Shared conda environment for the music-demand project.
+# Create:  conda env create -f environment.yml
+# Update:  conda env update -f environment.yml --prune
+# Use:     conda activate music-demand
+name: music-demand
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      # YouTube / general HTTP POCs
+      - requests>=2.31
+      # Google Trends POC (pinned combo — pytrends breaks on untested pandas)
+      - pytrends==4.9.2
+      - pandas==3.0.3
+      # GCS upload (bronze-layer ingestion via common/gcs_io.py)
+      - google-cloud-storage>=2.16

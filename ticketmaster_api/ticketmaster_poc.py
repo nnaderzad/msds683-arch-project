@@ -38,6 +38,25 @@ from urllib.request import Request, urlopen
 BASE_URL = "https://app.ticketmaster.com/discovery/v2"
 
 
+def load_env() -> None:
+    """Load KEY=VALUE pairs from ticketmaster_api/.env into os.environ.
+
+    Lets the API key live in a git-ignored .env (same pattern as the other
+    source POCs) instead of being exported manually each session.
+    """
+    from pathlib import Path
+
+    env_path = Path(__file__).with_name(".env")
+    if not env_path.exists():
+        return
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip())
+
+
 def get_api_key() -> str:
     """Read the Ticketmaster API key from an environment variable."""
 
@@ -105,14 +124,20 @@ def search_events(
     days_ahead: int,
     size: int,
     max_pages: int,
-) -> list[dict[str, Any]]:
-    """Search Ticketmaster /events for upcoming events matching our filters."""
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Search Ticketmaster /events for upcoming events matching our filters.
+
+    Returns (flattened_rows, raw_events). raw_events holds the untouched event
+    objects exactly as Ticketmaster returned them — that is what we land in the
+    bronze bucket, while the flattened rows feed the CSV/preview.
+    """
 
     # We snapshot from now through N days ahead. Re-running later lets us track
     # changes in event status, price ranges, and availability-related metadata.
     start = datetime.now(timezone.utc)
     end = start + timedelta(days=days_ahead)
     rows: list[dict[str, Any]] = []
+    raw_events: list[dict[str, Any]] = []
 
     for page in range(max_pages):
         # This calls GET /discovery/v2/events.json.
@@ -139,6 +164,7 @@ def search_events(
 
         payload = fetch_json("events.json", params)
         events = payload.get("_embedded", {}).get("events", [])
+        raw_events.extend(events)  # keep the untouched objects for the bronze layer
         rows.extend(flatten_event(event) for event in events)
 
         # Ticketmaster paginates responses with a page object.
@@ -149,7 +175,7 @@ def search_events(
         if not events or current_page + 1 >= total_pages:
             break
 
-    return rows
+    return rows, raw_events
 
 
 def first_price_range(event: dict[str, Any]) -> dict[str, Any]:
@@ -323,13 +349,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--size", type=int, default=50, help="Events per API page")
     parser.add_argument("--max-pages", type=int, default=3, help="Maximum API pages to fetch")
     parser.add_argument("--output", help="Optional CSV output path")
+    parser.add_argument(
+        "--upload-raw",
+        action="store_true",
+        help="Upload the untouched event JSON to the bronze GCS bucket "
+        "(raw/ticketmaster/dt=<date>/...). Requires google-cloud-storage + ADC.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    load_env()
 
-    rows = search_events(
+    rows, raw_events = search_events(
         city=args.city,
         state_code=args.state_code,
         keyword=args.keyword,
@@ -345,6 +378,20 @@ def main() -> int:
 
     if args.output:
         write_csv(args.output, rows)
+
+    if args.upload_raw:
+        if not raw_events:
+            print("\nNothing to upload — no raw events captured.")
+        else:
+            # Imported lazily so the script still runs (print/CSV) in a bare
+            # stdlib environment without google-cloud-storage installed.
+            import sys
+            from pathlib import Path
+
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+            from common.gcs_io import upload_raw
+
+            upload_raw("ticketmaster", raw_events)
 
     return 0
 
