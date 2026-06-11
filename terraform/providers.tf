@@ -6,6 +6,12 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+
+    # Zips the Cloud Function source directory (see ticketmaster_scheduler.tf).
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 
   # State is stored locally (terraform.tfstate). For a multi-person setup,

@@ -1,3 +1,13 @@
 project_id       = "data-architecture-498123"
 region           = "us-west1"
 bigquery_dataset = "event_demand_analytics"
+
+# Ticketmaster Discovery API consumer key (developer.ticketmaster.com).
+# Stored in Secret Manager by terraform apply; never commit the real value.
+ticketmaster_api_key = "your_api_key"
+
+# Where pipeline failure alerts are emailed.
+alert_email = "you@example.com"
+
+# Optional: when the extract runs (cron, America/Los_Angeles).
+# ticketmaster_schedule = "0 6,18 * * *"

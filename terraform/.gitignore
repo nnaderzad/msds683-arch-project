@@ -10,6 +10,9 @@ terraform.tfvars
 # Provider plugins (the .terraform.lock.hcl file IS committed — pins provider versions for the team)
 .terraform/
 
+# Zips built locally for Cloud Function source uploads
+.build/
+
 # Plan files
 *.tfplan
 crash.log
