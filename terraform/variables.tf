@@ -22,9 +22,9 @@ variable "ticketmaster_api_key" {
 }
 
 variable "ticketmaster_schedule" {
-  description = "Cron schedule for the Ticketmaster extract (interpreted in America/Los_Angeles). The MAX_CALLS_PER_RUN quota math assumes 2 runs/day — adding runs needs that budget rechecked."
+  description = "Cron schedule for the Ticketmaster extract (interpreted in America/Los_Angeles). The MAX_CALLS_PER_RUN quota math assumes 6 runs/day — adding runs needs that budget rechecked."
   type        = string
-  default     = "0 6,18 * * *" # 06:00 and 18:00 Pacific
+  default     = "0 */4 * * *" # every 4 hours (6 runs/day)
 }
 
 variable "alert_email" {

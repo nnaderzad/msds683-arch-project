@@ -16,10 +16,10 @@ window is therefore split into disjoint SLICE_DAYS-day slices, and each slice
 paged separately — every slice gets its own 1,000-event budget.
 
 API budget: Ticketmaster allows 5,000 calls/day and 5 calls/second.
-MAX_CALLS_PER_RUN (default 1,200) is a hard stop, so two scheduled runs plus
-one retry each can never exceed 4,800 calls/day. A typical nationwide run
-uses ~700-900 calls. The sleep between requests keeps us under the rate
-limit.
+MAX_CALLS_PER_RUN (default 780) is a hard stop: six scheduled runs/day all
+hitting the cap is 4,680 < 5,000. A typical nationwide run uses ~650-750
+calls (~4,300/day at 6 runs). The sleep between requests keeps us under the
+rate limit.
 
 Failure isolation: each state is fetched and uploaded independently. One
 state failing is recorded in the run summary and the sweep continues; the
@@ -365,6 +365,29 @@ def upsert_to_silver(rows: list[dict[str, Any]]) -> int:
     return int(merge_job.num_dml_affected_rows or 0)
 
 
+def export_to_processed(run_ts: datetime) -> str:
+    """Export the deduplicated tm_events table to the processed bucket.
+
+    Writes Parquet under processed/ticketmaster/dt=<date>/ after each merge,
+    so the bucket always holds a clean file copy of the silver table: bronze
+    keeps raw snapshots WITH duplicates, this layer is deduplicated. Re-runs
+    on the same day overwrite that day's export.
+    """
+
+    project_id = os.environ["GCP_PROJECT"]
+    dataset = os.environ["BQ_DATASET"]
+    bucket = os.environ["GCS_PROCESSED_BUCKET"]
+    dt = run_ts.strftime("%Y-%m-%d")
+    uri = f"gs://{bucket}/ticketmaster/dt={dt}/tm_events_*.parquet"
+
+    client = bigquery.Client(project=project_id)
+    client.query(
+        f"EXPORT DATA OPTIONS (uri='{uri}', format='PARQUET', overwrite=true) AS\n"
+        f"SELECT * FROM `{project_id}.{dataset}.tm_events`"
+    ).result()
+    return uri
+
+
 @functions_framework.http
 def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
     """HTTP entry point invoked by Cloud Scheduler.
@@ -377,7 +400,7 @@ def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
     """
 
     run_ts = datetime.now(timezone.utc)
-    max_calls = int(os.environ.get("MAX_CALLS_PER_RUN", "1200"))
+    max_calls = int(os.environ.get("MAX_CALLS_PER_RUN", "780"))
 
     states = state_codes()
     total_calls = 0
@@ -407,15 +430,21 @@ def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
     # not raised: the raw snapshots already landed, the MERGE is idempotent,
     # and the next scheduled run refreshes the same rows anyway — whereas a
     # Scheduler retry would re-spend the whole API call budget.
-    silver: dict[str, Any] = {"rows_in": 0, "rows_upserted": None, "error": None}
+    silver: dict[str, Any] = {
+        "rows_in": 0,
+        "rows_upserted": None,
+        "processed_export_uri": None,
+        "error": None,
+    }
     if silver_rows:
         unique_rows = dedupe_rows(silver_rows)
         silver["rows_in"] = len(unique_rows)
         try:
             silver["rows_upserted"] = upsert_to_silver(unique_rows)
+            silver["processed_export_uri"] = export_to_processed(run_ts)
         except Exception as exc:
             silver["error"] = f"{type(exc).__name__}: {exc}"
-            print(f"[silver] MERGE FAILED: {silver['error']}")
+            print(f"[silver] FAILED: {silver['error']}")
 
     summary: dict[str, Any] = {
         "run_ts_utc": run_ts.isoformat(timespec="seconds"),

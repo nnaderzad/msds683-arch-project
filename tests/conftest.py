@@ -86,4 +86,5 @@ def base_env(monkeypatch):
     monkeypatch.setenv("TICKETMASTER_API_KEY", "test-key")
     monkeypatch.setenv("GCP_PROJECT", "test-project")
     monkeypatch.setenv("GCS_RAW_BUCKET", "test-project-raw")
+    monkeypatch.setenv("GCS_PROCESSED_BUCKET", "test-project-processed")
     monkeypatch.setenv("BQ_DATASET", "test_dataset")

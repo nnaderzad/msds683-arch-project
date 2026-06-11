@@ -94,6 +94,15 @@ resource "google_secret_manager_secret_iam_member" "ticketmaster_fn_reads_key" {
   member    = "serviceAccount:${google_service_account.ticketmaster_fn.email}"
 }
 
+# After each merge the function exports the deduplicated tm_events table to
+# the processed bucket as Parquet; overwrite=true needs object delete too,
+# hence objectAdmin (still scoped to this one bucket).
+resource "google_storage_bucket_iam_member" "ticketmaster_fn_processed_writer" {
+  bucket = google_storage_bucket.layers["processed"].name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.ticketmaster_fn.email}"
+}
+
 # Silver-layer upsert: the function MERGEs deduped events into BigQuery
 # (tm_events keyed on event_id), so it needs to edit tables in the dataset
 # and run query/load jobs.
@@ -159,14 +168,16 @@ resource "google_cloudfunctions2_function" "ticketmaster_daily" {
       GCS_RAW_BUCKET      = google_storage_bucket.layers["raw"].name
       BQ_DATASET          = google_bigquery_dataset.analytics.dataset_id
       STATE_CODES         = "ALL" # all 50 states + DC; or e.g. "CA,NY,TX"
+      GCS_PROCESSED_BUCKET = google_storage_bucket.layers["processed"].name
       CLASSIFICATION_NAME = "music"
       DAYS_AHEAD          = "180"
-      SLICE_DAYS          = "15" # beats the 1,000-event deep-paging cap per slice
+      SLICE_DAYS          = "14" # beats the 1,000-event deep-paging cap per slice
       PAGE_SIZE           = "200"
       MAX_PAGES           = "5"
-      # Hard stop per run. 2 runs/day x (1 attempt + 1 retry) x 1200 = 4,800
-      # worst case, under the 5,000/day quota. Typical runs use ~700-900.
-      MAX_CALLS_PER_RUN = "1200"
+      # Hard stop per run. 6 runs/day x 780 = 4,680 worst case, under the
+      # 5,000/day quota. A typical nationwide run uses ~650-750 calls
+      # (~4,300/day) — measured 659 with SLICE_DAYS=15 on 2026-06-11.
+      MAX_CALLS_PER_RUN = "780"
     }
 
     secret_environment_variables {

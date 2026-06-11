@@ -456,8 +456,25 @@ def test_run_upserts_deduped_rows_into_silver(
 
     summary = tm_main.run(request=None)
 
-    assert summary["silver"] == {"rows_in": 1, "rows_upserted": 1, "error": None}
+    assert summary["silver"]["rows_in"] == 1
+    assert summary["silver"]["rows_upserted"] == 1
+    assert summary["silver"]["error"] is None
+    # After the merge, the deduped table is exported to the processed bucket.
+    assert summary["silver"]["processed_export_uri"].startswith(
+        "gs://test-project-processed/ticketmaster/dt="
+    )
     assert fake_bq.loaded_rows[0]["event_id"] == "evt-1"
+
+
+def test_export_to_processed_writes_parquet_snapshot(tm_main, base_env, fake_bq):
+    uri = tm_main.export_to_processed(RUN_TS)
+
+    assert uri == "gs://test-project-processed/ticketmaster/dt=2026-06-11/tm_events_*.parquet"
+    export_sql = fake_bq.queries[-1]
+    assert "EXPORT DATA" in export_sql
+    assert "format='PARQUET'" in export_sql
+    assert "overwrite=true" in export_sql  # same-day re-runs replace the export
+    assert "test-project.test_dataset.tm_events" in export_sql
 
 
 def test_run_reports_silver_failure_without_raising(
