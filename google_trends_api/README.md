@@ -1,211 +1,118 @@
-# Google Trends POC for Milestone 1
+# Google Trends ingestion — local search-interest signal
 
-Part of the **music-demand** project (`conda activate music-demand`).
+The **geographic + historical backbone** of the event-demand pipeline. Google
+Trends is the project's only source of *per-metro* artist popularity **and** the
+only one with real history (Spotify had no geo; the YouTube Data API has neither),
+so it carries the "is this artist popular *here*?" signal the demand model needs.
 
-## Purpose
+See [`../docs/PROJECT_STRATEGY.md`](../docs/PROJECT_STRATEGY.md) for how this fits
+the whole architecture, and [`DEPLOY.md`](DEPLOY.md) for deploying the cloud jobs.
 
-For Milestone 1 we need to prove that Google Trends can supply the **local
-search-interest signal** in our live-music demand pipeline — the per-metro
-"buzz" leading up to a show, which we join to Ticketmaster events and Spotify
-popularity.
-
-This POC answers:
-
-- Can we pull search interest for a roster of artists, per metro, over time?
-- Which metros can we resolve, and what are their Google Trends geo codes?
-- How noisy is the data, and what granularity gives a usable signal?
-- What are the limitations we should flag before committing to this source?
-
-## There is no official Google Trends API
-
-Google does not publish a Trends API. We use [`pytrends`](https://github.com/GeneralMills/pytrends),
-which drives the same private endpoint the Trends website uses. Consequences:
-
-- It is **rate-limited** and will occasionally return **HTTP 429**. We pause
-  between queries (default 10s) and back off on 429s.
-- The endpoint changes without notice, so the library can break; pin versions
-  (see `requirements.txt`). Verified working on `pytrends==4.9.2` +
-  `pandas==3.0.3`, Python 3.11.
-- Transient DNS/network drops to `trends.google.com` look like failures but are
-  not rate-limiting — the client retries those too.
-
-## The relative-scale quirk (important for modeling)
-
-Trends values are integers **0–100, normalized within each
-(query, geo, timeframe) pull** against that series' own peak. So:
-
-- Values **are** comparable across **time** for one artist in one metro.
-- Values are **not** comparable across artists, across metros, or across
-  different time windows.
-
-We therefore fetch **one artist + one metro at a time** (never a 5-keyword
-comparison batch) so each series keeps its own clean 0–100 scale. Downstream,
-treat each `(artist, metro)` series as its own index.
-
-## Geo codes: metros are Nielsen DMAs
-
-pytrends accepts metro geo codes in the form **`US-<STATE>-<DMA>`**
-(e.g. `US-CA-807`). Bare `US-<DMA>` returns HTTP 400. We confirmed the codes
-against `interest_by_region(resolution="DMA", inc_geo_code=True)`.
-
-We track **10 large US live-music metros** (`config.US_METROS`). These are
-weighted toward major touring/EDM markets rather than strict population rank —
-Las Vegas, Austin, and Denver matter more for live music than their population
-suggests. We deliberately avoid small DMAs, whose low search volume produces
-noisy 0/100 spikes.
-
-| Metro | geo code | DMA |
-|---|---|---:|
-| San Francisco-Oakland-San Jose (anchor) | `US-CA-807` | 807 |
-| Los Angeles | `US-CA-803` | 803 |
-| New York | `US-NY-501` | 501 |
-| Chicago | `US-IL-602` | 602 |
-| Las Vegas | `US-NV-839` | 839 |
-| Miami-Ft. Lauderdale | `US-FL-528` | 528 |
-| Denver | `US-CO-751` | 751 |
-| Seattle-Tacoma | `US-WA-819` | 819 |
-| Austin | `US-TX-635` | 635 |
-| Atlanta | `US-GA-524` | 524 |
-
-The `bay-area` preset narrows to just DMA 807 to line up with the Ticketmaster
-POC scope.
-
-## Artist roster
-
-`config.ARTISTS` holds ~32 acts and festivals: a core of touring EDM artists
-(Skrillex, Calvin Harris, Deadmau5, Fisher, Charlotte de Witte, Zedd, Illenium,
-Kaytranada, ODESZA, John Summit, Fred again.., Sammy Virji, Nimino, Swedish
-House Mafia, Four Tet, Ben Böhmer, Laszewo, RÜFÜS DU SOL, Disco Lines, Parcels,
-The xx, Empire of the Sun) plus pop/hip-hop/R&B acts with big upcoming Bay Area
-shows (Charli XCX, Tinashe, Ariana Grande, Ed Sheeran, Shakira, A$AP Rocky,
-Usher, Chris Brown) and two festivals (Portola Festival, Outside Lands).
-
-Each entry has a `query` distinct from its display `name` where the name
-collides with common words — e.g. `Fisher` → `"Fisher DJ"`, `Parcels` →
-`"Parcels band"`. See *Known limitations*.
-
-## Repo layout
+## What it does
 
 ```
-google_trends_api/
-├── README.md            # this file
-├── requirements.txt     # pinned pytrends + pandas (tested combo)
-├── config.py            # METROS (geo presets) + ARTISTS roster
-├── trends_client.py     # pytrends wrapper: retry/backoff + weekly resample
-├── fetch_trends.py      # CLI: fetch (artist x metro) -> tidy CSV
-└── sample_data/         # small committed sample pulls (see below)
+BigQuery tm_events ──► roster (artists w/ upcoming shows + their DMAs)
+   (Ticketmaster)        │  ranked, soonest-show-first
+                         ▼
+                   pytrends fetch ──► BRONZE  gs://…-raw/google_trends/dt=<date>/…json
+                   national daily  │            (one (artist, geo, endpoint) per file)
+                   + DMA snapshot   │
+                   + per-DMA daily  ▼
+                            joins to Ticketmaster on (artist, DMA, date)
 ```
 
-Full local pulls are written to `data/` at the repo root, which is gitignored
-(data lives in GCS per the project architecture). Only the small files in
-`sample_data/` are committed, so reviewers can see real output without running
-anything.
+- **Roster from Ticketmaster.** We don't hand-maintain an artist list — we read
+  the silver `tm_events` table for artists with upcoming shows and the DMAs they
+  play, rank by touring footprint (distinct markets) and soonest show, and select
+  the top N plus a curated EDM/pop seed. So Trends covers exactly the acts the rest
+  of the pipeline tracks, and the data joins by construction.
+- **Two fetch units per artist** (cheap): `interest_over_time(geo="US")` daily for
+  a ~270-day window, and `interest_by_region(resolution="DMA")` — one call returns
+  all ~210 DMAs (the geographic distribution). Optionally a deep **per-DMA daily**
+  series for the metros each artist plays.
+- **Bronze landing** via [`../common/gcs_io.py`](../common/gcs_io.py), same
+  `dt=`-partitioned layout as the Ticketmaster pipeline.
 
-## Install
+## Components
+
+| File | Role |
+|---|---|
+| `config.py` | `Metro`/`Artist` dataclasses; curated seed roster; 10 anchor metros |
+| `build_dma_table.py` | generate `reference/dma_geo.csv` (210 DMAs → `US-<ST>-<DMA>` geo codes) from one Trends call |
+| `build_zip_dma_table.py` | generate `reference/zip_to_dma.csv` (~41k ZIPs → DMA) from a public crosswalk |
+| `geo_lookup.py` | resolve a Ticketmaster venue (ZIP, then state) → DMA + geo code |
+| `build_roster.py` | query `tm_events`, explode artists, map venues → DMA, rank, write the roster |
+| `trends_client.py` | pytrends wrapper: `interest_over_time` / `interest_by_region`, retry/backoff |
+| `fetch_and_land.py` | the fetch+land core — one `run_unit` per (artist, geo, endpoint) |
+| `job.py` | Cloud Run Job entrypoint (backfill / daily), sharded + idempotent |
+| `Dockerfile`, `cloudbuild.yaml`, `DEPLOY.md` | container + deploy |
+
+`reference/*.csv` are committed, provenance-documented lookup tables so the roster
+is reproducible without re-hitting the rate-limited endpoint. Full local pulls go
+to a gitignored repo-root `data/`; small samples are in `sample_data/`.
+
+## Run locally
 
 ```bash
-conda activate music-demand          # or: conda create -n music-demand python=3.11
-pip install -r google_trends_api/requirements.txt
+conda activate music-demand   # env: ../environment.yml
+
+# 1. (Re)generate the committed geo reference tables — run once / to refresh:
+python google_trends_api/build_dma_table.py
+python google_trends_api/build_zip_dma_table.py
+
+# 2. Build the roster from the Ticketmaster silver table:
+python google_trends_api/build_roster.py --top-n 250          # or --states CA for a smoke
+
+# 3. Fetch + land (dry-run prints, omit --dry-run to write to the bucket):
+python google_trends_api/fetch_and_land.py --limit 3 --modes national snapshot --dry-run
+
+# Run the Cloud Run job logic locally, bounded:
+JOB_MODE=daily MAX_UNITS=4 STATES=CA python google_trends_api/job.py
 ```
 
-## How to run
+## Deployed pipeline
 
-```bash
-# See the metros we track and their geo codes:
-python google_trends_api/fetch_trends.py --list-metros
+Provisioned in [`../terraform/gtrends/`](../terraform/gtrends/) (isolated root,
+remote GCS state) — see [`DEPLOY.md`](DEPLOY.md):
 
-# Default: every roster artist across all 10 US metros, weekly, ~90 days.
-python google_trends_api/fetch_trends.py --output data/google_trends/interest.csv
+- **`gtrends-backfill`** Cloud Run Job — deep history pass, run on demand, sharded
+  across tasks. `INCLUDE_DMA=false` (default) does national + DMA snapshot;
+  `true` adds the per-DMA daily series.
+- **`gtrends-daily`** Cloud Run Job — scheduled daily refresh (national + DMA
+  snapshot at daily resolution).
+- Idempotent: a run skips units already landed in today's `dt=` partition, so
+  retries/restarts resume instead of re-spending Trends calls.
 
-# Bay Area only, EDM only, first 5 artists — quick smoke test:
-python google_trends_api/fetch_trends.py --geo bay-area --category edm --limit 5 \
-    --output data/google_trends/bay_edm.csv
+## Output schema (bronze JSON)
 
-# Daily granularity, shorter window:
-python google_trends_api/fetch_trends.py --granularity daily --timeframe "today 1-m" \
-    --output data/google_trends/daily.csv
+One file per `(artist, geo, endpoint)`; each holds metadata + `records`:
+
+```json
+{ "source": "google_trends", "endpoint": "interest_over_time",
+  "artist": "Journey", "query": "Journey", "geo": "US", "resolution": "national",
+  "timeframe": "2025-09-18 2026-06-14", "granularity": "daily",
+  "records": [ { "date": "2025-09-18T00:00:00.000", "Journey": 63, "isPartial": false }, … ] }
 ```
 
-### CLI options
+`interest_by_region` records carry `geoName` + `geoCode` (the DMA number) → joins
+to `reference/dma_geo.csv` / `zip_to_dma.csv` and thus to Ticketmaster venues.
 
-| Flag | Default | Meaning |
-|---|---|---|
-| `--geo` | `us-metros` | Metro preset: `us-metros` (10) or `bay-area` (1). |
-| `--category` | (all) | Restrict to one category: `edm`, `pop`, `hiphop`, `rnb`, `festival`. |
-| `--limit` | (none) | Cap number of artists — handy for smoke tests. |
-| `--timeframe` | `today 3-m` | Google Trends timeframe string (~90 days). |
-| `--granularity` | `weekly` | `weekly` resamples daily → steadier weekly means; or `daily`. |
-| `--sleep` | `10` | Seconds between queries to avoid HTTP 429. |
-| `--output` | (none) | CSV path; omit for a dry run (fetch + summary, no write). |
-| `--list-metros` | — | Print tracked metros and exit. |
+## Things to know (Google Trends quirks)
 
-Run time scales with `artists × metros × (sleep + request time)`. The full
-default run (32 × 10) takes roughly 30–60 minutes because of the polite 10s
-pause; use `--limit`/`--category`/`--geo bay-area` for fast iterations.
-
-## Output schema (tidy / long format)
-
-One row per `(artist, metro, date)`:
-
-| Column | Example | Notes |
-|---|---|---|
-| `extract_ts_utc` | `2026-06-02T04:11:00+00:00` | Run timestamp; repeated runs become snapshots. |
-| `artist` | `Fred again..` | Display name. |
-| `query` | `Fred again` | Exact term sent to Trends. |
-| `category` | `edm` | edm / pop / hiphop / rnb / festival. |
-| `geo_name` | `San Francisco-Oakland-San Jose` | Metro label. |
-| `geo_code` | `US-CA-807` | Google Trends geo code. |
-| `dma` | `807` | Nielsen DMA number (for joins). |
-| `date` | `2026-05-25` | Week-ending (weekly) or day (daily). |
-| `granularity` | `weekly` | `weekly` or `daily`. |
-| `interest` | `43` | 0–100 within this `(artist, geo)` series. |
-| `is_partial` | `True` | Google still collecting this period's data. |
-
-Long format joins cleanly: link to Ticketmaster on `(artist, metro, date)` and
-to Spotify on `artist`.
-
-## Verified POC results
-
-Tested 2026-06 against live Google Trends:
-
-- **pytrends works on pandas 3.0** — no breakage despite pandas' removal of
-  older APIs.
-- **Metro series carry real signal.** Daily metro data is sparse (many zero
-  days), but spikes are real and weekly means are usable. Example, `today 3-m`,
-  daily, "Fred again":
-
-  | Metro | mean | max | non-zero days |
-  |---|---:|---:|---:|
-  | San Francisco (807) | 4.7 | 100 | 15/93 |
-  | Los Angeles (803) | 10.2 | 100 | 24/93 |
-  | New York (501) | 14.3 | 100 | 28/93 |
-
-- **DMA breakdown confirms geo codes**: `interest_by_region(resolution="DMA")`
-  returns geoCode 807 = San Francisco-Oakland-San Jose, 803 = LA, 501 = NYC.
-
-Sample CSVs from a small live run are committed in `sample_data/` — see that
-folder's contents for the exact columns and values.
-
-## Known limitations
-
-- **Ambiguous names.** Short or common-word names pick up unrelated searches.
-  We mitigate with `query` overrides (`Fisher` → `Fisher DJ`), but some noise
-  remains; topic-level entity queries are a future improvement.
-- **Sparse metro data.** Niche acts in a single metro can be mostly zeros over
-  90 days. Weekly granularity and/or a longer timeframe help.
-- **Relative scale.** Values are not comparable across artists/metros (see
-  above). Don't sum or average across series naively.
-- **Rate limits / availability.** Long runs risk 429s and the unofficial
-  endpoint can change; we pin versions and back off, but this source is best
-  treated as periodically refreshed, not real-time.
-
-## Suggested Milestone 1 summary
-
-Google Trends (via pytrends) is a viable **local search-interest** source for
-the music-demand pipeline. We resolve 10 large US metros by Nielsen DMA geo code
-(anchored on the Bay Area, DMA 807) and pull per-artist, per-metro
-interest-over-time as tidy long-format CSVs that join to Ticketmaster events and
-Spotify popularity. The data carries real per-metro signal but is relative
-(0–100 within each series), sparse at daily/metro resolution, and rate-limited —
-so we fetch one artist+metro at a time, pause between queries, resample to
-weekly, and treat each series as its own index.
+- **No official API.** We use `pytrends` (the website's private endpoint):
+  rate-limited, occasional HTTP 429 → we pace politely and back off. Pinned combo
+  `pytrends==4.9.2` + `pandas==3.0.3` (Python 3.11).
+- **Values are relative 0–100** within each `(query, geo, timeframe)` pull —
+  comparable across *time* for one artist in one metro, **not** across artists or
+  metros. Treat each series as its own index; don't sum/average across series.
+- **Geo codes are `US-<STATE>-<DMA>`** (e.g. `US-CA-807`); bare `US-<DMA>` → 400.
+  Daily granularity is only returned for windows ≤ ~269 days.
+- **`interest_by_region` is the efficiency win** — all DMAs in one call — so we
+  use it for the geographic distribution and reserve per-DMA `interest_over_time`
+  for the deep pass.
+- **Ambiguous names** (short/common words) pick up unrelated searches; the curated
+  seed carries `query` overrides (e.g. `Fisher` → `"Fisher DJ"`). TM-derived names
+  are used as-is, so some noise remains.
+- Do **not** pass `retries=`/`backoff_factor=` to `TrendReq(...)` — pytrends 4.9.2
+  builds a urllib3 `Retry` with the removed `method_whitelist` kwarg and crashes on
+  urllib3 2.x. We do retry/backoff ourselves in `trends_client.py`.
