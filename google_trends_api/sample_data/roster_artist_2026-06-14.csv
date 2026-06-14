@@ -1,0 +1,51 @@
+rank,artist,query,n_events,n_dmas,soonest_date,top_genre,score,in_seed,selected
+1,Bop To The Top,Bop To The Top,56,50,2026-06-19,Pop,5056,False,True
+2,Journey,Journey,50,46,2026-06-14,Rock,4650,False,True
+3,Five Finger Death Punch,Five Finger Death Punch,50,45,2026-06-18,Metal,4550,False,True
+4,Eva Under Fire,Eva Under Fire,50,45,2026-07-17,Metal,4550,False,True
+5,Foreigner,Foreigner,50,45,2026-07-23,Rock,4550,False,True
+6,Chicago,Chicago,52,44,2026-06-14,Rock,4452,False,True
+7,Cody Jinks,Cody Jinks,48,44,2026-07-20,Metal,4448,False,True
+8,Alison Krauss and Union Station,Alison Krauss and Union Station,50,40,2026-06-14,Folk,4050,False,True
+9,O.A.R.,O.A.R.,49,40,2026-06-18,Rock,4049,False,True
+10,The Red Clay Strays,The Red Clay Strays,44,40,2026-06-18,Country,4044,False,True
+11,SWITCHFOOT,SWITCHFOOT,43,40,2026-06-18,Rock,4043,False,True
+12,Gavin DeGraw,Gavin DeGraw,47,39,2026-06-18,Rock,3947,False,True
+13,Koe Wetzel,Koe Wetzel,43,39,2026-06-14,Country,3943,False,True
+14,Brit Floyd,Brit Floyd,42,39,2026-06-14,Rock,3942,False,True
+15,Ole 60,Ole 60,42,38,2026-06-19,Country,3842,False,True
+16,Ty Dolla $ign,Ty Dolla $ign,42,38,2026-06-19,Hip-Hop/Rap,3842,False,True
+17,Jack Johnson,Jack Johnson,44,37,2026-06-19,Rock,3744,False,True
+18,Chance The Rapper,Chance The Rapper,42,37,2026-06-14,Hip-Hop/Rap,3742,False,True
+19,Bryson Tiller,Bryson Tiller,41,37,2026-08-27,Hip-Hop/Rap,3741,False,True
+20,Majid Jordan,Majid Jordan,41,37,2026-08-27,Hip-Hop/Rap,3741,False,True
+21,Charley Crockett,Charley Crockett,42,36,2026-06-17,Country,3642,False,True
+22,Modest Mouse,Modest Mouse,41,36,2026-06-14,Rock,3641,False,True
+23,Gin Blossoms,Gin Blossoms,40,36,2026-06-19,Rock,3640,False,True
+24,Gavin Adcock,Gavin Adcock,37,36,2026-07-03,Country,3637,False,True
+25,Straight No Chaser,Straight No Chaser,45,35,2026-06-16,Pop,3545,False,True
+26,Disney Worlds Collide Concert Tour,Disney Worlds Collide Concert Tour,42,35,2026-09-25,Other,3542,False,True
+27,Austin Millz,Austin Millz,40,35,2026-06-26,Hip-Hop/Rap,3540,False,True
+28,The Doobie Brothers,The Doobie Brothers,38,35,2026-06-15,Rock,3538,False,True
+29,49 Winchester,49 Winchester,38,35,2026-06-26,Country,3538,False,True
+30,Pouya,Pouya,38,35,2026-09-26,Hip-Hop/Rap,3538,False,True
+31,Christopher Cross,Christopher Cross,37,35,2026-06-18,Rock,3537,False,True
+32,Motionless In White,Motionless In White,40,34,2026-07-14,Metal,3440,False,True
+33,Tori Amos,Tori Amos,39,34,2026-07-07,Rock,3439,False,True
+34,Train,Train,39,34,2026-07-08,Rock,3439,False,True
+35,Barenaked Ladies,Barenaked Ladies,38,34,2026-07-08,Rock,3438,False,True
+36,Matt Nathanson,Matt Nathanson,37,34,2026-07-08,Rock,3437,False,True
+37,Lynyrd Skynyrd,Lynyrd Skynyrd,36,34,2026-07-10,Rock,3436,False,True
+38,Air Supply,Air Supply,44,33,2026-07-09,Pop,3344,False,True
+39,Dirty Heads,Dirty Heads,38,33,2026-06-21,Rock,3338,False,True
+40,Scott Bradlee's Postmodern Jukebox,Scott Bradlee's Postmodern Jukebox,36,33,2026-10-06,Jazz,3336,False,True
+41,Tesla,Tesla,34,33,2026-07-17,Metal,3334,False,True
+42,Sombr,Sombr,38,32,2026-07-26,Rock,3238,False,True
+43,5 Seconds of Summer,5 Seconds of Summer,36,32,2026-06-14,Pop,3236,False,True
+44,Whiskey Myers,Whiskey Myers,36,32,2026-06-14,Rock,3236,False,True
+45,Silversun Pickups,Silversun Pickups,36,32,2026-07-17,Rock,3236,False,True
+46,Kehlani,Kehlani,35,32,2026-06-19,R&B,3235,False,True
+47,The Pretty Reckless,The Pretty Reckless,35,32,2026-07-10,Rock,3235,False,True
+48,Salt N Pepa,Salt N Pepa,35,32,2026-08-15,Hip-Hop/Rap,3235,False,True
+49,TLC,TLC,35,32,2026-08-15,Hip-Hop/Rap,3235,False,True
+50,$UICIDEBOY$,$UICIDEBOY$,35,32,2026-08-29,Hip-Hop/Rap,3235,False,True
