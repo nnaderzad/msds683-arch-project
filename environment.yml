@@ -16,3 +16,5 @@ dependencies:
       - pandas==3.0.3
       # GCS upload (bronze-layer ingestion via common/gcs_io.py)
       - google-cloud-storage>=2.16
+      # BigQuery client — Google Trends roster reads the silver tm_events table
+      - google-cloud-bigquery>=3.20

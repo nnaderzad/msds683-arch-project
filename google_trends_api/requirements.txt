@@ -3,3 +3,6 @@
 # pytrends has historically broken on new pandas; this pandas pin is the tested combo.
 pytrends==4.9.2
 pandas==3.0.3
+# Cloud Run job: land bronze JSON to GCS + read tm_events to build the roster.
+google-cloud-storage>=2.16
+google-cloud-bigquery>=3.20
