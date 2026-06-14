@@ -61,6 +61,39 @@ class TrendsClient:
         # urllib3 2.x. We do our own retry/backoff in interest_over_time() instead.
         self._pytrends = TrendReq(hl=hl, tz=tz)
 
+    def _run_with_retry(self, label: str, build_and_fetch):
+        """Run a build_payload+fetch with retry/backoff on 429s and transient errors.
+
+        ``build_and_fetch`` is a zero-arg callable that (re)builds the pytrends
+        payload and returns the desired frame. It is re-invoked from scratch on
+        each attempt, so a retry never reuses a half-built payload.
+        """
+
+        last_error: Exception | None = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                return build_and_fetch()
+            except (TooManyRequestsError, ResponseError) as exc:
+                last_error = exc
+                wait = self.backoff_seconds * attempt
+                logger.warning(
+                    "Rate-limited on %s (attempt %d/%d); backing off %.0fs",
+                    label, attempt, self.max_retries, wait,
+                )
+                time.sleep(wait)
+            except Exception as exc:  # network blips etc. — retry a few times too
+                last_error = exc
+                wait = self.backoff_seconds * attempt
+                logger.warning(
+                    "Error on %s (attempt %d/%d): %s; retrying in %.0fs",
+                    label, attempt, self.max_retries, exc, wait,
+                )
+                time.sleep(wait)
+
+        raise RuntimeError(
+            f"Failed to fetch {label} after {self.max_retries} attempts"
+        ) from last_error
+
     def interest_over_time(
         self,
         query: str,
@@ -73,31 +106,38 @@ class TrendsClient:
         Google has no data for that query/geo (common for niche acts in a metro).
         """
 
-        last_error: Exception | None = None
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                self._pytrends.build_payload([query], timeframe=timeframe, geo=geo)
-                return self._pytrends.interest_over_time()
-            except (TooManyRequestsError, ResponseError) as exc:
-                last_error = exc
-                wait = self.backoff_seconds * attempt
-                logger.warning(
-                    "Rate-limited on '%s' @ %s (attempt %d/%d); backing off %.0fs",
-                    query, geo, attempt, self.max_retries, wait,
-                )
-                time.sleep(wait)
-            except Exception as exc:  # network blips etc. — retry a few times too
-                last_error = exc
-                wait = self.backoff_seconds * attempt
-                logger.warning(
-                    "Error on '%s' @ %s (attempt %d/%d): %s; retrying in %.0fs",
-                    query, geo, attempt, self.max_retries, exc, wait,
-                )
-                time.sleep(wait)
+        def _fetch() -> pd.DataFrame:
+            self._pytrends.build_payload([query], timeframe=timeframe, geo=geo)
+            return self._pytrends.interest_over_time()
 
-        raise RuntimeError(
-            f"Failed to fetch '{query}' @ {geo} after {self.max_retries} attempts"
-        ) from last_error
+        return self._run_with_retry(f"'{query}' @ {geo or 'US'} [{timeframe}]", _fetch)
+
+    def interest_by_region(
+        self,
+        query: str,
+        *,
+        geo: str = "US",
+        resolution: str = "DMA",
+        timeframe: str = "today 12-m",
+        inc_geo_code: bool = True,
+    ) -> pd.DataFrame:
+        """Return one query's interest broken down by region (default: all US DMAs).
+
+        A single call returns every region at ``resolution`` (~210 rows for DMA) —
+        the cheapest way to get the geographic distribution of interest. Indexed by
+        region name; includes a ``geoCode`` column when ``inc_geo_code`` is set.
+        Values are 0–100 relative within this single call.
+        """
+
+        def _fetch() -> pd.DataFrame:
+            self._pytrends.build_payload([query], timeframe=timeframe, geo=geo)
+            return self._pytrends.interest_by_region(
+                resolution=resolution, inc_geo_code=inc_geo_code
+            )
+
+        return self._run_with_retry(
+            f"'{query}' by {resolution} @ {geo} [{timeframe}]", _fetch
+        )
 
     def sleep_between_requests(self) -> None:
         """Polite pause between successful queries to avoid HTTP 429."""
