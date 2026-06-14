@@ -34,6 +34,7 @@ def upload_raw(
     *,
     bucket: str = DEFAULT_RAW_BUCKET,
     ext: str = "json",
+    suffix: str = "",
     run_ts: datetime | None = None,
 ) -> str:
     """Write one raw capture to the bronze bucket and return its gs:// URI.
@@ -43,12 +44,17 @@ def upload_raw(
         payload: a dict/list (serialized to JSON) or a pre-formatted str/bytes.
         bucket:  destination bucket (defaults to the project bronze bucket).
         ext:     file extension; "json" sets an application/json content type.
+        suffix:  optional tag inserted into the filename for traceability and to
+                 avoid collisions when a single run writes many files (e.g. the
+                 ticketmaster pipeline tags each state, Google Trends each
+                 artist+geo). Empty keeps the original ``<source>_<stamp>`` name.
         run_ts:  capture time (defaults to now, UTC) — controls the dt= partition.
     """
     run_ts = run_ts or datetime.now(timezone.utc)
     dt = run_ts.strftime("%Y-%m-%d")
     stamp = run_ts.strftime("%Y%m%dT%H%M%SZ")
-    blob_name = f"{source}/dt={dt}/{source}_{stamp}.{ext}"
+    suffix_part = f"_{suffix}" if suffix else ""
+    blob_name = f"{source}/dt={dt}/{source}{suffix_part}_{stamp}.{ext}"
 
     if isinstance(payload, (str, bytes)):
         data = payload
