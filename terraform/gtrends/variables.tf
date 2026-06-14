@@ -62,8 +62,20 @@ variable "youtube_schedule" {
   default     = "30 9 * * *" # 30 min after the Trends job, to stagger load
 }
 
+variable "youtube_top_n" {
+  description = "How many top-ranked Ticketmaster touring artists to feed the YouTube collector (unioned with the watchlist)."
+  type        = number
+  default     = 500
+}
+
+variable "youtube_max_artists" {
+  description = "Cap on the YouTube artist universe (TM roster + watchlist). Daily stats cost ~2 units/artist; keep 2*cap + resolve budget under the 10,000/day quota."
+  type        = number
+  default     = 2000
+}
+
 variable "youtube_resolve_max_units" {
   description = "YouTube Data API quota budget for channel resolution per run (search.list = 100 units each; daily quota = 10,000)."
   type        = number
-  default     = 8000
+  default     = 5000
 }
