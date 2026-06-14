@@ -44,3 +44,7 @@ scratch.md
 notes.md
 *.plan.md
 *.handoff.md
+
+# Internal working drafts — personal notes/messages, never push to teammates
+docs/team_messages.md
+*.private.md
