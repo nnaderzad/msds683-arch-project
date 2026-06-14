@@ -55,3 +55,15 @@ variable "gtrends_image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "youtube_schedule" {
+  description = "Cron for the daily YouTube snapshot (America/Los_Angeles)."
+  type        = string
+  default     = "30 9 * * *" # 30 min after the Trends job, to stagger load
+}
+
+variable "youtube_resolve_max_units" {
+  description = "YouTube Data API quota budget for channel resolution per run (search.list = 100 units each; daily quota = 10,000)."
+  type        = number
+  default     = 8000
+}
