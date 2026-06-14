@@ -28,6 +28,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -59,6 +60,12 @@ PROJECT_ID = gcs_io.PROJECT_ID
 PROCESSED_BUCKET = os.environ.get("GCS_PROCESSED_BUCKET", f"{PROJECT_ID}-processed")
 CACHE_BLOB = "youtube/channel_cache.json"
 WATCHLIST_PATH = Path(__file__).with_name("watchlist.csv")
+
+
+def _scrub(msg: object) -> str:
+    """Redact any API key before logging — YouTube keys ride in the request URL,
+    so an HTTPError's message would otherwise leak the key into Cloud Logging."""
+    return re.sub(r"key=[A-Za-z0-9_\-]+", "key=REDACTED", str(msg))
 
 
 # --- GCS-backed channel-id cache --------------------------------------------
@@ -217,7 +224,7 @@ def main() -> int:
         try:
             entry, used = resolve_channel_ids(name, api_key)
         except requests.HTTPError as exc:  # likely daily quota exhausted — stop gracefully
-            logger.warning("Channel resolution stopped (quota/HTTP): %s", exc)
+            logger.warning("Channel resolution stopped (quota/HTTP): %s", _scrub(exc))
             break
         resolve_units += used
         cache[name] = entry
@@ -234,7 +241,7 @@ def main() -> int:
         try:
             rec, used = stats_record(name, entry, api_key)
         except requests.HTTPError as exc:
-            logger.warning("Stats fetch failed for %s: %s", name, exc)
+            logger.warning("Stats fetch failed for %s: %s", name, _scrub(exc))
             continue
         stats_units += used
         records.append(rec)
