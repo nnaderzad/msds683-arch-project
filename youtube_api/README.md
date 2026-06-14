@@ -54,6 +54,11 @@ Turns the POC into the deployed pipeline:
 - **Roster-driven:** pulls the artist list from the Ticketmaster silver table
   (`tm_events`) — the same acts the Trends pipeline tracks — instead of a hardcoded
   list, so YouTube / Trends / Ticketmaster all join cleanly on `artist`.
+- **Watchlist:** also forward-collects a curated set of popular artists
+  (`watchlist.csv`) that aren't in our event data *yet* — YouTube has no history, so
+  this avoids permanent gaps if those acts get added later. The collector unions the
+  TM roster with the watchlist, de-dups, and caps the total (`YOUTUBE_MAX_ARTISTS`)
+  to keep a run under the 10k/day quota.
 - **Quota-aware:** resolves each artist's channel IDs **once** and caches them in
   GCS (`gs://…-processed/youtube/channel_cache.json`), capping search spend per run
   (`RESOLVE_MAX_UNITS`, default 8000). Every run then cheaply refreshes stats and
