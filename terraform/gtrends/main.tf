@@ -66,8 +66,9 @@ resource "google_project_iam_member" "gtrends_bq_jobs" {
 # --- Jobs -------------------------------------------------------------------
 
 resource "google_cloud_run_v2_job" "gtrends_backfill" {
-  name     = "gtrends-backfill"
-  location = var.region
+  name                = "gtrends-backfill"
+  location            = var.region
+  deletion_protection = false
 
   template {
     parallelism = var.gtrends_backfill_tasks
@@ -106,8 +107,9 @@ resource "google_cloud_run_v2_job" "gtrends_backfill" {
 }
 
 resource "google_cloud_run_v2_job" "gtrends_daily" {
-  name     = "gtrends-daily"
-  location = var.region
+  name                = "gtrends-daily"
+  location            = var.region
+  deletion_protection = false
 
   template {
     template {
