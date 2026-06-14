@@ -1,90 +1,92 @@
 # Event Demand Forecasting — Data Architecture (MSDS 683)
 
-End-to-end data architecture for predicting demand for electronic music events
-in the Bay Area, combining ticket-market signals (SeatGeek), artist popularity
-(Spotify), and local interest (Google Trends).
+End-to-end data architecture for predicting **concert ticket resale demand**,
+combining ticket/event data, global artist popularity, and local per-metro search
+interest. Thesis: a *locally* popular artist in a *small* venue tends to sell out
+and push resale prices up; a locally-unknown artist in a big room tends to soften.
+
+> **Strategy & design rationale:** [`docs/PROJECT_STRATEGY.md`](docs/PROJECT_STRATEGY.md)
+> (domain, analytical use cases, schema sketch, risks, division of labor).
+
+## Data sources
+
+| Source | Signal | Status |
+|---|---|---|
+| **Ticketmaster** (Discovery API) | upcoming events, venues, genres, status, **current** price ranges | deployed — nationwide, every 4h → `tm_events` |
+| **Google Trends** (pytrends) | **per-metro (DMA)** search interest, with real history | deployed — backfill + daily |
+| **YouTube** (Data API) | **global** popularity (subscribers) + momentum (Topic views) | deployed — daily snapshots |
+
+Honest limits that shape the design: Ticketmaster gives no *historical* resale
+prices (we snapshot forward); YouTube has no geography and no history (forward
+snapshots only) — so **Google Trends carries the geographic + historical signal**.
+Data joins on `(artist, DMA, date)` (Trends ↔ Ticketmaster) and `artist` (YouTube).
+
+## Architecture (medallion on GCP, project `data-architecture-498123`)
+
+```
+APIs ──► BRONZE (raw, GCS)                  ──► SILVER (BigQuery + processed/) ──► GOLD (analytics)
+         gs://…-raw/<source>/dt=YYYY-MM-DD/      tm_events (MERGE), …               model-ready star schema
+```
+
+- **Bronze:** untouched API JSON, `dt=`-partitioned, via `common/gcs_io.py`.
+- **Silver:** typed, deduped per-source tables (e.g. `tm_events`).
+- **Gold:** the joined, model-ready features (in progress).
+
+Compute is **Cloud Run** (functions + jobs) on **Cloud Scheduler**; infra is
+**Terraform** (the +20 bonus); secrets in **Secret Manager**; failures alert via
+**Cloud Monitoring**.
 
 ## Repo layout
 
 ```
-arch_project/
-├── Project plan.pdf       # class assignment
-├── README.md              # this file
-└── terraform/             # GCP infrastructure (Bonus +20 pts)
-    ├── providers.tf       # google provider + version pinning
-    ├── variables.tf       # project_id, region, dataset name
-    ├── apis.tf            # enables storage + bigquery APIs
-    ├── storage.tf         # 3 GCS buckets: raw / processed / analytics
-    ├── bigquery.tf        # event_demand_analytics dataset
-    ├── outputs.tf         # echoes resource names after apply
-    ├── terraform.tfvars.example
-    └── .gitignore
+├── docs/                     # PROJECT_STRATEGY.md (+ gitignored working notes)
+├── common/gcs_io.py          # shared bronze-landing helper (all sources)
+├── ticketmaster_api/         # Ticketmaster POC
+├── cloud_functions/
+│   └── ticketmaster_daily/   # deployed nationwide TM extractor (Cloud Run fn)
+├── google_trends_api/        # Google Trends ingestion (roster, geo, jobs) — see its README
+├── youtube_api/              # YouTube POC + collect_youtube.py (deployed collector)
+├── tests/                    # pytest
+├── terraform/                # main root: buckets, BigQuery, TM pipeline, monitoring
+│   └── gtrends/              # isolated root (remote GCS state): Trends + YouTube jobs
+└── environment.yml           # conda env `music-demand`
 ```
 
-## Architecture layers
+## Component docs
 
-| Layer     | GCS bucket                              | Holds                                              |
-|-----------|-----------------------------------------|----------------------------------------------------|
-| Bronze    | `data-architecture-498123-raw`          | Raw JSON from SeatGeek, Spotify, Google Trends     |
-| Silver    | `data-architecture-498123-processed`    | Cleaned + joined event-artist records              |
-| Gold      | `data-architecture-498123-analytics`    | Model-ready features                               |
-| Warehouse | BigQuery `event_demand_analytics`       | Cleaned + analytical tables                        |
+- Google Trends: [`google_trends_api/README.md`](google_trends_api/README.md) ·
+  deploy: [`google_trends_api/DEPLOY.md`](google_trends_api/DEPLOY.md)
+- Ticketmaster: [`ticketmaster_api/README.md`](ticketmaster_api/README.md) ·
+  [`cloud_functions/ticketmaster_daily/README.md`](cloud_functions/ticketmaster_daily/README.md)
+- YouTube: [`youtube_api/README.md`](youtube_api/README.md)
 
-Versioning is enabled on the raw bucket so the daily SeatGeek/Spotify snapshots
-can be re-read by hash if a pipeline run gets re-played.
+## Terraform layout (two roots)
+
+The **main** root (`terraform/`) holds the buckets, BigQuery dataset, the
+Ticketmaster pipeline, and monitoring (state is local, on the maintainer's
+machine). The **`terraform/gtrends/`** root holds the Google Trends + YouTube
+Cloud Run jobs and uses a **remote GCS backend** (`…-tfstate`), so any teammate
+can plan/apply it without sharing local state or the Ticketmaster key.
+
+```bash
+# Google Trends + YouTube infra:
+terraform -chdir=terraform/gtrends init
+terraform -chdir=terraform/gtrends apply     # see google_trends_api/DEPLOY.md
+```
 
 ## Prerequisites
 
-Install once on your machine:
-
 ```bash
-brew install terraform
 brew install --cask google-cloud-sdk
-```
-
-Authenticate gcloud against your GCP account (one-time, browser-based):
-
-```bash
-gcloud auth application-default login
+# Terraform: HashiCorp tap, or a direct binary to ~/.local/bin
+gcloud auth login && gcloud auth application-default login
 gcloud config set project data-architecture-498123
 ```
 
-Confirm billing is enabled on the project at
-https://console.cloud.google.com/billing — required for storage + BigQuery.
-
-## Provisioning the infrastructure
-
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars     # already filled with project_id
-terraform init                                    # downloads google provider
-terraform plan                                    # preview what will be created
-terraform apply                                   # type 'yes' to confirm
-```
-
-`terraform apply` is what the +20 bonus rubric asks you to demonstrate.
-
-After it succeeds, Terraform will echo the resource names. Verify in the GCP
-console:
-- Buckets → https://console.cloud.google.com/storage/browser
-- BigQuery → https://console.cloud.google.com/bigquery
-
-## Tearing it down
-
-```bash
-cd terraform
-terraform destroy
-```
-
-`force_destroy_buckets = true` (in `variables.tf`) lets destroy wipe buckets
-that still contain objects — convenient for a class project, flip to `false`
-before anything resembling production.
-
 ## Estimated cost
 
-For demo-scale data (a few GB across all buckets, a few BigQuery queries):
-- GCS: ~$0.02/GB/month standard storage → pennies/month
-- BigQuery: 10 GB storage + 1 TB query free tier → effectively free
-- No Cloud Composer, no Dataflow → no idle compute cost
-
-You can run this all term well under $5 with the $300 GCP new-account credit.
+Demo-scale: GCS standard storage ≈ pennies/month; BigQuery within the free tier;
+Cloud Run jobs bill per vCPU-second (an hours-long backfill ≈ cents–low dollars);
+Cloud Scheduler/Artifact Registry negligible. Comfortably within the $300 GCP
+new-account credit. (The Trends/YouTube backfills are the only notable compute,
+and they're bounded + idempotent.)
