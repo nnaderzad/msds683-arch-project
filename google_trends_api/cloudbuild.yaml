@@ -1,0 +1,22 @@
+# Build + push the Google Trends job image to Artifact Registry.
+# Run from the REPO ROOT (the build context is "."):
+#   gcloud builds submit --config google_trends_api/cloudbuild.yaml \
+#     --substitutions=_REGION=us-west1,_PROJECT=data-architecture-498123,_TAG=latest .
+substitutions:
+  _REGION: us-west1
+  _PROJECT: data-architecture-498123
+  _REPO: gtrends
+  _TAG: latest
+images:
+  - "${_REGION}-docker.pkg.dev/${_PROJECT}/${_REPO}/job:${_TAG}"
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - google_trends_api/Dockerfile
+      - -t
+      - "${_REGION}-docker.pkg.dev/${_PROJECT}/${_REPO}/job:${_TAG}"
+      - .
+options:
+  logging: CLOUD_LOGGING_ONLY

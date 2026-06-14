@@ -1,0 +1,10 @@
+# Keep the Cloud Build context small. The Trends image only COPYs common/ and
+# google_trends_api/, so everything else is noise — and data/ can get large.
+.git/
+.claude/
+data/
+downloads/
+terraform/
+**/__pycache__/
+*.pyc
+*.pyo
