@@ -58,6 +58,7 @@ CHANNELS_UNITS = 1   # channels.list quota cost
 PROJECT_ID = gcs_io.PROJECT_ID
 PROCESSED_BUCKET = os.environ.get("GCS_PROCESSED_BUCKET", f"{PROJECT_ID}-processed")
 CACHE_BLOB = "youtube/channel_cache.json"
+WATCHLIST_PATH = Path(__file__).with_name("watchlist.csv")
 
 
 # --- GCS-backed channel-id cache --------------------------------------------
@@ -144,6 +145,35 @@ def roster_artists(top_n: int, states: list[str] | None) -> list[str]:
     return list(artist_df.loc[artist_df["selected"], "artist"])
 
 
+def load_watchlist() -> list[str]:
+    """Popular-artist watchlist (forward-collected beyond the TM roster)."""
+    if not WATCHLIST_PATH.exists():
+        return []
+    names = []
+    for line in WATCHLIST_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and line.lower() != "artist":
+            names.append(line)
+    return names
+
+
+def build_universe(top_n: int, states: list[str] | None, max_artists: int) -> list[str]:
+    """TM roster ∪ watchlist (roster first), de-duplicated and capped for quota.
+
+    Daily stats cost ~2 units/artist, so the cap keeps a full run under the
+    10,000-unit/day YouTube quota (with headroom for incremental resolution).
+    """
+    seen: set[str] = set()
+    universe: list[str] = []
+    for name in roster_artists(top_n, states) + load_watchlist():
+        disp = " ".join(str(name).split())
+        key = disp.lower()
+        if key and key not in seen:
+            seen.add(key)
+            universe.append(disp)
+    return universe[:max_artists] if max_artists > 0 else universe
+
+
 def get_api_key() -> str:
     load_env()  # youtube_api/.env if present
     key = os.environ.get("YOUTUBE_API_KEY", "").strip()
@@ -166,11 +196,15 @@ def main() -> int:
     parser.add_argument("--resolve-max-units", type=int,
                         default=int(os.environ.get("RESOLVE_MAX_UNITS", "8000")),
                         help="Quota budget for channel resolution per run (search=100 each).")
+    parser.add_argument("--max-artists", type=int,
+                        default=int(os.environ.get("YOUTUBE_MAX_ARTISTS", "2000")),
+                        help="Cap on the artist universe (daily stats ~2 units each; quota=10k/day).")
     parser.add_argument("--dry-run", action="store_true", help="Don't land/cache to GCS.")
     args = parser.parse_args()
 
     api_key = get_api_key()
-    names = roster_artists(args.top_n, args.states)
+    names = build_universe(args.top_n, args.states, args.max_artists)
+    logger.info("Artist universe: %d (TM roster + watchlist, cap %d)", len(names), args.max_artists)
     cache = {} if args.dry_run else load_cache()
 
     # 1) Resolve channels for not-yet-cached artists, capped by quota budget.
