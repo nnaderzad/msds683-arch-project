@@ -46,3 +46,30 @@ Prints a per-artist summary plus the full structured JSON payload. Edit the
 - `search.list` (name → channel) = **100 units/call** — the expensive part.
   Default quota is 10,000 units/day, so resolve channel IDs once and cache them
   for a production run rather than searching every time.
+
+## Production collector (`collect_youtube.py`)
+
+Turns the POC into the deployed pipeline:
+
+- **Roster-driven:** pulls the artist list from the Ticketmaster silver table
+  (`tm_events`) — the same acts the Trends pipeline tracks — instead of a hardcoded
+  list, so YouTube / Trends / Ticketmaster all join cleanly on `artist`.
+- **Quota-aware:** resolves each artist's channel IDs **once** and caches them in
+  GCS (`gs://…-processed/youtube/channel_cache.json`), capping search spend per run
+  (`RESOLVE_MAX_UNITS`, default 8000). Every run then cheaply refreshes stats and
+  lands a daily snapshot to `gs://…-raw/youtube/dt=<date>/`. Stops gracefully at the
+  daily quota.
+- **Signals kept separate:** `official_subscribers` (brand/popularity) and
+  `topic_total_views` (audio/streaming momentum), per the official-vs-"- Topic"
+  rationale above.
+
+```bash
+python youtube_api/collect_youtube.py --top-n 50 --resolve-max-units 4000   # needs YOUTUBE_API_KEY
+```
+
+**Deployed** as the `youtube-daily` Cloud Run Job + Scheduler (9:30am PT) in
+[`../terraform/gtrends/youtube.tf`](../terraform/gtrends/youtube.tf), running as the
+`youtube-ingest` service account and reading the key from the `youtube-api-key`
+Secret Manager secret. It shares the ingestion image
+([`../google_trends_api/Dockerfile`](../google_trends_api/Dockerfile)) via a command
+override.
