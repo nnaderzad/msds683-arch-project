@@ -1,0 +1,48 @@
+name: CI
+
+# Check every push and pull request: lint + tests for the Python code, and
+# format/validate for the Terraform.
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    name: Python (ruff + pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest
+          pip install -r google_trends_api/requirements.txt -r youtube_api/requirements.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Tests (pytest)
+        run: pytest tests/ -q
+
+  terraform:
+    name: Terraform (fmt + validate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.6"
+      - name: Format check
+        run: terraform fmt -check -recursive
+      - name: Validate (main root)
+        working-directory: terraform
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Validate (gtrends root)
+        working-directory: terraform/gtrends
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
