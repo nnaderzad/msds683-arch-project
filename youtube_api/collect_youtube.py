@@ -38,6 +38,8 @@ _HERE = Path(__file__).resolve()
 sys.path.insert(0, str(_HERE.parents[1]))                       # repo root -> common
 sys.path.insert(0, str(_HERE.parents[1] / "google_trends_api"))  # build_roster, geo_lookup
 
+import requests  # noqa: E402
+
 from google.cloud import storage  # noqa: E402
 
 from common import gcs_io  # noqa: E402
@@ -151,10 +153,18 @@ def get_api_key() -> str:
 
 
 def main() -> int:
+    # Defaults come from env (so the Cloud Run job is configured via env vars) but
+    # stay CLI-overridable for local runs.
+    states_env = os.environ.get("STATES", "").strip()
+    default_states = (
+        None if states_env.upper() in ("", "ALL")
+        else [s.strip().upper() for s in states_env.split(",") if s.strip()]
+    )
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--top-n", type=int, default=250)
-    parser.add_argument("--states", nargs="*", default=None, help="Limit roster (smoke).")
-    parser.add_argument("--resolve-max-units", type=int, default=8000,
+    parser.add_argument("--top-n", type=int, default=int(os.environ.get("TOP_N", "250")))
+    parser.add_argument("--states", nargs="*", default=default_states, help="Limit roster (smoke).")
+    parser.add_argument("--resolve-max-units", type=int,
+                        default=int(os.environ.get("RESOLVE_MAX_UNITS", "8000")),
                         help="Quota budget for channel resolution per run (search=100 each).")
     parser.add_argument("--dry-run", action="store_true", help="Don't land/cache to GCS.")
     args = parser.parse_args()
@@ -170,7 +180,11 @@ def main() -> int:
             continue
         if resolve_units + SEARCH_UNITS > args.resolve_max_units:
             break
-        entry, used = resolve_channel_ids(name, api_key)
+        try:
+            entry, used = resolve_channel_ids(name, api_key)
+        except requests.HTTPError as exc:  # likely daily quota exhausted — stop gracefully
+            logger.warning("Channel resolution stopped (quota/HTTP): %s", exc)
+            break
         resolve_units += used
         cache[name] = entry
         newly_resolved += 1
@@ -183,7 +197,11 @@ def main() -> int:
         entry = cache.get(name)
         if not entry or not (entry.get("official_id") or entry.get("topic_id")):
             continue
-        rec, used = stats_record(name, entry, api_key)
+        try:
+            rec, used = stats_record(name, entry, api_key)
+        except requests.HTTPError as exc:
+            logger.warning("Stats fetch failed for %s: %s", name, exc)
+            continue
         stats_units += used
         records.append(rec)
 
