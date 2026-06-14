@@ -30,9 +30,9 @@ resource "google_storage_bucket" "layers" {
   }
 
   labels = {
-    layer       = each.key
-    project     = "event-demand-analytics"
-    managed_by  = "terraform"
+    layer      = each.key
+    project    = "event-demand-analytics"
+    managed_by = "terraform"
   }
 
   depends_on = [google_project_service.storage]
