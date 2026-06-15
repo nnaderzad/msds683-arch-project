@@ -47,7 +47,7 @@ flowchart TB
 | Source | Gives | Status |
 |---|---|---|
 | **Ticketmaster** (Discovery v2) | Event spine, venue, genre, face-value price (~23% cover) | ✅ live nationwide |
-| **SeatGeek** (Platform v2) | Secondary price + `listing_count` (resale demand), sometimes capacity | 🧪 local POC (access TBC) |
+| **SeatGeek** (Platform v2) | `popularity` score + venue **capacity** (pricing `stats` gated to partner tier — confirmed) | 🧪 local POC (enrichment only) |
 | **Google Trends** (pytrends) | Per-DMA local search interest + history (the geo backbone) | ✅ live |
 | **YouTube** (Data v3) | Global artist popularity (subs, views) | ✅ live |
 

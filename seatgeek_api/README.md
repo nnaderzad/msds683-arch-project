@@ -1,15 +1,32 @@
 # SeatGeek API — proof-of-concept extractor
 
-A second event + price source alongside Ticketmaster. **Why we're adding it:**
-Ticketmaster's Discovery API exposes a *face-value* price for only **~23% of
-events** (profiled in `analysis/profile_schema.py`). SeatGeek's `/events` `stats`
-carry **secondary-market** signals — `lowest_price`, `average_price`, and
-`listing_count` (resale inventory = a demand proxy) — which fit our *resale*-demand
-thesis better and provide a fallback if Ticketmaster ever breaks.
+A second event source alongside Ticketmaster. **Original goal:** Ticketmaster's
+Discovery API exposes a *face-value* price for only **~23% of events** (profiled in
+`analysis/profile_schema.py`), so we hoped SeatGeek's `/events` `stats`
+(`lowest_price`, `average_price`, `listing_count` = resale inventory) would give a
+richer *resale*-demand signal.
 
-This directory currently holds a **local POC only** (`seatgeek_poc.py`). A
-scheduled collector + Terraform (mirroring the Ticketmaster pipeline) is deferred
-until we confirm API access and see the data.
+> ## ⚠️ Finding (verified 2026-06-15 with the `shakshuka` app)
+> **SeatGeek's pricing `stats` are GATED — the basic client_id tier returns
+> `stats = {}` for every event**, including next weekend's stadium tours (Morgan
+> Wallen, Ed Sheeran, Ariana Grande) and major future tours (KAROL G). Confirmed
+> with and without `client_secret`, so it's an access tier, not "no inventory."
+> Getting prices/`listing_count` would require **SeatGeek partner/affiliate
+> approval**.
+>
+> **What the basic tier DOES give us (and why it's still worth keeping):**
+> - **`score` / `popularity`** — SeatGeek's own event-demand model, populated for
+>   all events (a signal Ticketmaster doesn't have; no geo though).
+> - **Venue `capacity`** — populated for a meaningful share of venues (~37% in a CA
+>   sample; e.g. Morgan Wallen 61,500, Ariana 18,000) → helps fill `dim_venue.capacity`.
+> - Full event/venue/performer/genre catalog (~34k concerts) — mostly redundant with TM.
+>
+> **So SeatGeek is repositioned from a *price* source to a *popularity + capacity*
+> enrichment source.** The resale-price gap is still open (pursue partner access, or
+> Eventbrite/Bandsintown/Resident Advisor — see the team backlog).
+
+This directory holds a **local POC only** (`seatgeek_poc.py`). A scheduled collector
++ Terraform is deferred (and lower-value now that pricing is gated).
 
 ## Step 0 — verify you can get API access (do this first)
 
@@ -52,16 +69,14 @@ and `venue_capacity` are populated.
 
 ## What we get (and don't)
 
-- **Demand signals:** `listing_count` / `visible_listing_count` (live resale
-  inventory), `lowest_price` / `average_price` / `median_price` / `highest_price`,
-  and SeatGeek's own `score` / `popularity`.
-- **Joins:** flattened columns mirror `tm_events` (`venue_*`, `price_*`, performers,
-  date) so a future `sg_events` silver table joins to Ticketmaster, Trends, and
-  YouTube on **artist + venue-DMA + date**.
-- **Bonus — venue capacity:** SeatGeek venues sometimes include `capacity`, which is
-  otherwise a hand-gathered dimension for us. The richness summary measures how
-  often it's filled.
-- **No history.** `stats` is a **current snapshot** — there is no price time-series
-  in the API. Like Ticketmaster prices and YouTube stats, history only accrues by
-  **snapshotting daily** (this script is forward-only). That's the next step once
-  access is confirmed.
+- **Available now (basic tier):** `score` / `popularity` (SeatGeek's demand model),
+  venue `capacity` (partial), and the full event/venue/performer/genre catalog.
+- **Gated (partner tier only):** `listing_count` / `visible_listing_count` and all
+  `lowest/average/median/highest_price` fields — these come back empty (`stats={}`).
+  The POC still captures these columns so they light up automatically if partner
+  access is ever granted.
+- **Joins:** flattened columns mirror `tm_events` (`venue_*`, performers, date) so a
+  future `sg_events` table joins to Ticketmaster, Trends, and YouTube on
+  **artist + venue-DMA + date**.
+- **No history** even at the partner tier — `stats` is a current snapshot, so history
+  (if unlocked) would only accrue by **snapshotting daily** (this script is forward-only).

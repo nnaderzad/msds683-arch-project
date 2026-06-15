@@ -304,14 +304,20 @@ def print_richness_summary(rows: list[dict[str, Any]]) -> None:
     with_genre = sum(1 for r in rows if r.get("primary_performer_genre"))
     open_counts = Counter("open" if r.get("is_open") else "closed" for r in rows)
 
-    print("\nData richness summary (compare price% to Ticketmaster's ~23%):")
+    with_score = sum(1 for r in rows if r.get("sg_score") is not None)
+
+    print("\nData richness summary:")
     print(f"- events returned: {total}")
-    print(f"- with price (lowest_price): {pct(with_price)}")
-    print(f"- with listing_count > 0 (resale inventory): {pct(with_listings)}")
-    print(f"- with venue_capacity > 0 (bonus dim): {pct(with_capacity)}")
+    print(f"- with sg_score/popularity (demand model): {pct(with_score)}")
+    print(f"- with venue_capacity > 0 (helps dim_venue): {pct(with_capacity)}")
     print(f"- with venue_id: {pct(with_venue)}")
     print(f"- with performers: {pct(with_perf)}")
     print(f"- with genre: {pct(with_genre)}")
+    print(f"- with price (lowest_price): {pct(with_price)}")
+    print(f"- with listing_count > 0 (resale inventory): {pct(with_listings)}")
+    if with_price == 0 and with_listings == 0 and total:
+        print("  NOTE: price + listing_count are GATED to SeatGeek partner access; "
+              "the basic client_id returns stats={} (verified 2026-06-15).")
     print(f"- open/closed: {dict(open_counts)}")
 
 

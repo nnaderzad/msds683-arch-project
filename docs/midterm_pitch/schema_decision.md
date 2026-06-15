@@ -176,14 +176,19 @@ history are **parked** (§7) — not needed to pitch the design.
 - **Venue capacity** → **one-off web/Wikipedia gather**, loaded as a static
   `dim_venue.capacity` attribute (capacity rarely changes; no live API needed).
   Treated as a slowly-/non-changing attribute.
-- **Price depth is a real risk (TM = 23%, face value only).** Mitigation: **add
-  SeatGeek** (primary **+ secondary** stats: `lowest/avg price`, `listing_count` =
-  inventory/demand proxy) — arguably a *better* fit for a *resale*-demand thesis
-  than TM, and a fallback if TM breaks. Fallbacks if SeatGeek stalls: Eventbrite
-  (indie/EDM face value), Bandsintown (broadens artist coverage), Resident Advisor
-  (EDM-specific). The star is **source-agnostic on price** — price columns can be
-  fed by TM *or* SeatGeek, so this doesn't change the schema. *(Spike tracked in
-  the team backlog.)*
+- **Price depth is a real, still-open risk (TM = 23%, face value only).** We
+  evaluated **SeatGeek** as a richer/secondary price source and **confirmed
+  2026-06-15 that its pricing `stats` are gated** to partner access — the basic API
+  returns `stats={}` even for next weekend's stadium tours. So SeatGeek is *not* a
+  price fix; it's repositioned to fill **venue `capacity`** + a **`popularity`
+  score** (see below). Resale-price options still to pursue: SeatGeek partner
+  approval, or Eventbrite / Bandsintown / Resident Advisor. The star stays
+  **source-agnostic on price** (TM today; another source if we unlock one), so this
+  doesn't change the schema — meanwhile we lean on TM face value + temporal
+  accumulation. *(Tracked in the team backlog.)*
+- **SeatGeek as an enrichment source (confirmed working).** Adds `dim_venue.capacity`
+  for many venues and a SeatGeek `popularity` measure on the event fact — both
+  optional left-join enrichments, never event filters.
 - **EDM as an optional demo *lens*, not a data filter.** The warehouse stays
   **all-genre, all-artist** — we never drop data. EDM (51% price coverage + the geo
   backbone) is just a clean *focal narrative* for the demo if we want one; the model

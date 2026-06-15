@@ -17,7 +17,7 @@ updated 2026-06-15.*
 flowchart LR
     subgraph SRC[Sources - daily snapshot, forward-only]
       TM[Ticketmaster API]
-      SG[SeatGeek API]
+      SG[SeatGeek API<br/>popularity + capacity<br/>pricing gated]
       GT[Google Trends]
       YT[YouTube API]
     end
@@ -39,7 +39,7 @@ flowchart LR
     GOLD[Gold - fact_event_demand star<br/>event x day, model-ready]
 
     TM --> bTM --> sEV
-    SG --> bSG --> sEV
+    SG --> bSG --> dims
     GT --> bGT --> sGT
     YT --> bYT --> sYT
     sEV --> GOLD
@@ -59,12 +59,14 @@ flowchart LR
   Ticketmaster's is in `cloud_functions/ticketmaster_daily/main.py`.)*
 
 ### Silver → one typed, deduped fact per source grain
-- **Ticketmaster + SeatGeek → `fact_event_price_snapshot`** (grain: event × day):
+- **Ticketmaster → `fact_event_price_snapshot`** (grain: event × day):
   flatten nested JSON → **standardize** dates to UTC + types → **normalize artist
   name** (for the join) → **dedupe** to one row per event (MERGE on `event_id`,
-  the live `tm_events` pattern) → **append today's snapshot**. SeatGeek adds
-  `listing_count` + secondary `lowest_price`; both sources fill the same price columns
-  (source-tagged), so the schema is **source-agnostic on price**.
+  the live `tm_events` pattern) → **append today's snapshot**. Price columns are
+  **source-agnostic** (TM face value today; another source if we unlock secondary
+  pricing later). *Note: SeatGeek pricing is gated (confirmed 2026-06-15), so it
+  does NOT feed price here — it contributes venue capacity + a popularity score
+  instead (below).*
 - **Google Trends → `fact_artist_interest_daily`** (grain: artist × DMA × day):
   explode the `records` arrays → **standardize** dates → **map DMA → geo** via the
   committed crosswalk (`google_trends_api/geo_lookup.py`) → keep the 0–100
@@ -73,7 +75,8 @@ flowchart LR
   parse channel stats → **standardize** → one row per (artist, day): subscribers, views.
 - **Build conformed dims:** `dim_artist` (every artist seen in events — *not* filtered
   to the Trends roster), `dim_venue` (+ `dma_code` from the crosswalk, + `capacity`
-  from a one-off web/Wikipedia gather), `dim_geo`, `dim_date`.
+  from **SeatGeek** where populated, backfilled by a one-off web/Wikipedia gather),
+  `dim_geo`, `dim_date`. A SeatGeek `popularity` score can also enrich the event fact.
 
 ### Gold → assemble the star
 - **`fact_event_demand`** (grain: event × day): start from

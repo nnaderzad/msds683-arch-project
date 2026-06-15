@@ -13,7 +13,8 @@ updated 2026-06-15.*
 
 ## The numbers to memorize (from real data)
 - **Venue → DMA join: 99.5%** → our geographic thesis is achievable.
-- **Ticketmaster price coverage: 23%** (face value) → why we're adding SeatGeek.
+- **Ticketmaster price coverage: 23%** (face value). Secondary pricing is gated
+  industry-wide (SeatGeek `stats` confirmed locked) → price depth is an open risk.
 - **Dance/Electronic price coverage: 51%** → EDM = a clean optional demo lens.
 - **36,251 events / 3,216 venues** today, accumulating daily (temporal richness).
 
@@ -74,13 +75,17 @@ updated 2026-06-15.*
 - **Google Trends is 0–100 *relative* — how can you compare across artists/metros?**
   We don't compare raw values across artists; we keep a per-artist national series to
   normalize for the *gap* use case. (Parked detail for now.)
-- **Ticketmaster only prices 23% of events — is the thesis viable?** Two answers:
-  (a) it's *face value* anyway; (b) we're adding **SeatGeek** (secondary `lowest_price`
-  + `listing_count` = resale demand), which fits the resale thesis better and is a
-  fallback. Price columns are source-agnostic in the schema.
-- **Where does venue capacity come from?** A **one-off web/Wikipedia gather**, loaded
-  as a static `dim_venue` attribute (capacity rarely changes); SeatGeek sometimes
-  provides it too.
+- **Ticketmaster only prices 23% of events — is the thesis viable?** Honest answer:
+  (a) it's *face value* anyway; (b) we evaluated **SeatGeek** for secondary pricing
+  but **confirmed its `stats` are gated to partner access** (empty even for next
+  weekend's stadium tours) — secondary pricing is defended industry-wide. So price
+  depth is an **open risk** we're pressure-testing: pursue SeatGeek partner access
+  and/or a narrowly-scoped polite collector, and lean on **temporal accumulation** of
+  TM face value meanwhile. The schema is source-agnostic on price, so unlocking a
+  source later changes nothing structural. *(This is the design we most want feedback on.)*
+- **Where does venue capacity come from?** **SeatGeek** populates `capacity` for many
+  venues (working today), backfilled by a **one-off web/Wikipedia gather**; loaded as
+  a static `dim_venue` attribute (capacity rarely changes).
 - **No source has price/popularity history — isn't that a problem?** Correct: TM,
   SeatGeek, and YouTube are all current-snapshot. We build history by **snapshotting
   daily** (temporal richness, already running). Google Trends is the exception — it
@@ -93,7 +98,10 @@ updated 2026-06-15.*
   retries, DQ gates) — and it's a rubric learning goal.
 
 ## Backlog surfaced during prep (not slides)
-- **SeatGeek spike** (verify API access → POC → collector) — now the top thesis-risk item.
-- Fallback price/coverage sources if SeatGeek stalls: Eventbrite, Bandsintown,
-  Resident Advisor.
+- **SeatGeek result (2026-06-15):** pricing `stats` gated to partner tier → keep
+  SeatGeek for **capacity + popularity** only. **Resale price is still unsolved.**
+- **Resale-price options to pursue:** SeatGeek partner/affiliate application; a
+  narrowly-scoped *polite* daily collector (EDM subset, internal JSON, no evasion);
+  or alt sources (Eventbrite, Bandsintown, Resident Advisor). Full multi-site
+  scraping (StubHub etc.) ruled out — anti-bot + ToS + maintenance, off-rubric.
 - Parked schema details: surrogate keys, SCD types, Trends cross-artist normalization.
