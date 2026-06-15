@@ -93,6 +93,11 @@ updated 2026-06-15.*
 - **How does this scale to 100 GB+?** Partitioned (`dt=`) append-only snapshots grow
   daily across 4 sources + nationwide events; the layout is built to scale, and we
   defend the design rather than padding with synthetic data.
+- **Can you cover every artist's local interest?** No — there are **9,317 distinct
+  artists** in the event data vs. a 50-artist starter roster, and enrichment is
+  **throughput-bound** (Trends ~10s/call; YouTube 10k/day quota). So the roster is a
+  *permanent prioritization queue* (soonest/biggest shows first); the rest are `NULL`
+  until collection reaches them. This is a design constraint we surface, not hide.
 - **Why Airflow if Cloud Scheduler already works?** Scheduler is fine for independent
   acquisition jobs; Airflow is for the silver→gold **dependency graph** (ordering,
   retries, DQ gates) — and it's a rubric learning goal.

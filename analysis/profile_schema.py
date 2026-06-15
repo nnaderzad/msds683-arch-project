@@ -208,6 +208,38 @@ def profile_dma_coverage(project: str, dataset: str) -> list[tuple[str, str, str
     return out
 
 
+def profile_artist_universe(project: str, dataset: str) -> list[tuple[str, str, str, str]]:
+    """Size the artist-coverage gap that YouTube/Trends collection must close.
+
+    attraction_names is pipe-delimited, so the true artist count needs the lineup
+    split out. The gap between this and the starter roster is the roster-expansion
+    burden — and the binding constraint is Trends/YouTube throughput, not events.
+    Smaller-show sources (e.g. indie/EDM) only widen this gap.
+    """
+
+    tm = fq(project, dataset, TM_TABLE)
+    n_artists = int(bq_rows(
+        f"SELECT COUNT(*) AS n FROM ("
+        f"  SELECT DISTINCT TRIM(a) AS artist FROM {tm}, "
+        f"  UNNEST(SPLIT(attraction_names, '|')) AS a "
+        f"  WHERE a IS NOT NULL AND TRIM(a) != '')",
+        project,
+    )[0]["n"])
+
+    roster = [a for a in _read_csv(SAMPLE_DIR / "roster_artist_2026-06-14.csv")
+              if a.get("artist")]
+    n_roster = len(roster)
+    coverage = round(100 * n_roster / n_artists, 2) if n_artists else 0.0
+    return [
+        ("artist_universe", "distinct individual artists in TM events",
+         str(n_artists), "artists to eventually cover"),
+        ("artist_universe", "current starter roster (collection queue)",
+         str(n_roster), "artists collected"),
+        ("artist_universe", "roster coverage of the artist universe",
+         str(coverage), "% of artists"),
+    ]
+
+
 def _read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
@@ -226,7 +258,8 @@ def run(project: str, dataset: str) -> list[dict[str, str]]:
 
     records: list[dict[str, str]] = []
     for profile in (profile_grains, profile_price_coverage,
-                    profile_join_hitrate, profile_dma_coverage):
+                    profile_join_hitrate, profile_dma_coverage,
+                    profile_artist_universe):
         for metric, dimension, value, unit in profile(project, dataset):
             records.append({
                 "metric": metric, "dimension": dimension, "value": value,

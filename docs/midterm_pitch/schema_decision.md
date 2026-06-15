@@ -153,6 +153,7 @@ From `analysis/profile_schema.py` (re-runnable; full table in
 | TM exposes a price | **23%** of events overall | TM price is *thin* and *face value* → see §6 risk; scope to better-covered genres. |
 | TM price for **Dance/Electronic** | **51%** | EDM is the best-covered genre → argues for an **EDM focus** for the demo/model. |
 | Events with an interest signal *today* | **5.6%** (50-act starter roster) | Roster = Trends **collection-priority queue**, *not* a filter. Target = **all** artists with shows; coverage grows as collection expands. Missing = `NULL`, never excluded. |
+| Distinct artists in TM events vs roster | **9,317 vs 50** (0.5%) | The real bottleneck is **collection throughput** (Trends ~10s/call; YouTube 10k/day ≈ 50 artists/day), not event sources → the roster is a *permanent* prioritization queue. Adding smaller-show sources widens this gap. |
 | Fact sizes per daily snapshot | event×day ≈ **36k**, artist×day ≈ 50, artist×DMA×day ≈ 50 | Small today; grows linearly with snapshots and roster — the partitioned design scales. |
 
 ---
