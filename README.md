@@ -34,7 +34,8 @@ APIs ──► BRONZE (raw, GCS)                  ──► SILVER (BigQuery + p
 
 Compute is **Cloud Run** (functions + jobs) on **Cloud Scheduler**; infra is
 **Terraform** (the +20 bonus); secrets in **Secret Manager**; failures alert via
-**Cloud Monitoring**.
+**Cloud Monitoring**; **CI** runs on every push (GitHub Actions: ruff + pytest +
+terraform validate). Current status + roadmap: [`docs/PROJECT_STRATEGY.md`](docs/PROJECT_STRATEGY.md#status--roadmap-2026-06-14).
 
 ## Repo layout
 

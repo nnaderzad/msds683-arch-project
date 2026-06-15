@@ -162,3 +162,25 @@ demand model once joined on artist + geography + date.
 3. Do we pursue a historical **resale-price** dataset, or accept forward-only +
    defend the scale story with temporal accumulation (+ labeled synthetic)?
 4. Confirm star-schema fact/dim split before M2 ER diagram.
+
+## Status & roadmap (2026-06-14)
+
+**Done & deployed (all Terraform-provisioned Cloud Run jobs + schedulers):**
+- **Ticketmaster** — live nationwide pipeline → bronze + silver `tm_events` (Nicky).
+- **Google Trends** — bronze ingestion (national + all-DMA snapshot daily; deep
+  per-DMA history backfill), roster derived from `tm_events`.
+- **YouTube** — daily stats for the TM roster ∪ a curated popular-artists watchlist
+  (forward-collection), quota-capped.
+- **CI** — GitHub Actions (ruff + pytest + terraform fmt/validate) on every push.
+
+**Next (in priority order):**
+1. **Silver → gold.** Trends → BQ `trends_interest`, YouTube → `youtube_stats`, then
+   the joined **`fact_event_demand`** star schema above — the rubric's "meaningful
+   transformation" demo and the input to any demand model.
+2. **Orchestration:** move from Cloud Scheduler toward **Airflow** (rubric learning
+   goal + demo item).
+3. Demand model on the gold features; CI action-version bump (Node 20 → 24).
+
+**Standing risks:** historical resale prices (Ticketmaster is forward-only); venue
+capacity source; hitting the 100 GB scale story (lean on temporal accumulation +
+clearly-labeled synthetic if needed).
