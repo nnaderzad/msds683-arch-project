@@ -158,22 +158,22 @@ resource "google_cloudfunctions2_function" "ticketmaster_daily" {
 
   service_config {
     available_memory      = "1Gi"
-    available_cpu         = "1" # 1Gi memory requires a full CPU on Cloud Run
+    available_cpu         = "1"  # 1Gi memory requires a full CPU on Cloud Run
     timeout_seconds       = 1800 # nationwide sweep takes ~10-15 min
     max_instance_count    = 1    # a scheduled batch job never needs to scale out
     service_account_email = google_service_account.ticketmaster_fn.email
 
     environment_variables = {
-      GCP_PROJECT         = var.project_id
-      GCS_RAW_BUCKET      = google_storage_bucket.layers["raw"].name
-      BQ_DATASET          = google_bigquery_dataset.analytics.dataset_id
-      STATE_CODES         = "ALL" # all 50 states + DC; or e.g. "CA,NY,TX"
+      GCP_PROJECT          = var.project_id
+      GCS_RAW_BUCKET       = google_storage_bucket.layers["raw"].name
+      BQ_DATASET           = google_bigquery_dataset.analytics.dataset_id
+      STATE_CODES          = "ALL" # all 50 states + DC; or e.g. "CA,NY,TX"
       GCS_PROCESSED_BUCKET = google_storage_bucket.layers["processed"].name
-      CLASSIFICATION_NAME = "music"
-      DAYS_AHEAD          = "180"
-      SLICE_DAYS          = "14" # beats the 1,000-event deep-paging cap per slice
-      PAGE_SIZE           = "200"
-      MAX_PAGES           = "5"
+      CLASSIFICATION_NAME  = "music"
+      DAYS_AHEAD           = "180"
+      SLICE_DAYS           = "14" # beats the 1,000-event deep-paging cap per slice
+      PAGE_SIZE            = "200"
+      MAX_PAGES            = "5"
       # Hard stop per run. 6 runs/day x 780 = 4,680 worst case, under the
       # 5,000/day quota. A typical nationwide run uses ~650-750 calls
       # (~4,300/day) — measured 659 with SLICE_DAYS=15 on 2026-06-11.
