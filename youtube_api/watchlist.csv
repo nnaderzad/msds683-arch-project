@@ -1,0 +1,173 @@
+# Watchlist of popular artists to FORWARD-COLLECT on YouTube, in addition to the
+# Ticketmaster roster. YouTube has no history via the API, so capturing today's
+# snapshot for popular acts that aren't in our event data *yet* avoids permanent
+# gaps if they get added to the project later.
+#
+# Provenance: initial list compiled by the assistant (LLM-derived) — a starting
+# seed of widely popular touring artists across genres. REVIEW AND EXTEND FREELY;
+# one artist per line. Lines starting with '#' and blank lines are ignored.
+artist
+# --- Pop ---
+Taylor Swift
+Beyoncé
+Ariana Grande
+Billie Eilish
+Dua Lipa
+Olivia Rodrigo
+Sabrina Carpenter
+Harry Styles
+Ed Sheeran
+Adele
+Bruno Mars
+Lady Gaga
+Justin Bieber
+The Weeknd
+Miley Cyrus
+Katy Perry
+Rihanna
+Selena Gomez
+Shawn Mendes
+Charlie Puth
+Sia
+Pink
+Lorde
+Halsey
+Camila Cabello
+Tate McRae
+Chappell Roan
+Gracie Abrams
+Benson Boone
+Teddy Swims
+# --- Hip-Hop / Rap ---
+Drake
+Kendrick Lamar
+Travis Scott
+Kanye West
+J. Cole
+Nicki Minaj
+Cardi B
+Post Malone
+Lil Wayne
+Eminem
+Future
+21 Savage
+Megan Thee Stallion
+Doja Cat
+Tyler the Creator
+Lil Baby
+Metro Boomin
+Playboi Carti
+Don Toliver
+Gunna
+Jack Harlow
+Latto
+Ice Spice
+Central Cee
+# --- R&B / Soul ---
+SZA
+Frank Ocean
+Usher
+Chris Brown
+Alicia Keys
+John Legend
+H.E.R.
+Daniel Caesar
+Brent Faiyaz
+Summer Walker
+Giveon
+Khalid
+Miguel
+Lauryn Hill
+# --- Rock / Alternative ---
+Coldplay
+Imagine Dragons
+Twenty One Pilots
+Foo Fighters
+Red Hot Chili Peppers
+Arctic Monkeys
+The Killers
+Paramore
+Green Day
+Fall Out Boy
+Metallica
+Pearl Jam
+Tame Impala
+The 1975
+Hozier
+Glass Animals
+Cage the Elephant
+blink-182
+Linkin Park
+Muse
+# --- Country ---
+Morgan Wallen
+Luke Combs
+Zach Bryan
+Chris Stapleton
+Kacey Musgraves
+Carrie Underwood
+Jelly Roll
+Lainey Wilson
+Kane Brown
+Luke Bryan
+Miranda Lambert
+Tyler Childers
+Cody Johnson
+Megan Moroney
+# --- Latin ---
+Bad Bunny
+Karol G
+Peso Pluma
+Shakira
+J Balvin
+Maluma
+Rauw Alejandro
+Feid
+Grupo Frontera
+Rosalía
+Manuel Turizo
+Ozuna
+Daddy Yankee
+Anuel AA
+Fuerza Regida
+# --- EDM / Dance ---
+Calvin Harris
+David Guetta
+Marshmello
+The Chainsmokers
+Kygo
+Tiesto
+Martin Garrix
+Diplo
+Zedd
+Illenium
+Skrillex
+deadmau5
+ODESZA
+Flume
+RÜFÜS DU SOL
+Fred again
+John Summit
+Swedish House Mafia
+Above & Beyond
+Disclosure
+Daft Punk
+Avicii
+Charlotte de Witte
+Eric Prydz
+# --- K-pop / Global ---
+BTS
+BLACKPINK
+Stray Kids
+SEVENTEEN
+TWICE
+NewJeans
+# --- Other widely-touring ---
+Michael Bublé
+Andrea Bocelli
+Sting
+Elton John
+Billy Joel
+Madonna
+Stevie Wonder
+Dolly Parton

@@ -62,7 +62,11 @@ resource "google_cloud_run_v2_job" "youtube_daily" {
         }
         env {
           name  = "TOP_N"
-          value = tostring(var.gtrends_top_n)
+          value = tostring(var.youtube_top_n)
+        }
+        env {
+          name  = "YOUTUBE_MAX_ARTISTS"
+          value = tostring(var.youtube_max_artists)
         }
         env {
           name  = "RESOLVE_MAX_UNITS"
