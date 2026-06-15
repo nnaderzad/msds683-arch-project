@@ -1,26 +1,29 @@
 metric,dimension,value,unit,as_of_ts,tm_events_rows
-grain_rows_per_snapshot,fact_event_price_snapshot (event x day),36251,rows/day,2026-06-15T03:54:26+00:00,36251
-grain_rows_per_snapshot,fact_artist_popularity_daily (artist x day),50,rows/day,2026-06-15T03:54:26+00:00,36251
-grain_rows_per_snapshot,fact_artist_interest_daily (artist x DMA x day),50,rows/day (targeted pairs),2026-06-15T03:54:26+00:00,36251
-dim_size,dim_venue (distinct venue_id),3216,rows,2026-06-15T03:54:26+00:00,36251
-dim_size,"dim_artist (distinct attraction combos, raw)",8748,rows (pre-split),2026-06-15T03:54:26+00:00,36251
-price_coverage,all genres,23.0,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Rock (n=10257),16.5,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Other (n=4285),16.0,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Pop (n=3745),11.0,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Country (n=3342),19.3,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Alternative (n=1983),55.7,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Hip-Hop/Rap (n=1810),17.7,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Undefined (n=1599),0.6,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=R&B (n=1427),17.9,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Jazz (n=1353),75.0,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Metal (n=1108),26.2,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Dance/Electronic (n=799),51.4,% events with price,2026-06-15T03:54:26+00:00,36251
-price_coverage,genre=Latin (n=791),0.0,% events with price,2026-06-15T03:54:26+00:00,36251
-interest_coverage_today,all genres (n=30256),5.6,% events with a Trends signal now (starter roster),2026-06-15T03:54:26+00:00,36251
-interest_coverage_today,EDM (Dance/Electronic) (n=404),3.2,% events with a Trends signal now (starter roster),2026-06-15T03:54:26+00:00,36251
-roster_size,starter roster artists (collection queue),50,artists,2026-06-15T03:54:26+00:00,36251
-dma_coverage_zip,all genres (n=36251),99.5,% events resolved by ZIP,2026-06-15T03:54:26+00:00,36251
-dma_coverage_any,all genres (n=36251),99.9,% events resolved (ZIP or state fallback),2026-06-15T03:54:26+00:00,36251
-dma_coverage_zip,EDM (Dance/Electronic) (n=799),99.5,% events resolved by ZIP,2026-06-15T03:54:26+00:00,36251
-dma_coverage_any,EDM (Dance/Electronic) (n=799),100.0,% events resolved (ZIP or state fallback),2026-06-15T03:54:26+00:00,36251
+grain_rows_per_snapshot,fact_event_price_snapshot (event x day),36251,rows/day,2026-06-15T05:08:47+00:00,36251
+grain_rows_per_snapshot,fact_artist_popularity_daily (artist x day),50,rows/day,2026-06-15T05:08:47+00:00,36251
+grain_rows_per_snapshot,fact_artist_interest_daily (artist x DMA x day),50,rows/day (targeted pairs),2026-06-15T05:08:47+00:00,36251
+dim_size,dim_venue (distinct venue_id),3216,rows,2026-06-15T05:08:47+00:00,36251
+dim_size,"dim_artist (distinct attraction combos, raw)",8748,rows (pre-split),2026-06-15T05:08:47+00:00,36251
+price_coverage,all genres,23.0,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Rock (n=10257),16.5,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Other (n=4285),16.0,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Pop (n=3745),11.0,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Country (n=3342),19.3,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Alternative (n=1983),55.7,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Hip-Hop/Rap (n=1810),17.7,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Undefined (n=1599),0.6,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=R&B (n=1427),17.9,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Jazz (n=1353),75.0,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Metal (n=1108),26.2,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Dance/Electronic (n=799),51.4,% events with price,2026-06-15T05:08:47+00:00,36251
+price_coverage,genre=Latin (n=791),0.0,% events with price,2026-06-15T05:08:47+00:00,36251
+interest_coverage_today,all genres (n=30256),5.6,% events with a Trends signal now (starter roster),2026-06-15T05:08:47+00:00,36251
+interest_coverage_today,EDM (Dance/Electronic) (n=404),3.2,% events with a Trends signal now (starter roster),2026-06-15T05:08:47+00:00,36251
+roster_size,starter roster artists (collection queue),50,artists,2026-06-15T05:08:47+00:00,36251
+dma_coverage_zip,all genres (n=36251),99.5,% events resolved by ZIP,2026-06-15T05:08:47+00:00,36251
+dma_coverage_any,all genres (n=36251),99.9,% events resolved (ZIP or state fallback),2026-06-15T05:08:47+00:00,36251
+dma_coverage_zip,EDM (Dance/Electronic) (n=799),99.5,% events resolved by ZIP,2026-06-15T05:08:47+00:00,36251
+dma_coverage_any,EDM (Dance/Electronic) (n=799),100.0,% events resolved (ZIP or state fallback),2026-06-15T05:08:47+00:00,36251
+artist_universe,distinct individual artists in TM events,9317,artists to eventually cover,2026-06-15T05:08:47+00:00,36251
+artist_universe,current starter roster (collection queue),50,artists collected,2026-06-15T05:08:47+00:00,36251
+artist_universe,roster coverage of the artist universe,0.54,% of artists,2026-06-15T05:08:47+00:00,36251

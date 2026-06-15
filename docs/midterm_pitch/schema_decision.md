@@ -153,6 +153,7 @@ From `analysis/profile_schema.py` (re-runnable; full table in
 | TM exposes a price | **23%** of events overall | TM price is *thin* and *face value* → see §6 risk; scope to better-covered genres. |
 | TM price for **Dance/Electronic** | **51%** | EDM is the best-covered genre → argues for an **EDM focus** for the demo/model. |
 | Events with an interest signal *today* | **5.6%** (50-act starter roster) | Roster = Trends **collection-priority queue**, *not* a filter. Target = **all** artists with shows; coverage grows as collection expands. Missing = `NULL`, never excluded. |
+| Distinct artists in TM events vs roster | **9,317 vs 50** (0.5%) | The real bottleneck is **collection throughput** (Trends ~10s/call; YouTube 10k/day ≈ 50 artists/day), not event sources → the roster is a *permanent* prioritization queue. Adding smaller-show sources widens this gap. |
 | Fact sizes per daily snapshot | event×day ≈ **36k**, artist×day ≈ 50, artist×DMA×day ≈ 50 | Small today; grows linearly with snapshots and roster — the partitioned design scales. |
 
 ---
@@ -181,9 +182,13 @@ history are **parked** (§7) — not needed to pitch the design.
   2026-06-15 that its pricing `stats` are gated** to partner access — the basic API
   returns `stats={}` even for next weekend's stadium tours. So SeatGeek is *not* a
   price fix; it's repositioned to fill **venue `capacity`** + a **`popularity`
-  score** (see below). Resale-price options still to pursue: SeatGeek partner
-  approval, or Eventbrite / Bandsintown / Resident Advisor. The star stays
-  **source-agnostic on price** (TM today; another source if we unlock one), so this
+  score** (see below). **Recon (2026-06-15) found the other options blocked too:**
+  TickPick + Resident Advisor sit behind DataDome and robots-disallow their price
+  endpoints (no polite scrape; evasion is off-limits); Eventbrite's public
+  event-search API was retired (404); Bandsintown needs a registered app_id, is
+  artist-centric, and has no price. **So SeatGeek *partner access* (request drafted)
+  is the one realistic path to a resale price signal.** The star stays
+  **source-agnostic on price** (TM today; SeatGeek-partner if granted), so this
   doesn't change the schema — meanwhile we lean on TM face value + temporal
   accumulation. *(Tracked in the team backlog.)*
 - **SeatGeek as an enrichment source (confirmed working).** Adds `dim_venue.capacity`
