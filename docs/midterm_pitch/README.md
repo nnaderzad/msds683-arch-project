@@ -105,8 +105,10 @@ updated 2026-06-15.*
 ## Backlog surfaced during prep (not slides)
 - **SeatGeek result (2026-06-15):** pricing `stats` gated to partner tier → keep
   SeatGeek for **capacity + popularity** only. **Resale price is still unsolved.**
-- **Resale-price options to pursue:** SeatGeek partner/affiliate application; a
-  narrowly-scoped *polite* daily collector (EDM subset, internal JSON, no evasion);
-  or alt sources (Eventbrite, Bandsintown, Resident Advisor). Full multi-site
-  scraping (StubHub etc.) ruled out — anti-bot + ToS + maintenance, off-rubric.
+- **Resale-price options (recon 2026-06-15): mostly blocked.** SeatGeek **partner
+  application** (drafted) is the one realistic path. Ruled out: TickPick + Resident
+  Advisor (DataDome + robots-disallow price endpoints; no polite scrape, evasion
+  off-limits), Eventbrite (public search API retired — 404), Bandsintown (needs
+  registered app_id, artist-centric, no price), StubHub/Vivid (Akamai/PerimeterX +
+  ToS). Meanwhile: TM face value + temporal accumulation.
 - Parked schema details: surrogate keys, SCD types, Trends cross-artist normalization.
