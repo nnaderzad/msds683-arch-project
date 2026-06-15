@@ -5,8 +5,7 @@ Trends is the project's only source of *per-metro* artist popularity **and** the
 only one with real history (Spotify had no geo; the YouTube Data API has neither),
 so it carries the "is this artist popular *here*?" signal the demand model needs.
 
-See [`../docs/PROJECT_STRATEGY.md`](../docs/PROJECT_STRATEGY.md) for how this fits
-the whole architecture, and [`DEPLOY.md`](DEPLOY.md) for deploying the cloud jobs.
+See [`DEPLOY.md`](DEPLOY.md) for deploying the cloud jobs.
 
 ## What it does
 

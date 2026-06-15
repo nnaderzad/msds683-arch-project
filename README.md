@@ -5,9 +5,6 @@ combining ticket/event data, global artist popularity, and local per-metro searc
 interest. Thesis: a *locally* popular artist in a *small* venue tends to sell out
 and push resale prices up; a locally-unknown artist in a big room tends to soften.
 
-> **Strategy & design rationale:** [`docs/PROJECT_STRATEGY.md`](docs/PROJECT_STRATEGY.md)
-> (domain, analytical use cases, schema sketch, risks, division of labor).
-
 ## Data sources
 
 | Source | Signal | Status |
@@ -35,12 +32,11 @@ APIs ──► BRONZE (raw, GCS)                  ──► SILVER (BigQuery + p
 Compute is **Cloud Run** (functions + jobs) on **Cloud Scheduler**; infra is
 **Terraform** (the +20 bonus); secrets in **Secret Manager**; failures alert via
 **Cloud Monitoring**; **CI** runs on every push (GitHub Actions: ruff + pytest +
-terraform validate). Current status + roadmap: [`docs/PROJECT_STRATEGY.md`](docs/PROJECT_STRATEGY.md#status--roadmap-2026-06-14).
+terraform validate).
 
 ## Repo layout
 
 ```
-├── docs/                     # PROJECT_STRATEGY.md (+ gitignored working notes)
 ├── common/gcs_io.py          # shared bronze-landing helper (all sources)
 ├── ticketmaster_api/         # Ticketmaster POC
 ├── cloud_functions/
