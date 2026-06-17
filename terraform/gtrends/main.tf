@@ -1,10 +1,13 @@
 # Google Trends ingestion — Artifact Registry + Cloud Run Jobs + Scheduler.
 #
-# Two jobs share one image (google_trends_api/job.py):
-#   gtrends-backfill : deep history pass — national + DMA snapshot (+ optional
-#                      per-DMA daily). Run ON DEMAND, sharded, long timeout.
-#   gtrends-daily    : scheduled refresh — national + DMA snapshot + the now-7d
-#                      HOURLY capture (the one resolution Google can't backfill).
+# Two jobs share one image (google_trends_api/job.py) and ONE global rate budget.
+# Both run as a SINGLE stream (no parallel shards) so TRENDS_SLEEP is the global
+# min interval between Trends calls, and both stop gracefully (exit 0) at the shared
+# DAILY_CALL_BUDGET (counted from the GCS partition), a wall-clock deadline, or queue
+# exhaustion — whichever trips first.
+#   gtrends-backfill : on-demand deep history pass — national + DMA snapshot (+ optional
+#                      per-DMA daily). Single stream; budget-capped pass trickles over days.
+#   gtrends-daily    : scheduled refresh — soonest-show-first, time-boxed to a small slice.
 #
 # Existing shared infra (raw bucket, BigQuery dataset, enabled APIs) is referred
 # to by NAME, not as resources — this root only creates the new Trends pieces, so
@@ -21,11 +24,12 @@ locals {
   gtrends_image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.gtrends.repository_id}/job:${var.gtrends_image_tag}"
 
   common_env = {
-    GCP_PROJECT    = var.project_id
-    GCS_RAW_BUCKET = local.raw_bucket
-    TOP_N          = tostring(var.gtrends_top_n)
-    TRENDS_SLEEP   = tostring(var.gtrends_sleep_seconds)
-    STATES         = "ALL"
+    GCP_PROJECT       = var.project_id
+    GCS_RAW_BUCKET    = local.raw_bucket
+    TOP_N             = tostring(var.gtrends_top_n)
+    TRENDS_SLEEP      = tostring(var.gtrends_sleep_seconds)     # global min interval between calls
+    DAILY_CALL_BUDGET = tostring(var.gtrends_daily_call_budget) # global calls/UTC-day ceiling (both jobs)
+    STATES            = "ALL"
   }
 }
 
@@ -71,13 +75,15 @@ resource "google_cloud_run_v2_job" "gtrends_backfill" {
   deletion_protection = false
 
   template {
+    # KEEP single-stream (gtrends_backfill_tasks=1): parallel shards run independent
+    # request streams that defeat the global rate cap and re-trip the 429 throttle.
     parallelism = var.gtrends_backfill_tasks
     task_count  = var.gtrends_backfill_tasks
 
     template {
       service_account = google_service_account.gtrends_ingest.email
       max_retries     = 1
-      timeout         = "86400s" # up to 24h; a sharded deep backfill runs long
+      timeout         = "86400s" # up to 24h; a single-stream deep pass runs long
 
       containers {
         image = local.gtrends_image
@@ -93,6 +99,17 @@ resource "google_cloud_run_v2_job" "gtrends_backfill" {
         env {
           name  = "INCLUDE_DMA"
           value = tostring(var.gtrends_backfill_include_dma)
+        }
+        # Stop ~just under the 24h task timeout so the run exits 0 (not SIGKILL'd).
+        env {
+          name  = "RUN_DEADLINE_SECONDS"
+          value = "84000"
+        }
+        # Cross-day resume: skip units landed in the last 30 days so a budget-capped
+        # deep pass advances to new units each run instead of redoing the head.
+        env {
+          name  = "RESUME_LOOKBACK_DAYS"
+          value = "30"
         }
         dynamic "env" {
           for_each = local.common_env
@@ -114,8 +131,13 @@ resource "google_cloud_run_v2_job" "gtrends_daily" {
   template {
     template {
       service_account = google_service_account.gtrends_ingest.email
-      max_retries     = 1
-      timeout         = "3600s"
+      # Single stream, soonest-show-first, best-effort: it lands what fits in
+      # RUN_DEADLINE_SECONDS (a small daily slice), exits 0, and resumes tomorrow.
+      # The deterministic guards (rate cap + global daily budget + deadline) keep it
+      # under the throttle, so the modest 3600s timeout is just a hard backstop —
+      # the run normally stops itself at the 3300s deadline well before SIGKILL.
+      max_retries = 2
+      timeout     = "3600s"
 
       containers {
         image = local.gtrends_image
@@ -129,6 +151,17 @@ resource "google_cloud_run_v2_job" "gtrends_daily" {
         env {
           name  = "MAX_UNITS"
           value = tostring(var.gtrends_daily_max_units)
+        }
+        # Stop starting units after ~55 min so the run exits 0 (not SIGKILL'd at 3600s),
+        # leaving headroom under the shared daily budget for an on-demand backfill.
+        env {
+          name  = "RUN_DEADLINE_SECONDS"
+          value = "3300"
+        }
+        # Daily wants a fresh same-day refresh, so no cross-day resume (today only).
+        env {
+          name  = "RESUME_LOOKBACK_DAYS"
+          value = "0"
         }
         dynamic "env" {
           for_each = local.common_env
