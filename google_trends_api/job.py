@@ -15,9 +15,17 @@ The roster is regenerated fresh from the Ticketmaster silver table each run, so 
 upcoming shows are picked up automatically.
 
 Env (all optional; sensible defaults):
-  JOB_MODE=backfill|daily   TOP_N=250   MAX_UNITS=0(all)   TRENDS_SLEEP=12
+  JOB_MODE=backfill|daily   TOP_N=250   MAX_UNITS=0(all)   TRENDS_SLEEP=20
   STATES=ALL|CA,NY,...      CLOUD_RUN_TASK_INDEX=0   CLOUD_RUN_TASK_COUNT=1
+  DAILY_CALL_BUDGET=0(off)  RUN_DEADLINE_SECONDS=0(off)  RESUME_LOOKBACK_DAYS=0
   GCS_RAW_BUCKET (via common/gcs_io)
+
+Stays under the Trends rate limit deterministically: run as ONE stream (no parallel
+shards) so TRENDS_SLEEP is the global min interval between calls, and stop gracefully
+(exit 0) at whichever of three guards trips first — DAILY_CALL_BUDGET (global calls
+per UTC day, counted from the GCS partition), RUN_DEADLINE_SECONDS (wall-clock), or
+queue exhaustion. RESUME_LOOKBACK_DAYS skips units already landed in recent days so a
+budget-capped pass advances over days instead of redoing the soonest-first head.
 
 Run locally (bounded smoke):
   JOB_MODE=daily MAX_UNITS=4 STATES=CA python google_trends_api/job.py
@@ -30,7 +38,8 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime, timezone
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root for `common`
@@ -52,15 +61,32 @@ def env(name: str, default: str) -> str:
     return os.environ.get(name, default).strip()
 
 
-def landed_suffixes_today(bucket: str) -> set[str]:
-    """Suffixes already present in today's dt= partition (for resume/idempotency)."""
-    dt = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+def landed_state(bucket: str, lookback_days: int = 0) -> tuple[set[str], int]:
+    """Scan recent dt= partitions once for (resume done-set, today's call count).
+
+    Returns:
+        done_suffixes: suffixes present in TODAY plus the previous ``lookback_days``
+            partitions. A unit already landed in this window is skipped — cross-day
+            resume so a budget-capped pass advances over days instead of redoing the
+            soonest-first head every UTC day.
+        calls_today: number of landed files in TODAY's partition only — the
+            deterministic, GLOBAL (every job writes here) per-UTC-day call ledger
+            used to enforce DAILY_CALL_BUDGET.
+    """
     client = storage.Client(project=gcs_io.PROJECT_ID)
-    out: set[str] = set()
-    for blob in client.list_blobs(bucket, prefix=f"google_trends/dt={dt}/"):
-        if (m := _STAMP.search(blob.name)):
-            out.add(m.group(1))
-    return out
+    today = datetime.now(timezone.utc).date()
+    done: set[str] = set()
+    calls_today = 0
+    for delta in range(max(lookback_days, 0) + 1):
+        dt = (today - timedelta(days=delta)).strftime("%Y-%m-%d")
+        n = 0
+        for blob in client.list_blobs(bucket, prefix=f"google_trends/dt={dt}/"):
+            n += 1
+            if (m := _STAMP.search(blob.name)):
+                done.add(m.group(1))
+        if delta == 0:
+            calls_today = n
+    return done, calls_today
 
 
 def build_queue(
@@ -99,7 +125,10 @@ def main() -> int:
     mode = env("JOB_MODE", "backfill")
     top_n = int(env("TOP_N", "250"))
     max_units = int(env("MAX_UNITS", "0"))
-    sleep = float(env("TRENDS_SLEEP", "12"))
+    min_interval = float(env("TRENDS_SLEEP", "20"))      # global min seconds between calls
+    daily_budget = int(env("DAILY_CALL_BUDGET", "0"))    # global calls/UTC-day; 0 = off
+    run_deadline = float(env("RUN_DEADLINE_SECONDS", "0"))  # wall-clock cap; 0 = off
+    lookback_days = int(env("RESUME_LOOKBACK_DAYS", "0"))   # cross-day resume window
     states_raw = env("STATES", "ALL")
     states = None if states_raw.upper() in ("", "ALL") else [s.strip().upper() for s in states_raw.split(",")]
     task_index = int(env("CLOUD_RUN_TASK_INDEX", "0"))
@@ -111,35 +140,55 @@ def main() -> int:
     queue = build_queue(mode, top_n, states, include_dma)
     shard = queue[task_index::task_count]  # disjoint round-robin slice per task
 
-    done = landed_suffixes_today(gcs_io.DEFAULT_RAW_BUCKET)
+    done, calls_today_start = landed_state(gcs_io.DEFAULT_RAW_BUCKET, lookback_days)
     pending = [u for u in shard if suffix_for(u["kind"], u["artist"], u["geo_code"]) not in done]
     if max_units > 0:
         pending = pending[:max_units]
 
     logger.info(
-        "mode=%s task=%d/%d queue=%d shard=%d already_done=%d pending=%d sleep=%.0fs",
-        mode, task_index, task_count, len(queue), len(shard), len(done), len(pending), sleep,
+        "mode=%s task=%d/%d queue=%d shard=%d done(lookback=%dd)=%d pending=%d "
+        "calls_today=%d budget=%d interval=%.0fs deadline=%.0fs",
+        mode, task_index, task_count, len(queue), len(shard), lookback_days, len(done),
+        len(pending), calls_today_start, daily_budget, min_interval, run_deadline,
     )
 
-    client = TrendsClient(request_sleep=sleep)
+    client = TrendsClient(min_interval=min_interval)
     tf_daily = daily_timeframe()
+    started = time.monotonic()
     landed, failed = 0, {}
-    for i, u in enumerate(pending, 1):
+    stop_reason = "queue_done"
+    for u in pending:
+        # Deterministic stop guards — whichever trips first ends the run GRACEFULLY
+        # (summary + exit 0), never a platform SIGKILL. calls_made counts attempts
+        # (incl. retries), so the budget check is conservative re: real API hits.
+        if daily_budget > 0 and calls_today_start + client.calls_made >= daily_budget:
+            stop_reason = "daily_budget"
+            break
+        if run_deadline > 0 and time.monotonic() - started >= run_deadline:
+            stop_reason = "time_budget"
+            break
         try:
             run_unit(client, u["kind"], u["artist"], u["query"],
                      geo_code=u["geo_code"], tf_daily=tf_daily, dry_run=False)
             landed += 1
         except Exception as exc:  # isolate per-unit failures; keep going
-            failed[suffix_for(u["kind"], u["artist"], u["geo_code"])] = f"{type(exc).__name__}: {exc}"
-            logger.warning("unit failed: %s", failed)
-        if i < len(pending):
-            client.sleep_between_requests()
+            suffix = suffix_for(u["kind"], u["artist"], u["geo_code"])
+            failed[suffix] = f"{type(exc).__name__}: {exc}"
+            logger.warning("unit failed: %s -> %s", suffix, failed[suffix])
 
+    elapsed_min = (time.monotonic() - started) / 60.0
     summary = {
         "run_ts_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "mode": mode, "task": f"{task_index}/{task_count}",
-        "queue": len(queue), "shard": len(shard),
+        "queue": len(queue), "shard": len(shard), "pending": len(pending),
+        "stop_reason": stop_reason,
         "landed": landed, "failed_count": len(failed), "failed": failed,
+        "calls_this_run": client.calls_made,
+        "calls_today_start": calls_today_start,
+        "calls_today_total": calls_today_start + client.calls_made,
+        "daily_budget": daily_budget,
+        "min_interval_s": min_interval,
+        "achieved_rate_per_min": round(client.calls_made / elapsed_min, 2) if elapsed_min > 0 else None,
     }
     print(json.dumps(summary))  # -> Cloud Logging run history
     if failed:

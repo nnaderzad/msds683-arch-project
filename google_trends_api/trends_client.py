@@ -6,7 +6,8 @@ with HTTP 429. This module centralizes:
 
 - request construction (one keyword + one geo at a time, so the 0-100 scale is
   per-(artist, geo) and never silently rescaled against other artists),
-- retry/backoff on 429s,
+- a deterministic rate cap (one call per ``min_interval`` seconds) plus a small
+  retry/backoff on 429s,
 - the daily -> weekly resampling we use to tame metro-level noise.
 
 The 0-100 values are relative within each (artist, geo, timeframe) pull, so they
@@ -39,56 +40,103 @@ PACIFIC_TZ_OFFSET = 480
 
 
 class TrendsClient:
-    """Fetch Google Trends interest-over-time series, one (artist, geo) at a time."""
+    """Fetch Google Trends interest-over-time series, one (artist, geo) at a time.
+
+    Rate is capped *deterministically*: ``_pace`` enforces at least ``min_interval``
+    seconds between successive call starts, so the achieved request rate is exactly
+    ``1 call / min_interval`` no matter how long each call takes. Run this as a single
+    stream (no parallel shards) and the cap is global. ``calls_made`` is the per-run
+    ledger of real API hits (retries included) the job uses to enforce a daily budget.
+    """
 
     def __init__(
         self,
         *,
         hl: str = "en-US",
         tz: int = PACIFIC_TZ_OFFSET,
-        request_sleep: float = 10.0,
-        max_retries: int = 4,
-        backoff_seconds: float = 30.0,
+        min_interval: float = 20.0,
+        max_retries: int = 2,
+        backoff_seconds: float = 20.0,
     ) -> None:
-        # request_sleep is the polite pause between successful queries (the plan
-        # calls for ~10s to avoid tripping the 429 rate limit). backoff_seconds
-        # is the *additional* escalating wait applied only after a 429.
-        self.request_sleep = request_sleep
+        # min_interval is the DETERMINISTIC rate cap: minimum seconds between
+        # successive call *starts* (enforced in _pace, retries included), so the rate
+        # is exactly 1 call / min_interval. One stream at 20s => <=3 calls/min. Pacing
+        # is timing only; it never changes the data fetched.
+        # backoff_seconds is the per-attempt 429 retry wait (deterministic, linear).
+        # max_retries is intentionally low: a rate-limited unit is cheap to retry on a
+        # later run (Trends data is backfillable), so we fail fast rather than burn the
+        # daily budget grinding on a throttled IP.
+        self.min_interval = min_interval
         self.max_retries = max_retries
         self.backoff_seconds = backoff_seconds
+        # Every fetch attempt (incl. retries) increments calls_made — the deterministic
+        # per-process call ledger the job reconciles against the daily budget.
+        self.calls_made = 0
+        self._last_call_ts: float | None = None
         # NOTE: do NOT pass retries=/backoff_factor= here. pytrends 4.9.2 builds a
         # urllib3 Retry with the removed `method_whitelist` kwarg, which raises on
         # urllib3 2.x. We do our own retry/backoff in interest_over_time() instead.
         self._pytrends = TrendReq(hl=hl, tz=tz)
 
+    def _pace(self) -> None:
+        """Deterministic rate gate run before every fetch attempt.
+
+        Blocks until ``min_interval`` has elapsed since the previous call start, then
+        records this start and counts it. Because it runs on retries too, the achieved
+        rate is exactly ``1 call / min_interval`` and ``calls_made`` reflects real API
+        hits rather than just successes.
+        """
+
+        if self.min_interval > 0 and self._last_call_ts is not None:
+            wait = self.min_interval - (time.monotonic() - self._last_call_ts)
+            if wait > 0:
+                time.sleep(wait)
+        self._last_call_ts = time.monotonic()
+        self.calls_made += 1
+
     def _run_with_retry(self, label: str, build_and_fetch):
-        """Run a build_payload+fetch with retry/backoff on 429s and transient errors.
+        """Pace, then run a build_payload+fetch with retry/backoff on 429s.
 
         ``build_and_fetch`` is a zero-arg callable that (re)builds the pytrends
-        payload and returns the desired frame. It is re-invoked from scratch on
-        each attempt, so a retry never reuses a half-built payload.
+        payload and returns the desired frame. It is re-invoked from scratch on each
+        attempt, so a retry never reuses a half-built payload. Every attempt is rate-
+        gated by ``_pace`` first. We do NOT sleep after the final attempt — a throttled
+        unit just rolls to a later run.
         """
 
         last_error: Exception | None = None
         for attempt in range(1, self.max_retries + 1):
+            self._pace()
             try:
                 return build_and_fetch()
             except (TooManyRequestsError, ResponseError) as exc:
                 last_error = exc
-                wait = self.backoff_seconds * attempt
-                logger.warning(
-                    "Rate-limited on %s (attempt %d/%d); backing off %.0fs",
-                    label, attempt, self.max_retries, wait,
-                )
-                time.sleep(wait)
+                if attempt < self.max_retries:
+                    wait = self.backoff_seconds * attempt
+                    logger.warning(
+                        "Rate-limited on %s (attempt %d/%d); backing off %.0fs",
+                        label, attempt, self.max_retries, wait,
+                    )
+                    time.sleep(wait)
+                else:
+                    logger.warning(
+                        "Rate-limited on %s (attempt %d/%d); giving up (rolls to a later run)",
+                        label, attempt, self.max_retries,
+                    )
             except Exception as exc:  # network blips etc. — retry a few times too
                 last_error = exc
-                wait = self.backoff_seconds * attempt
-                logger.warning(
-                    "Error on %s (attempt %d/%d): %s; retrying in %.0fs",
-                    label, attempt, self.max_retries, exc, wait,
-                )
-                time.sleep(wait)
+                if attempt < self.max_retries:
+                    wait = self.backoff_seconds * attempt
+                    logger.warning(
+                        "Error on %s (attempt %d/%d): %s; retrying in %.0fs",
+                        label, attempt, self.max_retries, exc, wait,
+                    )
+                    time.sleep(wait)
+                else:
+                    logger.warning(
+                        "Error on %s (attempt %d/%d): %s; giving up",
+                        label, attempt, self.max_retries, exc,
+                    )
 
         raise RuntimeError(
             f"Failed to fetch {label} after {self.max_retries} attempts"
@@ -138,12 +186,6 @@ class TrendsClient:
         return self._run_with_retry(
             f"'{query}' by {resolution} @ {geo} [{timeframe}]", _fetch
         )
-
-    def sleep_between_requests(self) -> None:
-        """Polite pause between successful queries to avoid HTTP 429."""
-
-        if self.request_sleep > 0:
-            time.sleep(self.request_sleep)
 
 
 def to_weekly(daily: pd.Series) -> pd.Series:
