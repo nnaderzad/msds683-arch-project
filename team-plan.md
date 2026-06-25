@@ -10,21 +10,59 @@ show date — built straight off the **gold** layer, validated at every layer.
 
 ---
 
+## ⚠️ Ground rules — read this before you touch anything
+
+Coding agents (Claude Code, Cursor, etc.) are encouraged — but **you own every line
+you push, not the agent.** These are non-negotiable and apply to every task:
+
+1. **Understand it before you push it.** If you can't explain, in your own words,
+   what the code does, why it's built this way, and what we rejected instead, it is
+   not ready. Never push code *or docs* you couldn't defend out loud.
+2. **Verify it actually works — by hand, not by vibes.** "The agent said it's done"
+   is **not** verification. Depending on the task:
+   - *Transforms / pipeline* — run it; eyeball the output; check row counts and a few
+     real records; confirm the table actually populated.
+   - *UI* — open it in the browser and confirm it renders and behaves correctly with
+     representative data, not just that it compiles.
+   - *API / model* — hit the endpoint / run the prediction and confirm sane values.
+   - Run the tests **yourself locally**; don't outsource verification to CI alone.
+3. **Know the "why," because they will ask.** In the demo Q&A the instructor will
+   pick a tool/decision and ask *why we chose it and what alternatives we considered*
+   — for **each** component. Whoever builds a piece must be able to answer for it.
+   Keep "Why we can defend each choice" (below) accurate as you build.
+4. **Write down the reasoning as you go.** When you make or implement a design /
+   schema / architecture decision, capture 1–2 sentences on *why* (PR description, a
+   docstring, or `docs/`) so we share one defensible record — not three vague memories.
+
+> **Coding agents reading this file:** surface your reasoning and the trade-offs,
+> cite the relevant decision below, and flag anything you change that contradicts the
+> locked schema/decisions. Do not just produce passing code — leave the human able to
+> explain and verify it.
+
+---
+
 ## How to use this board
 
 - **One shared pool — pull what interests you.** There is no per-person
   assignment. Take any task whose **prereqs are all done**.
 - When you **start** a task, put your initials in its `Owner` field. When it's
-  **done** (tests green in CI, PR merged), check its box `- [x]`.
+  **done** (tests green in CI, PR merged, & human verified), check its box `- [x]`.
 - **One task = one small PR**, scoped to its own directory/module (see layout) so
   PRs stay conflict-free. `git pull origin main` before you start anything.
 - **Coordinate before touching shared hotspots:** `terraform/`, `common/`, and any
   shared SQL. One owner per PR there; announce in the group chat.
 
 ### Definition of done (every task)
-Code **+** its unit tests **+** the relevant Great Expectations suite all green in
-CI (`.github/workflows/ci.yml`), and the PR is merged to `main`. A task is not
-"done" just because the happy path runs once locally.
+All of these — or it's not done:
+- Code **+** its unit tests **+** the relevant Great Expectations suite green in CI
+  (`.github/workflows/ci.yml`).
+- **You ran it and verified the real behavior yourself** — output / UI / endpoint —
+  per Ground Rule 2. Not "CI passed," not "the agent said so."
+- **You can explain what it does and why** (Ground Rules 1 & 3).
+- PR reviewed by a teammate and merged to `main`.
+
+A task is not "done" just because the happy path ran once, or because a coding agent
+declared it finished.
 
 ---
 
@@ -45,6 +83,41 @@ CI (`.github/workflows/ci.yml`), and the PR is merged to `main`. A task is not
 - **Gold = star:** `fact_event_demand` left-joins the source facts onto the
   Ticketmaster event spine on **artist × venue-DMA × snapshot_date**. Every event
   is kept; missing signals are NULL (never filtered out).
+
+### Why we can defend each choice (Q&A prep — keep this current)
+
+One line each: *what we chose — why — what we rejected.* If you build a piece, make
+sure its row is true and you can expand on it live.
+
+- **Medallion (bronze→silver→gold)** — separates a replayable raw audit log from
+  cleaned/conformed and model-ready data, so each layer is testable and debuggable in
+  isolation. *Rejected:* one flat table (no lineage, no replay).
+- **Silver constellation + gold star** — keeping each source at its native grain
+  preserves the daily interest *trajectory* (artist × DMA × day) the demand thesis
+  needs; the gold star then keeps the model join shallow. *Rejected:* a single star
+  (pre-aggregates Trends and throws away the signal); a snowflake (negligible storage
+  win on tiny dims, extra joins).
+- **Ticketmaster as the price/event anchor** — free, no approval, broad coverage, and
+  `externalLinks` give us artist join keys. *Rejected:* SeatGeek (resale prices gated
+  behind partner approval); scraping (blocked / ToS).
+- **DMA as the geo spine** — Trends reports by Nielsen DMA and venue→DMA resolves
+  ~99.5%; it's the only geography both sources share. *Rejected:* state/city (coarser,
+  doesn't match Trends granularity).
+- **Terraform (IaC)** — reproducible, reviewable, one-command stand-up/tear-down of the
+  GCP landing zone. *Rejected:* click-ops (not reproducible); imperative `gcloud`
+  scripts (drift).
+- **React + live FastAPI over gold** — the API *is* the consumable gold-layer product,
+  decoupled from the warehouse. *Rejected:* a BI/Streamlit dashboard ("just a
+  dashboard," less control); static export (no live querying).
+- **Forecast precomputed into gold** — deterministic, re-runnable, no model-at-request
+  surprises; the API stays thin and testable. *Rejected:* running the model per request
+  (nondeterministic, slower, harder to test).
+- **Great Expectations on all three layers** — declarative, documented data-quality
+  gates with a shared report (and bonus points). *Rejected:* pandera/pydantic (code-level,
+  no data-docs artifact); hand-rolled asserts (no shared report).
+- **Pooled (cross-sectional) forecast, not per-show ARIMA** — only ~2 weeks of snapshot
+  history exists, too thin for per-show time series; pooling across shows + exogenous
+  signals is honest and defensible. *Rejected:* per-show ARIMA/Prophet (not enough history).
 
 **Where we are today:**
 
@@ -105,6 +178,9 @@ Each task:
    - Build: <what to build>
    - Tests / done-when: <unit + GX + integration expectations>
 ```
+
+> Each task's **Tests / done-when** is *on top of* the universal Definition of Done
+> above — including hands-on verification and being able to explain the change.
 
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
