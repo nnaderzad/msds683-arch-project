@@ -1,0 +1,36 @@
+classDiagram
+    class dim_date {
+        +date : date [PK]
+    }
+    class fact_event_demand {
+        +event_id : string [FK]
+        +snapshot_date : date [FK]
+        +artist_id : int [FK]
+        +venue_id : int [FK]
+        +dma_code : string [FK]
+        +days_to_show : int
+        +price_min : float
+        +price_max : float
+        +price_currency : string
+        +status_code : string
+        +local_interest : int
+        +yt_subscribers : int
+        +yt_views : int
+    }
+    class dim_event {
+        +event_id : string [PK]
+    }
+    class dim_artist {
+        +artist_id : int [PK]
+    }
+    class dim_venue {
+        +venue_id : int [PK]
+    }
+    class dim_geo {
+        +dma_code : string [PK]
+    }
+    dim_date "1" -- "0..*" fact_event_demand : snapshot_date
+    dim_event "1" -- "0..*" fact_event_demand : event_id
+    dim_artist "1" -- "0..*" fact_event_demand : artist_id
+    dim_venue "1" -- "0..*" fact_event_demand : venue_id
+    dim_geo "1" -- "0..*" fact_event_demand : dma_code
