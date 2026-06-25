@@ -1,0 +1,388 @@
+<?xml version="1.0" ?>
+<mxfile host="app.diagrams.net">
+  <diagram id="p0" name="Silver - source constellation">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p0_dim_date" value="dim_date" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="270" height="270" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r0" value="PK  date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r1" value="year : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r2" value="quarter : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r3" value="month : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r4" value="month_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r5" value="day_of_week : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r6" value="day_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r7" value="is_weekend : bool" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r8" value="is_us_holiday : bool" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="222" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_date_r9" value="season : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_date">
+          <mxGeometry y="246" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster" value="fact_ticketmaster" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="350" y="40" width="270" height="294" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r0" value="PK  tm_snapshot_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r1" value="FK  event_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r2" value="FK  snapshot_date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r3" value="status_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r4" value="price_type : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r5" value="price_currency : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r6" value="price_min : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r7" value="price_max : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r8" value="public_sale_start_utc : datetime" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="222" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r9" value="public_sale_end_utc : datetime" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="246" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_ticketmaster_r10" value="days_to_show : int   - derived: show_date - snapshot_date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_ticketmaster">
+          <mxGeometry y="270" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends" value="fact_trends" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="660" y="40" width="270" height="222" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r0" value="PK  trends_snapshot_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r1" value="FK  artist_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r2" value="FK  dma_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r3" value="FK  snapshot_date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r4" value="interest : int   - 0-100, per-pull normalized" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r5" value="granularity : string   - weekly / daily" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r6" value="is_partial : bool" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_trends_r7" value="category : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_trends">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube" value="fact_youtube" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="660" y="302" width="270" height="222" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r0" value="PK  youtube_snapshot_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r1" value="FK  artist_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r2" value="FK  snapshot_date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r3" value="official_subscribers : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r4" value="official_total_views : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r5" value="official_video_count : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r6" value="topic_total_views : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_fact_youtube_r7" value="topic_video_count : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p0_fact_youtube">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event" value="dim_event" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="350" width="270" height="246" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r0" value="PK  event_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r1" value="event_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r2" value="event_type : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r3" value="FK  show_date : date   - the show date (NOT the snapshot date)" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r4" value="show_time : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r5" value="timezone : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r6" value="primary_genre : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r7" value="event_url : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_event_r8" value="FK  venue_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_event">
+          <mxGeometry y="222" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue" value="dim_venue" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="350" y="374" width="270" height="342" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r0" value="PK  venue_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r1" value="UK  ticketmaster_venue_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r2" value="venue_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r3" value="FK  dma_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r4" value="ticketmaster_market_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r5" value="capacity : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r6" value="venue_type : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r7" value="city : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r8" value="state_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="222" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r9" value="postal_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="246" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r10" value="address : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="270" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r11" value="latitude : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="294" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_venue_r12" value="longitude : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_venue">
+          <mxGeometry y="318" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_geo" value="dim_geo" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="660" y="564" width="270" height="126" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_geo_r0" value="PK  dma_code : string   - e.g. 807" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_geo">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_geo_r1" value="geo_code : string   - e.g. US-CA-807" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_geo">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_geo_r2" value="metro_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_geo">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_geo_r3" value="state : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_geo">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist" value="dim_artist" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="636" width="270" height="174" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r0" value="PK  artist_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r1" value="artist_name : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r2" value="trends_query : string   - exact Trends term, may differ from name" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r3" value="primary_genre : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r4" value="UK  yt_channel_id : string   - official YouTube channel id" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_dim_artist_r5" value="UK  ticketmaster_attraction_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p0_dim_artist">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_bridge_event_artist" value="bridge_event_artist" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="660" y="730" width="270" height="126" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_bridge_event_artist_r0" value="PK/FK  event_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#82b366;fontSize=12;" vertex="1" parent="p0_bridge_event_artist">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_bridge_event_artist_r1" value="PK/FK  artist_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#82b366;fontSize=12;" vertex="1" parent="p0_bridge_event_artist">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_bridge_event_artist_r2" value="is_headliner : bool" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#82b366;fontSize=12;" vertex="1" parent="p0_bridge_event_artist">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_bridge_event_artist_r3" value="billing_order : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#82b366;fontSize=12;" vertex="1" parent="p0_bridge_event_artist">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e0" value="snapshot_date" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_date" target="p0_fact_ticketmaster">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e1" value="snapshot_date" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_date" target="p0_fact_trends">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e2" value="snapshot_date" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_date" target="p0_fact_youtube">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e3" value="show_date" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_date" target="p0_dim_event">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e4" value="event_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_event" target="p0_fact_ticketmaster">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e5" value="venue_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_venue" target="p0_dim_event">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e6" value="dma_code" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_geo" target="p0_dim_venue">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e7" value="dma_code" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_geo" target="p0_fact_trends">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e8" value="artist_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_artist" target="p0_fact_trends">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e9" value="artist_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_artist" target="p0_fact_youtube">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e10" value="event_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_event" target="p0_bridge_event_artist">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p0_e11" value="artist_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p0_dim_artist" target="p0_bridge_event_artist">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p1" name="Gold - fact_event_demand star">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="p1_dim_date" value="dim_date" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="270" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_date_r0" value="PK  date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p1_dim_date">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand" value="fact_event_demand" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="350" y="40" width="270" height="342" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r0" value="FK  event_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r1" value="FK  snapshot_date : date" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="54" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r2" value="FK  artist_id : int   - headliner (via bridge_event_artist.is_headliner)" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="78" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r3" value="FK  venue_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="102" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r4" value="FK  dma_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="126" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r5" value="days_to_show : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="150" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r6" value="price_min : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="174" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r7" value="price_max : float" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="198" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r8" value="price_currency : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="222" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r9" value="status_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="246" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r10" value="local_interest : int   - from fact_trends (artist+dma+date); NULL if not yet collected" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="270" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r11" value="yt_subscribers : int   - from fact_youtube (artist+date)" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="294" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_fact_event_demand_r12" value="yt_views : int   - from fact_youtube (artist+date)" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="p1_fact_event_demand">
+          <mxGeometry y="318" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_event" value="dim_event" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="660" y="40" width="270" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_event_r0" value="PK  event_id : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p1_dim_event">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_artist" value="dim_artist" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="134" width="270" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_artist_r0" value="PK  artist_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p1_dim_artist">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_venue" value="dim_venue" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="660" y="134" width="270" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_venue_r0" value="PK  venue_id : int" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p1_dim_venue">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_geo" value="dim_geo" style="swimlane;startSize=30;html=1;childLayout=stackLayout;horizontal=1;resizeParent=1;resizeParentMax=0;horizontalStack=0;collapsible=0;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="228" width="270" height="54" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_dim_geo_r0" value="PK  dma_code : string" style="shape=partialRectangle;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;spacingLeft=8;top=1;left=0;bottom=0;right=0;fillColor=none;overflow=hidden;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="p1_dim_geo">
+          <mxGeometry y="30" width="270" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_e0" value="snapshot_date" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p1_dim_date" target="p1_fact_event_demand">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_e1" value="event_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p1_dim_event" target="p1_fact_event_demand">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_e2" value="artist_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p1_dim_artist" target="p1_fact_event_demand">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_e3" value="venue_id" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p1_dim_venue" target="p1_fact_event_demand">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1_e4" value="dma_code" style="edgeStyle=entityRelationEdgeStyle;rounded=0;html=1;fontSize=11;startArrow=ERmandOne;startFill=0;endArrow=ERzeroToMany;endFill=0;" edge="1" parent="1" source="p1_dim_geo" target="p1_fact_event_demand">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

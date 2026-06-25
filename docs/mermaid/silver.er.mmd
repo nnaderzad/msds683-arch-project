@@ -1,0 +1,105 @@
+erDiagram
+    dim_date     ||--o{ fact_ticketmaster   : snapshot_date
+    dim_date     ||--o{ fact_trends         : snapshot_date
+    dim_date     ||--o{ fact_youtube        : snapshot_date
+    dim_date     ||--o{ dim_event           : show_date
+    dim_event    ||--o{ fact_ticketmaster   : event_id
+    dim_venue    ||--o{ dim_event           : venue_id
+    dim_geo      ||--o{ dim_venue           : dma_code
+    dim_geo      ||--o{ fact_trends         : dma_code
+    dim_artist   ||--o{ fact_trends         : artist_id
+    dim_artist   ||--o{ fact_youtube        : artist_id
+    dim_event    ||--o{ bridge_event_artist : event_id
+    dim_artist   ||--o{ bridge_event_artist : artist_id
+
+    dim_date {
+        date date PK
+        int year
+        int quarter
+        int month
+        string month_name
+        int day_of_week
+        string day_name
+        bool is_weekend
+        bool is_us_holiday
+        string season
+    }
+    dim_geo {
+        string dma_code PK "e.g. 807"
+        string geo_code "e.g. US-CA-807"
+        string metro_name
+        string state
+    }
+    dim_artist {
+        int artist_id PK
+        string artist_name
+        string trends_query "exact Trends term, may differ from name"
+        string primary_genre
+        string yt_channel_id UK "official YouTube channel id"
+        string ticketmaster_attraction_id UK
+    }
+    dim_venue {
+        int venue_id PK
+        string ticketmaster_venue_id UK
+        string venue_name
+        string dma_code FK
+        string ticketmaster_market_id
+        int capacity
+        string venue_type
+        string city
+        string state_code
+        string postal_code
+        string address
+        float latitude
+        float longitude
+    }
+    dim_event {
+        string event_id PK
+        string event_name
+        string event_type
+        date show_date FK "the show date (NOT the snapshot date)"
+        string show_time
+        string timezone
+        string primary_genre
+        string event_url
+        int venue_id FK
+    }
+    bridge_event_artist {
+        string event_id PK, FK
+        int artist_id PK, FK
+        bool is_headliner
+        int billing_order
+    }
+    fact_ticketmaster {
+        string tm_snapshot_id PK
+        string event_id FK
+        date snapshot_date FK
+        string status_code
+        string price_type
+        string price_currency
+        float price_min
+        float price_max
+        datetime public_sale_start_utc
+        datetime public_sale_end_utc
+        int days_to_show "derived: show_date - snapshot_date"
+    }
+    fact_trends {
+        string trends_snapshot_id PK
+        int artist_id FK
+        string dma_code FK
+        date snapshot_date FK
+        int interest "0-100, per-pull normalized"
+        string granularity "weekly / daily"
+        bool is_partial
+        string category
+    }
+    fact_youtube {
+        string youtube_snapshot_id PK
+        int artist_id FK
+        date snapshot_date FK
+        int official_subscribers
+        int official_total_views
+        int official_video_count
+        int topic_total_views
+        int topic_video_count
+    }

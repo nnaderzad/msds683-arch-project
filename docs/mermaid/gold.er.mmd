@@ -1,0 +1,27 @@
+erDiagram
+    dim_date   ||--o{ fact_event_demand : snapshot_date
+    dim_event  ||--o{ fact_event_demand : event_id
+    dim_artist ||--o{ fact_event_demand : artist_id
+    dim_venue  ||--o{ fact_event_demand : venue_id
+    dim_geo    ||--o{ fact_event_demand : dma_code
+
+    fact_event_demand {
+        string event_id FK
+        date snapshot_date FK
+        int artist_id FK "headliner (via bridge_event_artist.is_headliner)"
+        int venue_id FK
+        string dma_code FK
+        int days_to_show
+        float price_min
+        float price_max
+        string price_currency
+        string status_code
+        int local_interest "from fact_trends (artist+dma+date); NULL if not yet collected"
+        int yt_subscribers "from fact_youtube (artist+date)"
+        int yt_views "from fact_youtube (artist+date)"
+    }
+    dim_date   { date date PK }
+    dim_event  { string event_id PK }
+    dim_artist { int artist_id PK }
+    dim_venue  { int venue_id PK }
+    dim_geo    { string dma_code PK }

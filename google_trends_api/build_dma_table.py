@@ -61,7 +61,7 @@ def primary_state(dma_name: str) -> str | None:
 def build_table(seed_query: str = SEED_QUERY) -> pd.DataFrame:
     """One interest_by_region call -> tidy (dma, dma_name, state, geo_code) table."""
 
-    client = TrendsClient(request_sleep=0)
+    client = TrendsClient(min_interval=0)  # single one-off call; no pacing needed
     frame = client.interest_by_region(seed_query, geo="US", resolution="DMA")
     if "geoCode" not in frame.columns:
         raise SystemExit(f"Unexpected interest_by_region columns: {list(frame.columns)}")

@@ -190,8 +190,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--sleep",
         type=float,
-        default=10.0,
-        help="Seconds to pause between queries to avoid HTTP 429 (default: %(default)s).",
+        default=20.0,
+        help="Deterministic min seconds between queries (rate cap to avoid HTTP 429; default: %(default)s).",
     )
     parser.add_argument("--output", type=Path, help="CSV output path.")
     parser.add_argument(
@@ -209,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
 
     artists = select_artists(args)
     metros = select_metros(args)
-    client = TrendsClient(request_sleep=args.sleep)
+    client = TrendsClient(min_interval=args.sleep)
     extract_ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     total = len(artists) * len(metros)
@@ -229,9 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             if not new_rows:
                 logger.info("    no data for %s @ %s", artist.name, metro.name)
             rows.extend(new_rows)
-            # Polite pause between queries, but not after the final one.
-            if done < total:
-                client.sleep_between_requests()
+            # No explicit pause: the client self-paces every call to min_interval.
 
     print_coverage_summary(rows, len(artists), len(metros))
 

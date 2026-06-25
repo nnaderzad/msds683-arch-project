@@ -164,8 +164,8 @@ def main() -> int:
                         help="Which fetch units to run (default: national snapshot).")
     parser.add_argument("--limit", type=int, default=None,
                         help="Cap the number of selected artists (smoke testing).")
-    parser.add_argument("--sleep", type=float, default=10.0,
-                        help="Polite seconds between Trends calls (default 10).")
+    parser.add_argument("--sleep", type=float, default=20.0,
+                        help="Deterministic min seconds between Trends calls (rate cap; default 20).")
     parser.add_argument("--dry-run", action="store_true",
                         help="Fetch + summarize but write nothing to GCS.")
     args = parser.parse_args()
@@ -177,11 +177,12 @@ def main() -> int:
         artists = artists.head(args.limit)
     targets = pd.read_csv(roster_dir / "roster_targets.csv") if "dma" in args.modes else None
 
-    client = TrendsClient(request_sleep=args.sleep)
+    client = TrendsClient(min_interval=args.sleep)
     tf_daily = daily_timeframe()
     logger.info("Roster: %s | %d artists | modes=%s | daily window=%s | dry_run=%s",
                 roster_dir.name, len(artists), args.modes, tf_daily, args.dry_run)
 
+    # No explicit pause needed: the client self-paces every call to min_interval.
     landed = 0
     for art in artists.itertuples():
         for kind in args.modes:
@@ -190,12 +191,10 @@ def main() -> int:
                     run_unit(client, "dma", art.artist, art.query,
                              geo_code=tgt.geo_code, tf_daily=tf_daily, dry_run=args.dry_run)
                     landed += 1
-                    client.sleep_between_requests()
             else:
                 run_unit(client, kind, art.artist, art.query,
                          tf_daily=tf_daily, dry_run=args.dry_run)
                 landed += 1
-                client.sleep_between_requests()
 
     logger.info("Done: %d fetch units %s.", landed,
                 "simulated (dry-run)" if args.dry_run else "landed")

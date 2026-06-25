@@ -27,15 +27,21 @@ variable "gtrends_top_n" {
 }
 
 variable "gtrends_sleep_seconds" {
-  description = "Polite pause between Google Trends calls to avoid HTTP 429."
+  description = "Deterministic min interval (seconds) between Google Trends calls — the global rate cap. 20s => <=3 calls/min. Keep jobs single-stream so this stays global."
   type        = number
-  default     = 12
+  default     = 20
+}
+
+variable "gtrends_daily_call_budget" {
+  description = "Global ceiling on Trends calls per UTC day (counted from the GCS partition, shared across daily + backfill). 0 = no cap."
+  type        = number
+  default     = 800
 }
 
 variable "gtrends_backfill_tasks" {
-  description = "Parallel Cloud Run tasks for the backfill (each owns a disjoint queue shard)."
+  description = "Cloud Run tasks for the backfill. KEEP AT 1: parallel shards run independent streams that defeat the global rate cap and re-trip the 429 throttle."
   type        = number
-  default     = 4
+  default     = 1
 }
 
 variable "gtrends_backfill_include_dma" {

@@ -18,8 +18,19 @@ Cloud Scheduler ─(OAuth :run)─► Cloud Run Job  gtrends-daily ◄───�
 ```
 
 Both jobs run `google_trends_api/job.py`, regenerate the roster from BigQuery
-`tm_events`, shard work across tasks, and skip units already landed today
-(idempotent / resumable).
+`tm_events`, and skip units already landed (idempotent / resumable). They run as a
+**single stream** (no parallel shards) so `TRENDS_SLEEP` is the global min interval
+between Trends calls, and they stop gracefully (exit 0) at whichever deterministic
+guard trips first: the shared `DAILY_CALL_BUDGET` (calls per UTC day, counted from
+the `dt=` partition — global across both jobs), a wall-clock deadline, or queue
+exhaustion. `gtrends-daily` keeps the soonest-show-first artists fresh in a small
+time-boxed slice; the long tail / history is filled by the on-demand backfill.
+
+Watch the per-day call rate any time with the read-only QC script:
+
+```bash
+python google_trends_api/check_call_rate.py --days 7 --budget 800
+```
 
 ## Prerequisites
 
@@ -86,8 +97,13 @@ gcloud run jobs execute gtrends-daily --region us-west1
 | var | default | meaning |
 |---|---|---|
 | `gtrends_top_n` | 250 | top touring artists selected (plus the curated seed) |
-| `gtrends_backfill_tasks` | 4 | parallel backfill shards |
-| `gtrends_sleep_seconds` | 12 | polite pause between Trends calls (429 avoidance) |
+| `gtrends_sleep_seconds` | 20 | **deterministic min interval (s) between Trends calls — the global rate cap (≤3 calls/min)** |
+| `gtrends_daily_call_budget` | 800 | **global ceiling on Trends calls per UTC day, shared by both jobs (0 = off)** |
+| `gtrends_backfill_tasks` | 1 | **backfill Cloud Run tasks — keep at 1; parallel shards defeat the global rate cap** |
 | `gtrends_backfill_include_dma` | false | deep per-DMA pass on/off |
 | `gtrends_schedule` | `0 9 * * *` | daily job cron (America/Los_Angeles) |
 | `gtrends_daily_max_units` | 0 | cap units per daily run (0 = all) |
+
+Non-Terraform job knobs (set as env in `main.tf`): `RUN_DEADLINE_SECONDS` (wall-clock
+stop so a run exits 0 instead of being SIGKILL'd — daily 3300, backfill 84000) and
+`RESUME_LOOKBACK_DAYS` (cross-day resume window — daily 0, backfill 30).
