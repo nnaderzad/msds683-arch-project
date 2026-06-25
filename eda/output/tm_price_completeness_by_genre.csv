@@ -1,0 +1,16 @@
+dimension,value,n_events,n_any_price,n_complete,pct_complete,median_days_with_price
+genre,Rock,11530,1953,1686,14.6,0.0
+genre,Alternative,2237,1301,1099,49.1,11.0
+genre,Jazz,1556,1150,918,59.0,15.0
+genre,Other,4679,835,672,14.4,0.0
+genre,Country,3662,735,638,17.4,0.0
+genre,Fairs & Festivals,541,444,439,81.1,15.0
+genre,Pop,4245,480,411,9.7,0.0
+genre,Dance/Electronic,944,499,408,43.2,3.0
+genre,Folk,867,390,325,37.5,0.0
+genre,Hip-Hop/Rap,2117,372,313,14.8,0.0
+genre,Metal,1245,332,288,23.1,0.0
+genre,R&B,1612,294,254,15.8,0.0
+genre,World,621,275,232,37.4,0.0
+genre,Blues,707,265,230,32.5,0.0
+genre,Religious,258,151,138,53.5,15.0

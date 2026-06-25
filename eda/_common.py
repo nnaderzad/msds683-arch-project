@@ -20,18 +20,26 @@ DEFAULT_PROJECT = "data-architecture-498123"
 DEFAULT_DATASET = "event_demand_analytics"
 
 
-def bq_rows(sql: str, project: str) -> list[dict[str, str]]:
+def bq_rows(
+    sql: str,
+    project: str,
+    external_table_definition: str | None = None,
+) -> list[dict[str, str]]:
     """Run a BigQuery SQL statement via the bq CLI and return rows as dicts.
 
     Uses the authenticated ``bq`` CLI (CSV output) so the EDA needs no extra
     Python client dependency and runs wherever the project is authed (ADC).
+
+    ``external_table_definition`` (e.g. ``"t::PARQUET=gs://a.parquet,gs://b.parquet"``)
+    queries files in GCS as an ephemeral table — no persistent BigQuery object.
     """
 
-    proc = subprocess.run(
-        ["bq", f"--project_id={project}", "query", "--use_legacy_sql=false",
-         "--format=csv", "--max_rows=1000000", sql],
-        capture_output=True, text=True, check=True,
-    )
+    cmd = ["bq", f"--project_id={project}", "query", "--use_legacy_sql=false",
+           "--format=csv", "--max_rows=1000000"]
+    if external_table_definition:
+        cmd.append(f"--external_table_definition={external_table_definition}")
+    cmd.append(sql)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return list(csv.DictReader(io.StringIO(proc.stdout)))
 
 
