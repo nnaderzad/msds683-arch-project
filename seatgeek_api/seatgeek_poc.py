@@ -2,7 +2,7 @@
 """SeatGeek Platform API proof-of-concept extractor.
 
 Why SeatGeek (alongside Ticketmaster): Ticketmaster's Discovery API only exposes
-a *face-value* price for ~23% of events (profiled in analysis/profile_schema.py).
+a *face-value* price for ~23% of events (profiled in eda/profile_schema.py).
 SeatGeek's /events `stats` carry **secondary-market** signals — `lowest_price`,
 `average_price`, `listing_count` (resale inventory = a demand proxy) — which fit a
 *resale*-demand thesis better, and act as a fallback if Ticketmaster breaks.
