@@ -97,16 +97,27 @@ def load_event_panel(project: str, uris: list[str]) -> list[dict[str, str]]:
     """One row per event, aggregated across the daily snapshots (raw strings)."""
 
     sql = """
+        WITH s AS (
+          SELECT *,
+            REGEXP_EXTRACT(_FILE_NAME, r'dt=([0-9]{4}-[0-9]{2}-[0-9]{2})') AS snapshot_date
+          FROM tmhist
+        )
+        -- Descriptive fields come from each event's LATEST snapshot (deterministic),
+        -- not ANY_VALUE (non-deterministic; would churn names/files across reruns).
         SELECT
           event_id,
-          ANY_VALUE(event_name) AS event_name,
-          ANY_VALUE(genre) AS genre,
-          ANY_VALUE(venue_name) AS venue_name,
-          ANY_VALUE(venue_city) AS venue_city,
-          ANY_VALUE(venue_state_code) AS venue_state_code,
-          ANY_VALUE(venue_postal_code) AS venue_postal_code,
-          ANY_VALUE(attraction_names) AS attraction_names,
-          CAST(ANY_VALUE(local_date) AS STRING) AS show_date,
+          ARRAY_AGG(event_name ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)] AS event_name,
+          ARRAY_AGG(genre ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)] AS genre,
+          ARRAY_AGG(venue_name ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)] AS venue_name,
+          ARRAY_AGG(venue_city ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)] AS venue_city,
+          ARRAY_AGG(venue_state_code ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)]
+            AS venue_state_code,
+          ARRAY_AGG(venue_postal_code ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)]
+            AS venue_postal_code,
+          ARRAY_AGG(attraction_names ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)]
+            AS attraction_names,
+          CAST(ARRAY_AGG(local_date ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)] AS STRING)
+            AS show_date,
           COUNT(DISTINCT snapshot_date) AS snapshot_days,
           COUNT(DISTINCT IF(price_min IS NOT NULL, snapshot_date, NULL)) AS days_with_price,
           MIN(price_min) AS price_min_min,
@@ -117,12 +128,12 @@ def load_event_panel(project: str, uris: list[str]) -> list[dict[str, str]]:
             AS price_min_last,
           STRING_AGG(DISTINCT NULLIF(price_type, ''), '|'
                      ORDER BY NULLIF(price_type, '')) AS price_types,
-          ANY_VALUE(price_currency) AS price_currency
-        FROM (
-          SELECT *,
-            REGEXP_EXTRACT(_FILE_NAME, r'dt=([0-9]{4}-[0-9]{2}-[0-9]{2})') AS snapshot_date
-          FROM tmhist
-        )
+          ARRAY_AGG(price_currency ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)]
+            AS price_currency,
+          ARRAY_AGG(status_code IGNORE NULLS ORDER BY snapshot_date DESC)[SAFE_OFFSET(0)]
+            AS latest_status,
+          LOGICAL_OR(status_code = 'offsale') AS ever_offsale
+        FROM s
         GROUP BY event_id
     """
     return bq_rows(sql, project, external_table_definition=_external_def(uris))
@@ -194,6 +205,10 @@ def compute_metrics(rows: list[dict], total_days: int,
             "is_edm": (r.get("genre") or "") in EDM_GENRES,
             "days_to_show": (show_date - as_of_date).days
             if (show_date and as_of_date) else None,
+            "price_min_min": _to_float(r.get("price_min_min")),
+            "price_max_max": _to_float(r.get("price_max_max")),
+            "latest_status": r.get("latest_status") or "",
+            "ever_offsale": str(r.get("ever_offsale")).lower() == "true",
         })
     return out
 
@@ -246,6 +261,33 @@ def pricetype_breakdown(rows: list[dict]) -> list[dict]:
             counts.get(r.get("price_types") or "(unspecified)", 0) + 1)
     return sorted(({"price_types": k, "n_events": v} for k, v in counts.items()),
                   key=lambda d: -d["n_events"])
+
+
+def status_breakdown(rows: list[dict]) -> list[dict]:
+    """Latest event status counts (the only, ambiguous, sold-out proxy TM exposes)."""
+
+    counts: dict[str, int] = {}
+    priced: dict[str, int] = {}
+    for r in rows:
+        s = r.get("latest_status") or "(unknown)"
+        counts[s] = counts.get(s, 0) + 1
+        if r["days_with_price"] > 0:
+            priced[s] = priced.get(s, 0) + 1
+    return [{"latest_status": s, "n_events": counts[s], "n_priced": priced.get(s, 0)}
+            for s in sorted(counts, key=lambda k: -counts[k])]
+
+
+def select_highest_priced(rows: list[dict], n: int, bay_only: bool = False) -> list[dict]:
+    """Top-n priced shows by face-value max price (optionally Bay Area only)."""
+
+    pool = [r for r in rows if r["days_with_price"] > 0
+            and (r.get("is_bay_area") if bay_only else True)]
+
+    def key(r: dict) -> tuple:
+        return (-(r.get("price_max_max") or r.get("price_min_last") or 0.0),
+                -(r.get("price_min_last") or 0.0), r["event_id"])
+
+    return sorted(pool, key=key)[:n]
 
 
 def days_with_price_histogram(rows: list[dict], total_days: int) -> list[dict]:
@@ -312,6 +354,16 @@ def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")[:40] or "show"
 
 
+def _plot_title(ev: dict, prefix: str) -> str:
+    base = f"{ev.get('event_name')} — {ev.get('venue_city')}"
+    dwp = f"{ev['days_with_price']}/{ev['snapshot_days']} days priced"
+    if prefix.startswith("high"):
+        price = ev.get("price_max_max") or ev.get("price_min_last")
+        ptxt = f"${price:,.0f} max face; " if price else ""
+        return f"{base} ({ptxt}{dwp})"
+    return f"{base} ({dwp})"
+
+
 # ---------------------------------------------------------------------------
 # Plotting + output
 # ---------------------------------------------------------------------------
@@ -351,7 +403,7 @@ def _write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
 def write_markdown(path: Path, panel: list[dict], total_days: int, uris: list[str],
                    as_of: str, hist: list[dict], ptypes: list[dict],
                    by_genre: list[dict], by_state: list[dict], by_dma: list[dict],
-                   plots: list[tuple]) -> None:
+                   status: list[dict], plot_sections: list[tuple]) -> None:
     n = len(panel)
     n_any = sum(1 for r in panel if r["days_with_price"] > 0)
     n_complete = sum(1 for r in panel if r["is_complete"])
@@ -389,11 +441,27 @@ def write_markdown(path: Path, panel: list[dict], total_days: int, uris: list[st
         "|---|---|",
         *[f"| {h['days_with_price']} | {h['n_events']:,} |" for h in hist],
         "",
-        "## price_type (Ticketmaster = face value, not resale)",
+        "## Price type & resale — we have 0% resale data",
+        "",
+        "Ticketmaster's Discovery feed returns a single **face-value** price range per "
+        "event. Confirmed in the raw bronze: every priced event has exactly one "
+        "`priceRange` of type `standard`, with no secondary/resale fields — so **100% "
+        "of resale/secondary-market price data is missing** from this source.",
         "",
         "| price_types | n_events |",
         "|---|---|",
         *[f"| {p['price_types']} | {p['n_events']:,} |" for p in ptypes],
+        "",
+        "## Event status — the only (ambiguous) sold-out signal",
+        "",
+        "Ticketmaster exposes no explicit sold-out flag. `status_code` is the closest "
+        "proxy, but `offsale` is ambiguous (sold out vs. sale ended vs. not yet on "
+        "sale), so it can't be read as sold-out on its own.",
+        "",
+        "| latest_status | n_events | n_priced |",
+        "|---|---|---|",
+        *[f"| {s['latest_status']} | {s['n_events']:,} | {s['n_priced']:,} |"
+          for s in status],
         "",
         "## Most complete coverage by genre",
         "",
@@ -409,11 +477,11 @@ def write_markdown(path: Path, panel: list[dict], total_days: int, uris: list[st
         *[f"| {d['value']} | {d['n_events']:,} | {d['n_complete']:,} | "
           f"{d['pct_complete']}% | {d['median_days_with_price']} |" for d in by_dma],
         "",
-        "## Sample price trajectories",
-        "",
     ]
-    for title, rel in plots:
-        lines += [f"**{title}**", "", f"![{title}]({rel})", ""]
+    for section_title, section_plots in plot_sections:
+        lines += [f"## {section_title}", ""]
+        for title, rel in section_plots:
+            lines += [f"**{title}**", "", f"![{title}]({rel})", ""]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -428,6 +496,8 @@ def main() -> int:
     parser.add_argument("--start-date", default=None, help="earliest dt= (YYYY-MM-DD)")
     parser.add_argument("--end-date", default=None, help="latest dt= (YYYY-MM-DD)")
     parser.add_argument("--plot-top-n", type=int, default=6)
+    parser.add_argument("--highprice-top-n", type=int, default=5,
+                        help="how many highest-priced shows to plot per region")
     parser.add_argument("--output-dir", default=str(OUTPUT_DIR))
     args = parser.parse_args()
 
@@ -454,19 +524,35 @@ def main() -> int:
     by_state = coverage_by_dimension(panel, "venue_state_code")
     by_dma = coverage_by_dimension(panel, "metro")
 
-    # Plots for a few of the most complete shows.
-    plot_events = select_plot_events(panel, args.plot_top_n)
-    series_rows = load_event_series(args.project, uris, [e["event_id"] for e in plot_events])
-    plots: list[tuple] = []
-    for ev in plot_events:
-        series = build_series_for_plot(series_rows, ev["event_id"])
-        if not series:
-            continue
-        fname = f"price_{ev['event_id']}_{_slug(ev.get('event_name'))}.png"
-        title = (f"{ev.get('event_name')} — {ev.get('venue_city')} "
-                 f"({ev['days_with_price']}/{ev['snapshot_days']} days priced)")
-        plot_price_trajectory(series, title, plots_dir / fname)
-        plots.append((title, f"plots/{fname}"))
+    status = status_breakdown(panel)
+
+    # Event groups to plot: most complete (existing `price_*`), plus highest-priced
+    # Bay Area (`highbay_*`) and nationwide (`highus_*`). Existing plots are kept.
+    complete_events = select_plot_events(panel, args.plot_top_n)
+    high_bay = select_highest_priced(panel, args.highprice_top_n, bay_only=True)
+    high_us = select_highest_priced(panel, args.highprice_top_n, bay_only=False)
+    groups = [
+        ("Sample price trajectories (most complete shows)", "price", complete_events),
+        ("Highest-priced shows — San Francisco Bay Area", "highbay", high_bay),
+        ("Highest-priced shows — Nationwide (US)", "highus", high_us),
+    ]
+    all_ids = sorted({e["event_id"] for _, _, evs in groups for e in evs})
+    series_rows = load_event_series(args.project, uris, all_ids)
+
+    plot_sections: list[tuple] = []
+    n_plots = 0
+    for section_title, prefix, events in groups:
+        section: list[tuple] = []
+        for ev in events:
+            series = build_series_for_plot(series_rows, ev["event_id"])
+            if not series:
+                continue
+            fname = f"{prefix}_{ev['event_id']}_{_slug(ev.get('event_name'))}.png"
+            title = _plot_title(ev, prefix)
+            plot_price_trajectory(series, title, plots_dir / fname)
+            section.append((title, f"plots/{fname}"))
+        plot_sections.append((section_title, section))
+        n_plots += len(section)
 
     # Stamp every panel row with provenance for run-to-run diffing.
     for r in panel:
@@ -479,7 +565,8 @@ def main() -> int:
         "snapshot_days", "days_with_price", "price_completeness", "coverage_span",
         "is_complete", "price_min_first", "price_min_last", "price_min_min",
         "price_max_max", "price_changed", "price_types", "price_currency",
-        "is_edm", "is_bay_area", "as_of_ts", "snapshot_window",
+        "latest_status", "ever_offsale", "is_edm", "is_bay_area",
+        "as_of_ts", "snapshot_window",
     ]
     panel_sorted = sorted(panel, key=lambda r: (-r["days_with_price"], r["event_id"]))
     _write_csv(out_dir / "tm_price_history_by_event.csv", panel_sorted, panel_fields)
@@ -489,12 +576,21 @@ def main() -> int:
     _write_csv(out_dir / "tm_price_completeness_by_state.csv", by_state, dim_fields)
     _write_csv(out_dir / "tm_price_completeness_by_dma.csv", by_dma, dim_fields)
     _write_csv(out_dir / "tm_price_by_price_type.csv", ptypes, ["price_types", "n_events"])
+    _write_csv(out_dir / "tm_price_status_breakdown.csv", status,
+               ["latest_status", "n_events", "n_priced"])
+    high_rows = ([{**r, "region": "bay_area"} for r in high_bay]
+                 + [{**r, "region": "us"} for r in high_us])
+    high_fields = ["region", "event_id", "event_name", "headliner", "genre", "venue_name",
+                   "venue_city", "venue_state_code", "metro", "show_date", "days_to_show",
+                   "snapshot_days", "days_with_price", "price_min_last", "price_max_max",
+                   "price_changed", "latest_status"]
+    _write_csv(out_dir / "tm_highest_priced_shows.csv", high_rows, high_fields)
     write_markdown(out_dir / "tm_price_eda.md", panel, total_days, uris, as_of,
-                   hist, ptypes, by_genre, by_state, by_dma, plots)
+                   hist, ptypes, by_genre, by_state, by_dma, status, plot_sections)
 
     n_complete = sum(1 for r in panel if r["is_complete"])
     print(f"[tm_price_eda] {len(panel):,} events; {n_complete:,} complete; "
-          f"{len(plots)} plots -> {out_dir}")
+          f"{n_plots} plots -> {out_dir}")
     return 0
 
 

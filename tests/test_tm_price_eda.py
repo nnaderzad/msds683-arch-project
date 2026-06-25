@@ -20,7 +20,8 @@ GeoLookup = eda.GeoLookup
 
 def raw(event_id, *, snapshot_days, days_with_price, genre="Rock",
         first="50", last="50", zip_code="10001", state="NY",
-        names="Some Act", show_date="2026-08-01"):
+        names="Some Act", show_date="2026-08-01", status="onsale",
+        ever_offsale="false"):
     """Build one per-event row shaped like the aggregated bq CSV output (strings)."""
     return {
         "event_id": event_id, "event_name": f"Show {event_id}", "genre": genre,
@@ -30,6 +31,7 @@ def raw(event_id, *, snapshot_days, days_with_price, genre="Rock",
         "days_with_price": str(days_with_price), "price_min_first": first,
         "price_min_last": last, "price_min_min": first, "price_max_max": last,
         "price_types": "standard", "price_currency": "USD",
+        "latest_status": status, "ever_offsale": ever_offsale,
     }
 
 
@@ -50,6 +52,9 @@ def test_compute_metrics_completeness_and_flags():
     assert out["A"]["is_edm"] is True
     assert out["A"]["headliner"] == "Some Act"
     assert out["A"]["days_to_show"] == 30  # 2026-08-01 - 2026-07-02
+    assert out["A"]["latest_status"] == "onsale"
+    assert out["A"]["ever_offsale"] is False
+    assert out["A"]["price_max_max"] == 60.0
     # B: priced 1/4 days -> incomplete despite full span.
     assert out["B"]["price_completeness"] == 0.25
     assert out["B"]["is_complete"] is False
@@ -139,6 +144,33 @@ def test_build_series_for_plot_orders_and_filters():
 def test_dt_from_uri():
     assert eda.dt_from_uri("gs://b/ticketmaster/dt=2026-06-25/x.parquet") == "2026-06-25"
     assert eda.dt_from_uri("gs://b/ticketmaster/nope.parquet") is None
+
+
+def test_status_breakdown_counts_priced():
+    rows = [
+        {"latest_status": "onsale", "days_with_price": 3},
+        {"latest_status": "onsale", "days_with_price": 0},
+        {"latest_status": "offsale", "days_with_price": 2},
+    ]
+    sb = {d["latest_status"]: d for d in eda.status_breakdown(rows)}
+    assert sb["onsale"]["n_events"] == 2 and sb["onsale"]["n_priced"] == 1
+    assert sb["offsale"]["n_events"] == 1 and sb["offsale"]["n_priced"] == 1
+
+
+def test_select_highest_priced_ranks_and_filters():
+    rows = [
+        {"event_id": "A", "days_with_price": 3, "price_max_max": 500.0,
+         "price_min_last": 400.0, "is_bay_area": True},
+        {"event_id": "B", "days_with_price": 5, "price_max_max": 900.0,
+         "price_min_last": 800.0, "is_bay_area": False},
+        {"event_id": "C", "days_with_price": 2, "price_max_max": 700.0,
+         "price_min_last": 600.0, "is_bay_area": True},
+        {"event_id": "D", "days_with_price": 0, "price_max_max": 9999.0,
+         "price_min_last": 9999.0, "is_bay_area": True},  # priceless -> excluded
+    ]
+    assert [r["event_id"] for r in eda.select_highest_priced(rows, 2)] == ["B", "C"]
+    assert [r["event_id"] for r in
+            eda.select_highest_priced(rows, 2, bay_only=True)] == ["C", "A"]
 
 
 def test_plot_smoke(tmp_path):
