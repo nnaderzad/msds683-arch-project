@@ -36,8 +36,8 @@ table" isn't free — something has to be rolled up:
 | Source | Natural grain | What it measures |
 |---|---|---|
 | Ticketmaster | **event × snapshot-day** | price range, status, days-to-show |
-| Google Trends | **artist × DMA × day** | local search interest (0–100) |
-| YouTube | **artist × day** | subscribers, views (global) |
+| Google Trends | **artist × DMA(geolocation) × snapshot-day** | local search interest (0–100) |
+| YouTube | **artist × snapshot-day** | subscribers, views (global) |
 
 So the decision is really: **force one grain (single star)** or **keep each grain
 and join (constellation)?**
