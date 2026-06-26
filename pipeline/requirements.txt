@@ -3,5 +3,6 @@
 #
 # The transforms' *pure* functions are stdlib-only and unit-test offline (CI never
 # installs this), so importing a transform module stays import-safe without these;
-# only upsert_to_silver / the BigQuery load path needs the client.
+# only the BigQuery load path and the dim_date holiday lookup need them.
 google-cloud-bigquery>=3.0
+holidays>=0.40  # us_holiday_dates() in build_dimensions.py (dim_date.is_us_holiday)

@@ -252,12 +252,19 @@ Each task:
      (seed = 46 rows, 5 artists × 12 days, subs 2.3k–821k, PK unique, idempotent).
    - **GX silver-youtube suite deferred to C3.**
 
-- [ ] **A3 · Conformed dimensions**  ·  Owner: `____`
-   - Prereqs: T0
-   - Build: `pipeline/silver/build_dimensions.py` — `dim_date / dim_artist /
-     dim_venue / dim_geo / dim_event` + `bridge_event_artist` from `tm_events` +
-     `reference/` crosswalks (venue→DMA is the spine, ~99.5% resolved).
-   - Tests / done-when: PK-uniqueness + FK-coverage unit checks; GX dim suites.
+- [x] **A3 · Conformed dimensions**  ·  Owner: `TK`  ·  ✅ PR #15
+   - Prereqs: T0 ✅
+   - Built: `pipeline/silver/build_dimensions.py` — `dim_date / dim_artist / dim_venue /
+     dim_geo / dim_event` + `bridge_event_artist` from `tm_events` + `reference/dma_geo.csv`
+     (= `dim_geo`) and `GeoLookup` (venue→DMA). Pure builders (offline-tested on the seed
+     `tm_events`); full-refresh `CREATE OR REPLACE`. Decisions: headliner = name-match
+     (else first); `dim_artist` best-effort enriched (roster `query`/`top_genre` + the
+     YouTube channel cache for `yt_channel_id`); `is_us_holiday` via the `holidays` lib.
+   - Verified: real full load — `dim_event` 40,734 · `dim_artist` 10,356 · `dim_venue`
+     3,345 (DMA 99.94%, 2 NULL) · `dim_geo` 210 · `dim_date` 356 · `bridge` 56,506; **PK
+     unique** on every table, **0 FK orphans** (bridge→artist, event→venue, venue→geo),
+     exactly one headliner/event; 586 artists carry a YouTube channel id.
+   - **GX dim suites deferred to C3.**
 
 - [ ] **C2 · GX bronze suites**  ·  Owner: `____`
    - Prereqs: C1
@@ -379,9 +386,9 @@ Each task:
 ## Dependency quick-reference (what's unblocked)
 
 - **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
-- **After `T0` ✅:** `A1` ✅, `A2` ✅ done; `A3` unblocked → then `C3`, `INT-1`.
+- **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done → then `C3`, `INT-1`.
 - **After `C1`:** `C2`, `C3`.
-- **After `A1`+`A2`+`A3`:** `B1` → then `C4`, `D1`, `INT-2`, `G1`.
+- **After `A1`+`A2`+`A3` ✅:** `B1` (gold) **now unblocked** → then `C4`, `D1`, `INT-2`, `G1`.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
 - **Last:** `E2E-1` → `SCALE-1`, `I1`, `I2`.
