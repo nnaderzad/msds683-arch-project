@@ -54,8 +54,9 @@ you push, not the agent.** These are non-negotiable and apply to every task:
 
 ### Definition of done (every task)
 All of these — or it's not done:
-- Code **+** its unit tests **+** the relevant Great Expectations suite green in CI
-  (`.github/workflows/ci.yml`).
+- Code **+** its tests green in CI (`.github/workflows/ci.yml`) — unit tests for Python,
+  dbt schema/data tests for dbt models. The **GX suite once the scaffold (C1) exists**;
+  until then a *deferred-to-C3/C4* note is acceptable (A1/A2/A3 shipped this way).
 - **You ran it and verified the real behavior yourself** — output / UI / endpoint —
   per Ground Rule 2. Not "CI passed," not "the agent said so."
 - **You can explain what it does and why** (Ground Rules 1 & 3).
@@ -70,19 +71,22 @@ declared it finished.
 
 | Decision | Choice |
 |---|---|
-| Infrastructure | **Terraform, keep & extend** — IaC for the new transform/model job + the API service. It's our reproducible GCP landing zone and our "IaC" box on the tech-stack diagram. |
+| Infrastructure | **Terraform, keep & extend** — IaC for the new transform/model job + the API service. It's our reproducible GCP landing zone and our "IaC" box on the tech-stack diagram. Terraform owns **containers** (dataset, buckets, IAM, external tables); **dbt owns analytical table DDL**. |
 | End product | **React app + live API** — FastAPI over BigQuery gold. Forecasts are **precomputed into gold** (deterministic, no model-at-request-time); the API just serves them. |
 | Data validation | **Great Expectations on all three layers** — bronze, silver, gold (bonus points). |
 | Medallion | **Keep bronze → silver → gold.** Schema is **locked** from the midterm (`docs/data-model.md`). |
+| Transform engine | **dbt (dbt-bigquery), ELT** — silver + gold transforms are SQL models pushed down to BigQuery; dbt owns table DDL, materialization, tests & lineage. Python ingests raw + orchestrates. *(A1/A2/A3 predate this and migrate via `MIG-1/2/3`.)* |
 
 **Locked schema (from `docs/data-model.md`):**
 - **Silver = constellation:** three native-grain facts — `fact_ticketmaster`
   (event × snapshot_date), `fact_trends` (artist × dma × snapshot_date),
   `fact_youtube` (artist × snapshot_date) — plus conformed dims
   `dim_date / dim_artist / dim_venue / dim_geo / dim_event` and `bridge_event_artist`.
-- **Gold = star:** `fact_event_demand` left-joins the source facts onto the
-  Ticketmaster event spine on **artist × venue-DMA × snapshot_date**. Every event
-  is kept; missing signals are NULL (never filtered out).
+- **Gold = star:** `fact_event_demand` keeps the Ticketmaster event-snapshot spine
+  (`fact_ticketmaster`, event × snapshot_date) and **LEFT-JOINs** the other source facts
+  onto it — `fact_trends` on (headliner `artist_id`, venue `dma_code`, `snapshot_date`),
+  `fact_youtube` on (headliner `artist_id`, `snapshot_date`). Every event row is kept;
+  missing signals are NULL (never filtered out).
 
 ### Why we can defend each choice (Q&A prep — keep this current)
 
@@ -106,6 +110,11 @@ sure its row is true and you can expand on it live.
 - **Terraform (IaC)** — reproducible, reviewable, one-command stand-up/tear-down of the
   GCP landing zone. *Rejected:* click-ops (not reproducible); imperative `gcloud`
   scripts (drift).
+- **dbt (dbt-bigquery) for silver/gold transforms** — the join/aggregation runs *in* the
+  warehouse (ELT push-down), so it scales as snapshots accumulate instead of pulling rows
+  out to one Python node; dbt gives table DDL, incremental loads, data tests, and
+  lineage/docs in one place. *Rejected:* per-table Python in-memory joins (don't scale —
+  move data to the compute); a hand-rolled SQL runner (slowly reinvents a worse dbt).
 - **React + live FastAPI over gold** — the API *is* the consumable gold-layer product,
   decoupled from the warehouse. *Rejected:* a BI/Streamlit dashboard ("just a
   dashboard," less control); static export (no live querying).
@@ -124,8 +133,13 @@ sure its row is true and you can expand on it live.
 | Layer | Ticketmaster | Google Trends | YouTube |
 |---|---|---|---|
 | Bronze (raw JSON → GCS) | ✅ deployed | ✅ deployed | ✅ deployed |
-| Silver (BigQuery) | ✅ `tm_events` (MERGE-upsert) | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
-| Gold (`fact_event_demand`) | ❌ designed, to build |||
+| Silver (BigQuery) | ⚠️ `tm_events` current-state → dims; `fact_ticketmaster` history **to build (A4)** | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
+| Dims + bridge | ✅ `dim_*` + `bridge_event_artist` (A3, from `tm_events`) |||
+| Gold (`fact_event_demand`) | ❌ designed, to build (B1, dbt) |||
+
+> `tm_events` (current-state, MERGE-upsert) feeds the **dims** (A3). The silver TM **fact**
+> `fact_ticketmaster` — event × snapshot_date price *history*, sourced from the processed
+> parquet snapshots — is a **different table**, built in **A4**; it's the spine B1 joins onto.
 
 > **Honest model constraint:** daily snapshots only started ~mid-June, so per-show
 > price *history* is thin (~2 weeks). The forecast must **pool across shows**
@@ -154,13 +168,14 @@ All deterministic and re-runnable — no LLM at runtime, fixed seeds, committed 
 ## Directory layout (new code lands here — modules stay disjoint)
 
 ```
-pipeline/silver/     trends_to_silver.py · youtube_to_silver.py · build_dimensions.py
-pipeline/gold/       build_fact_event_demand.py · export_predictions_table.py
+dbt/                 dbt-bigquery project — models/silver · models/gold · sources · tests
+pipeline/silver/     Python extractors (A1/A2/A3) — migrating to dbt models (MIG-1/2/3)
+pipeline/gold/       export_predictions_table.py  (gold facts are now dbt models)
 model/               features.py · train.py · predict.py
 api/                 app.py (FastAPI) · Dockerfile
 web/                 React (Vite) app
 great_expectations/  GX project (suites per layer)
-terraform/           extend: api Cloud Run service · transform/model job · gold BQ tables
+terraform/           extend: api Cloud Run service · dbt transform/model job · dataset/IAM/external tables
 eda/                 tm_price_eda.py · profile_schema.py · _common.py (deterministic EDA)
 tests/               extend existing pytest suites + shared fixtures
 docs/                pipeline_walkthrough.md
@@ -201,10 +216,12 @@ Each task:
    - Tests / done-when: `great_expectations checkpoint list` runs; a trivial suite
      passes in CI.
 
-- [ ] **G0 · Terraform: empty gold BigQuery tables**  ·  Owner: `____`
+- [ ] **G0 · Terraform: gold dataset + IAM (+ external tables)**  ·  Owner: `____`
    - Prereqs: none — ready
-   - Build: IaC the gold dataset/tables (empty) so downstream tasks have a target.
-   - Tests / done-when: `terraform plan` clean; `bq show` confirms tables exist.
+   - Build: IaC the **containers** — dataset(s), IAM, and any GCS→BQ external tables the
+     models read. **Do not create the analytical tables in Terraform** — dbt materializes
+     them (Terraform-managed tables would drift against `dbt build`).
+   - Tests / done-when: `terraform plan` clean; `bq ls` shows the dataset; dbt can build into it.
 
 - [ ] **F1 · React scaffold (mock data)**  ·  Owner: `____`
    - Prereqs: none — ready
@@ -266,6 +283,19 @@ Each task:
      exactly one headliner/event; 586 artists carry a YouTube channel id.
    - **GX dim suites deferred to C3.**
 
+- [ ] **A4 · Ticketmaster bronze→silver (`fact_ticketmaster`)**  ·  Owner: `____`  ·  *(first dbt model)*
+   - Prereqs: T0 ✅
+   - Build: stand up the `dbt/` project (dbt-bigquery) **and** `models/silver/fact_ticketmaster.sql`
+     — the event × snapshot_date price **history**, sourced from the processed parquet
+     snapshots (`gs://<proj>-processed/ticketmaster/dt=*/*.parquet`, declared as a dbt
+     source; `snapshot_date` recovered from `_FILE_NAME`, same pattern as `eda/tm_price_eda.py`).
+     Schema per `docs/data-model.md` §3; derive `days_to_show`. Materialized **incremental**,
+     `partition_by=snapshot_date`, `unique_key=tm_snapshot_id` (idempotent). This is the
+     silver fact the gold spine (B1) joins onto — **distinct from current-state `tm_events`**.
+   - Tests / done-when: dbt `unique`/`not_null` on `tm_snapshot_id`, `not_null` keys,
+     `days_to_show ≥ 0`; **real `dbt build` verified by hand** (row count ≈ Σ snapshot_days,
+     idempotent re-run). GX silver suite → C3. *(dbt-in-CI is `G3`.)*
+
 - [ ] **C2 · GX bronze suites**  ·  Owner: `____`
    - Prereqs: C1
    - Build: raw-JSON landing checks per source (required keys, types, non-empty).
@@ -278,18 +308,51 @@ Each task:
    - Tests / done-when: suites green in CI.
 
 - [ ] **INT-1 · Integration: bronze→silver**  ·  Owner: `____`
-   - Prereqs: A1, A2, A3, T0
-   - Build: run all silver transforms on the seeded slice end-to-end.
+   - Prereqs: A1, A2, A3, A4, T0
+   - Build: run all silver transforms (incl. `fact_ticketmaster`) on the seeded slice end-to-end.
    - Tests / done-when: expected row counts per table; GX silver suites pass.
+
+### dbt adoption — follow-ups  *(new; A1/A2/A3 predate dbt — bring them onto the engine)*
+
+- [ ] **MIG-1 · Migrate `fact_trends` (A1) to a dbt model**  ·  Owner: `____`
+   - Prereqs: A4 (dbt scaffold)
+   - Build: re-express `pipeline/silver/trends_to_silver.py` as `models/silver/fact_trends.sql`.
+     Needs the raw `ibr_DMA` JSON queryable in BQ (GCS→BQ external table / load step) so the
+     model can `SELECT` it. Keep `interest` per-pull 0–100; same `artist_id` surrogate.
+   - Tests / done-when: dbt tests (PK unique, `interest` ∈ [0,100]); parity vs the current
+     Python output on the seed; then retire the Python script.
+
+- [ ] **MIG-2 · Migrate `fact_youtube` (A2) to a dbt model**  ·  Owner: `____`
+   - Prereqs: A4
+   - Build: `models/silver/fact_youtube.sql` from the YouTube raw (external table / load).
+   - Tests / done-when: dbt tests; seed parity; retire the Python script.
+
+- [ ] **MIG-3 · Migrate dims + bridge (A3) to dbt models**  ·  Owner: `____`
+   - Prereqs: A4
+   - Build: `models/silver/dim_*.sql` + `bridge_event_artist.sql` from `tm_events` (source)
+     + `dma_geo.csv` (dbt seed); headliner/enrichment logic in SQL/macros.
+   - Tests / done-when: dbt tests (PK unique, FK `relationships`); seed parity; retire
+     `pipeline/silver/build_dimensions.py`.
+
+- [ ] **G3 · dbt in CI**  ·  Owner: `____`
+   - Prereqs: A4
+   - Build: run `dbt build` + `dbt test` against a BigQuery sandbox in CI (service-account /
+     WIF creds — **no committed keys**). Decide the **dbt-test vs Great Expectations**
+     division of labor so the same checks aren't duplicated in both.
+   - Tests / done-when: CI runs dbt green on a sandbox dataset; creds setup documented.
 
 ### Phase 2 — Gold + scaffolds
 
 - [ ] **B1 · Gold star `fact_event_demand`**  ·  Owner: `____`
-   - Prereqs: A1, A2, A3
-   - Build: `pipeline/gold/build_fact_event_demand.py` — left-join silver facts onto
-     the TM event spine on (artist_id, venue-dma, snapshot_date); keep every event
-     (NULL where uncollected); derive `days_to_show`.
-   - Tests / done-when: unit test asserting **no row drop vs. the spine**; GX gold suite.
+   - Prereqs: A1 ✅, A2 ✅, A3 ✅, **A4**
+   - Build: `dbt/models/gold/fact_event_demand.sql` — keep the `fact_ticketmaster` spine
+     (`ref`); **LEFT JOIN** `fact_trends` on (headliner `artist_id`, venue `dma_code`,
+     `snapshot_date`) and `fact_youtube` on (headliner `artist_id`, `snapshot_date`);
+     headliner via `bridge_event_artist.is_headliner`; keep every event (NULL where
+     uncollected); carry `days_to_show`. Materialized incremental, partitioned by `snapshot_date`.
+   - Tests / done-when: dbt data test **no row drop vs the spine** (gold rows ==
+     `fact_ticketmaster` rows) + FK `relationships` to dims; **real `dbt build` verified by
+     hand**. GX gold suite → C4.
 
 - [ ] **C4 · GX gold suites**  ·  Owner: `____`
    - Prereqs: C1, B1
@@ -308,9 +371,9 @@ Each task:
    - Build: `api/app.py` — `/shows`, `/show/{id}` over gold (stubbed data OK for now).
    - Tests / done-when: pytest via FastAPI `TestClient` on stub responses.
 
-- [ ] **G1 · Terraform: transform/load Cloud Run job**  ·  Owner: `____`
-   - Prereqs: A1/A2/A3/B1 scripts exist
-   - Build: a Cloud Run job that runs the silver + gold transforms (extends `terraform/`).
+- [ ] **G1 · Terraform: dbt transform Cloud Run job**  ·  Owner: `____`
+   - Prereqs: A4/B1 dbt models exist (silver + gold)
+   - Build: a Cloud Run job that runs `dbt build` (silver + gold) (extends `terraform/`).
    - Tests / done-when: `terraform plan` clean; dry-run job execution.
 
 - [ ] **INT-2 · Integration: silver→gold**  ·  Owner: `____`
@@ -386,10 +449,11 @@ Each task:
 ## Dependency quick-reference (what's unblocked)
 
 - **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
-- **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done → then `C3`, `INT-1`.
+- **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
+- **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
 - **After `C1`:** `C2`, `C3`.
-- **After `A1`+`A2`+`A3` ✅:** `B1` (gold) **now unblocked** → then `C4`, `D1`, `INT-2`, `G1`.
+- **After `A1`+`A2`+`A3`+`A4`:** `B1` (gold) → then `C4`, `D1`, `INT-2`, `G1`.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
 - **Last:** `E2E-1` → `SCALE-1`, `I1`, `I2`.
-- **Shared hotspots (one owner per PR, announce first):** `terraform/`, `common/`, shared SQL.
+- **Shared hotspots (one owner per PR, announce first):** `terraform/`, `common/`, `dbt/`, shared SQL.
