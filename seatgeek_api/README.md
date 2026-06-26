@@ -2,7 +2,7 @@
 
 A second event source alongside Ticketmaster. **Original goal:** Ticketmaster's
 Discovery API exposes a *face-value* price for only **~23% of events** (profiled in
-`analysis/profile_schema.py`), so we hoped SeatGeek's `/events` `stats`
+`eda/profile_schema.py`), so we hoped SeatGeek's `/events` `stats`
 (`lowest_price`, `average_price`, `listing_count` = resale inventory) would give a
 richer *resale*-demand signal.
 

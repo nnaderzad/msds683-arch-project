@@ -8,7 +8,7 @@ updated 2026-06-15.*
 - **`schema_decision.md`** — processing paradigm + schema (sections 2 & 3 below).
 - **`transformation_pipeline.md`** — the raw→gold flow (section 3).
 - **`tech_stack.md`** — tools/services diagram (section 4).
-- **Evidence:** `../../analysis/profile_schema.py` → `../../analysis/output/schema_profile.md`
+- **Evidence:** `../../eda/profile_schema.py` → `../../eda/output/schema_profile.md`
   (real-warehouse numbers behind every claim; re-runnable).
 
 ## The numbers to memorize (from real data)
