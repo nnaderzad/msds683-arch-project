@@ -1,8 +1,8 @@
 # Schema & processing paradigm — decision doc
 
 *Midterm Design Pitch · MSDS 683. Team-facing. Numbers come from
-`analysis/profile_schema.py` (real warehouse, re-runnable) — see
-`analysis/output/schema_profile.md`. Last updated 2026-06-15.*
+`eda/profile_schema.py` (real warehouse, re-runnable) — see
+`eda/output/schema_profile.md`. Last updated 2026-06-15.*
 
 **One-line recommendation:** OLAP, daily batch, **a simple star schema**
 (`fact_event_demand` + 4 dimensions) for the audience and the model — fed under
@@ -144,8 +144,8 @@ place we could snowflake, and we chose not to.)
 
 ## 4. Evidence from the real warehouse (why these choices hold)
 
-From `analysis/profile_schema.py` (re-runnable; full table in
-`analysis/output/schema_profile.md`):
+From `eda/profile_schema.py` (re-runnable; full table in
+`eda/output/schema_profile.md`):
 
 | Finding | Number | So what |
 |---|---|---|
