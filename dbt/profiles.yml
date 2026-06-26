@@ -1,0 +1,18 @@
+# Project-local dbt profile. Run dbt from this directory with `--profiles-dir .`
+# (or set DBT_PROFILES_DIR=dbt). Auth is **ADC / gcloud oauth — no committed keys**:
+#   gcloud auth application-default login   (one-time)
+# Project / dataset / location default to the live values but are env-overridable so a
+# teammate can point at a sandbox without editing this file.
+event_demand:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_GCP_PROJECT', 'data-architecture-498123') }}"
+      dataset: "{{ env_var('DBT_BQ_DATASET', 'event_demand_analytics') }}"
+      location: "{{ env_var('DBT_BQ_LOCATION', 'us-west1') }}"
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 600
+      job_retries: 1

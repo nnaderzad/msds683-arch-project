@@ -1,0 +1,5 @@
+# dbt transform engine (silver + gold). Install into the project env:
+#   conda activate music-demand && pip install -r dbt/requirements.txt
+# dbt packages (dbt_external_tables, dbt_utils) are pinned in packages.yml and pulled
+# with `dbt deps`. CI does not install dbt yet — dbt-in-CI is task G3.
+dbt-bigquery>=1.9,<1.12

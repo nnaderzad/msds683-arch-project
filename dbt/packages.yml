@@ -1,0 +1,8 @@
+packages:
+  # Stages the processed-parquet snapshots as a BigQuery external table (zero-copy)
+  # from the source definition in models/sources.yml — version-controlled, re-runnable.
+  - package: dbt-labs/dbt_external_tables
+    version: [">=0.9.0", "<1.0.0"]
+  # Generic tests / helpers (accepted_range, surrogate keys, ...).
+  - package: dbt-labs/dbt_utils
+    version: [">=1.1.0", "<2.0.0"]
