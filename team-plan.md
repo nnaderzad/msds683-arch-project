@@ -124,7 +124,7 @@ sure its row is true and you can expand on it live.
 | Layer | Ticketmaster | Google Trends | YouTube |
 |---|---|---|---|
 | Bronze (raw JSON → GCS) | ✅ deployed | ✅ deployed | ✅ deployed |
-| Silver (BigQuery) | ✅ `tm_events` (MERGE-upsert) | ✅ `fact_trends` (A1) | ❌ to build |
+| Silver (BigQuery) | ✅ `tm_events` (MERGE-upsert) | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
 | Gold (`fact_event_demand`) | ❌ designed, to build |||
 
 > **Honest model constraint:** daily snapshots only started ~mid-June, so per-show
@@ -241,11 +241,16 @@ Each task:
      backfill (1,031 files) is the same command / future G1 job.
    - **GX silver-trends suite deferred to C3** (no GX scaffold yet — folds in there).
 
-- [ ] **A2 · YouTube bronze→silver (`fact_youtube`)**  ·  Owner: `____`
-   - Prereqs: T0
-   - Build: `pipeline/silver/youtube_to_silver.py` — `fact_youtube`
-     (artist × snapshot_date): subscribers, views, video_count.
-   - Tests / done-when: as A1 (unit + schema + GX silver-youtube suite).
+- [x] **A2 · YouTube bronze→silver (`fact_youtube`)**  ·  Owner: `TK`  ·  ✅ PR #14
+   - Prereqs: T0 ✅
+   - Built: `pipeline/silver/youtube_to_silver.py` flattens the daily YouTube captures
+     → `fact_youtube` (artist × snapshot_date): the subscriber/view/video-count
+     measures only (channel ids/titles are `dim_artist` attributes per schema change #7,
+     so dropped from the fact). Reuses `common/keys.py` `artist_id`; idempotent
+     staging+MERGE; hidden subscriber counts preserved as NULL.
+   - Verified: offline tests in `tests/test_youtube_to_silver.py` + a real BigQuery load
+     (seed = 46 rows, 5 artists × 12 days, subs 2.3k–821k, PK unique, idempotent).
+   - **GX silver-youtube suite deferred to C3.**
 
 - [ ] **A3 · Conformed dimensions**  ·  Owner: `____`
    - Prereqs: T0
@@ -374,7 +379,7 @@ Each task:
 ## Dependency quick-reference (what's unblocked)
 
 - **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
-- **After `T0` ✅:** `A1` ✅ done; `A2`, `A3` unblocked → then `C3`, `INT-1`.
+- **After `T0` ✅:** `A1` ✅, `A2` ✅ done; `A3` unblocked → then `C3`, `INT-1`.
 - **After `C1`:** `C2`, `C3`.
 - **After `A1`+`A2`+`A3`:** `B1` → then `C4`, `D1`, `INT-2`, `G1`.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
