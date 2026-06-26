@@ -1,0 +1,43 @@
+{
+  "source": "youtube",
+  "extract_ts_utc": "2026-06-16T16:31:08+00:00",
+  "n_records": 3,
+  "records": [
+    {
+      "query": "Bingo Loco",
+      "official_channel_id": "UC3TUWSdOmCvbCxpV45T4BfQ",
+      "official_channel_title": "Bingo Loco",
+      "official_subscribers": 2260,
+      "official_total_views": 2155983,
+      "official_video_count": 197,
+      "topic_channel_id": "UCJR9mQKfPMV15jFlZdR8ODA",
+      "topic_channel_title": "bongo cat - Topic",
+      "topic_total_views": 1603574,
+      "topic_video_count": 223
+    },
+    {
+      "query": "Rolling Quartz",
+      "official_channel_id": "UCA_NMesSILCEBUJ3Qqw8muw",
+      "official_channel_title": "ROLLING QUARTZ official",
+      "official_subscribers": 820000,
+      "official_total_views": 32173447,
+      "official_video_count": 213,
+      "topic_channel_id": "UC3Ju7gtvPx9Kj6mhH8U1qRw",
+      "topic_channel_title": "Rolling Quartz - Topic",
+      "topic_total_views": 700133,
+      "topic_video_count": 60
+    },
+    {
+      "query": "Everclear",
+      "official_channel_id": "UClxjm6JR5j7Wc_uP20OjUCA",
+      "official_channel_title": "Everclear",
+      "official_subscribers": 112000,
+      "official_total_views": 206632645,
+      "official_video_count": 11,
+      "topic_channel_id": "UClBVV9ZvFRdEGTDCGSkNysA",
+      "topic_channel_title": "Everclear - Topic",
+      "topic_total_views": 92401466,
+      "topic_video_count": 498
+    }
+  ]
+}

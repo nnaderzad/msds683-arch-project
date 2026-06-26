@@ -1,0 +1,1065 @@
+{
+  "source": "google_trends",
+  "endpoint": "interest_by_region",
+  "extract_ts_utc": "2026-06-15T22:19:44+00:00",
+  "artist": "CAIN",
+  "query": "CAIN",
+  "geo": "US",
+  "geo_code": null,
+  "resolution": "DMA",
+  "timeframe": "today 12-m",
+  "granularity": "snapshot",
+  "n_records": 210,
+  "records": [
+    {
+      "geoName": "Abilene-Sweetwater TX",
+      "geoCode": "662",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Albany GA",
+      "geoCode": "525",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Albany-Schenectady-Troy NY",
+      "geoCode": "532",
+      "CAIN": 45
+    },
+    {
+      "geoName": "Albuquerque-Santa Fe NM",
+      "geoCode": "790",
+      "CAIN": 49
+    },
+    {
+      "geoName": "Alexandria LA",
+      "geoCode": "644",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Alpena MI",
+      "geoCode": "583",
+      "CAIN": 71
+    },
+    {
+      "geoName": "Amarillo TX",
+      "geoCode": "634",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Anchorage AK",
+      "geoCode": "743",
+      "CAIN": 45
+    },
+    {
+      "geoName": "Atlanta GA",
+      "geoCode": "524",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Augusta GA",
+      "geoCode": "520",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Austin TX",
+      "geoCode": "635",
+      "CAIN": 67
+    },
+    {
+      "geoName": "Bakersfield CA",
+      "geoCode": "800",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Baltimore MD",
+      "geoCode": "512",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Bangor ME",
+      "geoCode": "537",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Baton Rouge LA",
+      "geoCode": "716",
+      "CAIN": 73
+    },
+    {
+      "geoName": "Beaumont-Port Arthur TX",
+      "geoCode": "692",
+      "CAIN": 64
+    },
+    {
+      "geoName": "Bend OR",
+      "geoCode": "821",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Billings, MT",
+      "geoCode": "756",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Biloxi-Gulfport MS",
+      "geoCode": "746",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Binghamton NY",
+      "geoCode": "502",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Birmingham AL",
+      "geoCode": "630",
+      "CAIN": 70
+    },
+    {
+      "geoName": "Bluefield-Beckley-Oak Hill WV",
+      "geoCode": "559",
+      "CAIN": 63
+    },
+    {
+      "geoName": "Boise ID",
+      "geoCode": "757",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Boston MA-Manchester NH",
+      "geoCode": "506",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Bowling Green KY",
+      "geoCode": "736",
+      "CAIN": 65
+    },
+    {
+      "geoName": "Buffalo NY",
+      "geoCode": "514",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Burlington VT-Plattsburgh NY",
+      "geoCode": "523",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Butte-Bozeman MT",
+      "geoCode": "754",
+      "CAIN": 45
+    },
+    {
+      "geoName": "Casper-Riverton WY",
+      "geoCode": "767",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Cedar Rapids-Waterloo-Iowa City & Dubuque IA",
+      "geoCode": "637",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Champaign & Springfield-Decatur IL",
+      "geoCode": "648",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Charleston SC",
+      "geoCode": "519",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Charleston-Huntington WV",
+      "geoCode": "564",
+      "CAIN": 66
+    },
+    {
+      "geoName": "Charlotte NC",
+      "geoCode": "517",
+      "CAIN": 66
+    },
+    {
+      "geoName": "Charlottesville VA",
+      "geoCode": "584",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Chattanooga TN",
+      "geoCode": "575",
+      "CAIN": 70
+    },
+    {
+      "geoName": "Cheyenne WY-Scottsbluff NE",
+      "geoCode": "759",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Chicago IL",
+      "geoCode": "602",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Chico-Redding CA",
+      "geoCode": "868",
+      "CAIN": 60
+    },
+    {
+      "geoName": "Cincinnati OH",
+      "geoCode": "515",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Clarksburg-Weston WV",
+      "geoCode": "598",
+      "CAIN": 90
+    },
+    {
+      "geoName": "Cleveland-Akron (Canton) OH",
+      "geoCode": "510",
+      "CAIN": 75
+    },
+    {
+      "geoName": "Colorado Springs-Pueblo CO",
+      "geoCode": "752",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Columbia SC",
+      "geoCode": "546",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Columbia-Jefferson City MO",
+      "geoCode": "604",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Columbus GA",
+      "geoCode": "522",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Columbus OH",
+      "geoCode": "535",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Columbus-Tupelo-West Point MS",
+      "geoCode": "673",
+      "CAIN": 72
+    },
+    {
+      "geoName": "Corpus Christi TX",
+      "geoCode": "600",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Dallas-Ft. Worth TX",
+      "geoCode": "623",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Davenport IA-Rock Island-Moline IL",
+      "geoCode": "682",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Dayton OH",
+      "geoCode": "542",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Denver CO",
+      "geoCode": "751",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Des Moines-Ames IA",
+      "geoCode": "679",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Detroit MI",
+      "geoCode": "505",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Dothan AL",
+      "geoCode": "606",
+      "CAIN": 70
+    },
+    {
+      "geoName": "Duluth MN-Superior WI",
+      "geoCode": "676",
+      "CAIN": 46
+    },
+    {
+      "geoName": "El Paso TX",
+      "geoCode": "765",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Elmira NY",
+      "geoCode": "565",
+      "CAIN": 66
+    },
+    {
+      "geoName": "Erie PA",
+      "geoCode": "516",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Eugene OR",
+      "geoCode": "801",
+      "CAIN": 60
+    },
+    {
+      "geoName": "Eureka CA",
+      "geoCode": "802",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Evansville IN",
+      "geoCode": "649",
+      "CAIN": 60
+    },
+    {
+      "geoName": "Fairbanks AK",
+      "geoCode": "745",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Fargo-Valley City ND",
+      "geoCode": "724",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Flint-Saginaw-Bay City MI",
+      "geoCode": "513",
+      "CAIN": 49
+    },
+    {
+      "geoName": "Florence-Myrtle Beach SC",
+      "geoCode": "570",
+      "CAIN": 100
+    },
+    {
+      "geoName": "Fresno-Visalia CA",
+      "geoCode": "866",
+      "CAIN": 49
+    },
+    {
+      "geoName": "Ft. Myers-Naples FL",
+      "geoCode": "571",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Ft. Smith-Fayetteville-Springdale-Rogers AR",
+      "geoCode": "670",
+      "CAIN": 63
+    },
+    {
+      "geoName": "Ft. Wayne IN",
+      "geoCode": "509",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Gainesville FL",
+      "geoCode": "592",
+      "CAIN": 67
+    },
+    {
+      "geoName": "Glendive MT",
+      "geoCode": "798",
+      "CAIN": 0
+    },
+    {
+      "geoName": "Grand Junction-Montrose CO",
+      "geoCode": "773",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Grand Rapids-Kalamazoo-Battle Creek MI",
+      "geoCode": "563",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Great Falls MT",
+      "geoCode": "755",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Green Bay-Appleton WI",
+      "geoCode": "658",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Greensboro-High Point-Winston Salem NC",
+      "geoCode": "518",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Greenville-New Bern-Washington NC",
+      "geoCode": "545",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Greenville-Spartanburg SC-Asheville NC-Anderson SC",
+      "geoCode": "567",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Greenwood-Greenville MS",
+      "geoCode": "647",
+      "CAIN": 72
+    },
+    {
+      "geoName": "Harlingen-Weslaco-Brownsville-McAllen TX",
+      "geoCode": "636",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Harrisburg-Lancaster-Lebanon-York PA",
+      "geoCode": "566",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Harrisonburg VA",
+      "geoCode": "569",
+      "CAIN": 63
+    },
+    {
+      "geoName": "Hartford & New Haven CT",
+      "geoCode": "533",
+      "CAIN": 40
+    },
+    {
+      "geoName": "Hattiesburg-Laurel MS",
+      "geoCode": "710",
+      "CAIN": 66
+    },
+    {
+      "geoName": "Helena MT",
+      "geoCode": "766",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Honolulu HI",
+      "geoCode": "744",
+      "CAIN": 41
+    },
+    {
+      "geoName": "Houston TX",
+      "geoCode": "618",
+      "CAIN": 79
+    },
+    {
+      "geoName": "Huntsville-Decatur (Florence) AL",
+      "geoCode": "691",
+      "CAIN": 81
+    },
+    {
+      "geoName": "Idaho Falls-Pocatello ID",
+      "geoCode": "758",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Indianapolis IN",
+      "geoCode": "527",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Jackson MS",
+      "geoCode": "718",
+      "CAIN": 69
+    },
+    {
+      "geoName": "Jackson TN",
+      "geoCode": "639",
+      "CAIN": 58
+    },
+    {
+      "geoName": "Jacksonville FL",
+      "geoCode": "561",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Johnstown-Altoona PA",
+      "geoCode": "574",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Jonesboro AR",
+      "geoCode": "734",
+      "CAIN": 77
+    },
+    {
+      "geoName": "Joplin MO-Pittsburg KS",
+      "geoCode": "603",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Juneau AK",
+      "geoCode": "747",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Kansas City MO",
+      "geoCode": "616",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Knoxville TN",
+      "geoCode": "557",
+      "CAIN": 65
+    },
+    {
+      "geoName": "La Crosse-Eau Claire WI",
+      "geoCode": "702",
+      "CAIN": 41
+    },
+    {
+      "geoName": "Lafayette IN",
+      "geoCode": "582",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Lafayette LA",
+      "geoCode": "642",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Lake Charles LA",
+      "geoCode": "643",
+      "CAIN": 73
+    },
+    {
+      "geoName": "Lansing MI",
+      "geoCode": "551",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Laredo TX",
+      "geoCode": "749",
+      "CAIN": 39
+    },
+    {
+      "geoName": "Las Vegas NV",
+      "geoCode": "839",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Lexington KY",
+      "geoCode": "541",
+      "CAIN": 68
+    },
+    {
+      "geoName": "Lima OH",
+      "geoCode": "558",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Lincoln & Hastings-Kearney NE",
+      "geoCode": "722",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Little Rock-Pine Bluff AR",
+      "geoCode": "693",
+      "CAIN": 69
+    },
+    {
+      "geoName": "Los Angeles CA",
+      "geoCode": "803",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Louisville KY",
+      "geoCode": "529",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Lubbock TX",
+      "geoCode": "651",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Macon GA",
+      "geoCode": "503",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Madison WI",
+      "geoCode": "669",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Mankato MN",
+      "geoCode": "737",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Marquette MI",
+      "geoCode": "553",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Medford-Klamath Falls OR",
+      "geoCode": "813",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Memphis TN",
+      "geoCode": "640",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Meridian MS",
+      "geoCode": "711",
+      "CAIN": 83
+    },
+    {
+      "geoName": "Miami-Ft. Lauderdale FL",
+      "geoCode": "528",
+      "CAIN": 39
+    },
+    {
+      "geoName": "Milwaukee WI",
+      "geoCode": "617",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Minneapolis-St. Paul MN",
+      "geoCode": "613",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Minot-Bismarck-Dickinson(Williston) ND",
+      "geoCode": "687",
+      "CAIN": 43
+    },
+    {
+      "geoName": "Missoula MT",
+      "geoCode": "762",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Mobile AL-Pensacola (Ft. Walton Beach) FL",
+      "geoCode": "686",
+      "CAIN": 75
+    },
+    {
+      "geoName": "Monroe LA-El Dorado AR",
+      "geoCode": "628",
+      "CAIN": 94
+    },
+    {
+      "geoName": "Monterey-Salinas CA",
+      "geoCode": "828",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Montgomery (Selma) AL",
+      "geoCode": "698",
+      "CAIN": 66
+    },
+    {
+      "geoName": "Nashville TN",
+      "geoCode": "659",
+      "CAIN": 71
+    },
+    {
+      "geoName": "New Orleans LA",
+      "geoCode": "622",
+      "CAIN": 57
+    },
+    {
+      "geoName": "New York NY",
+      "geoCode": "501",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Norfolk-Portsmouth-Newport News VA",
+      "geoCode": "544",
+      "CAIN": 46
+    },
+    {
+      "geoName": "North Platte NE",
+      "geoCode": "740",
+      "CAIN": 72
+    },
+    {
+      "geoName": "Odessa-Midland TX",
+      "geoCode": "633",
+      "CAIN": 74
+    },
+    {
+      "geoName": "Oklahoma City OK",
+      "geoCode": "650",
+      "CAIN": 63
+    },
+    {
+      "geoName": "Omaha NE",
+      "geoCode": "652",
+      "CAIN": 58
+    },
+    {
+      "geoName": "Orlando-Daytona Beach-Melbourne FL",
+      "geoCode": "534",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Ottumwa IA-Kirksville MO",
+      "geoCode": "631",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Paducah KY-Cape Girardeau MO-Harrisburg-Mount Vernon IL",
+      "geoCode": "632",
+      "CAIN": 68
+    },
+    {
+      "geoName": "Palm Springs CA",
+      "geoCode": "804",
+      "CAIN": 61
+    },
+    {
+      "geoName": "Panama City FL",
+      "geoCode": "656",
+      "CAIN": 75
+    },
+    {
+      "geoName": "Parkersburg WV",
+      "geoCode": "597",
+      "CAIN": 83
+    },
+    {
+      "geoName": "Peoria-Bloomington IL",
+      "geoCode": "675",
+      "CAIN": 55
+    },
+    {
+      "geoName": "Philadelphia PA",
+      "geoCode": "504",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Phoenix AZ",
+      "geoCode": "753",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Pittsburgh PA",
+      "geoCode": "508",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Portland OR",
+      "geoCode": "820",
+      "CAIN": 62
+    },
+    {
+      "geoName": "Portland-Auburn ME",
+      "geoCode": "500",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Presque Isle ME",
+      "geoCode": "552",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Providence RI-New Bedford MA",
+      "geoCode": "521",
+      "CAIN": 42
+    },
+    {
+      "geoName": "Quincy IL-Hannibal MO-Keokuk IA",
+      "geoCode": "717",
+      "CAIN": 69
+    },
+    {
+      "geoName": "Raleigh-Durham (Fayetteville) NC",
+      "geoCode": "560",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Rapid City SD",
+      "geoCode": "764",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Reno NV",
+      "geoCode": "811",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Richmond-Petersburg VA",
+      "geoCode": "556",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Roanoke-Lynchburg VA",
+      "geoCode": "573",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Rochester MN-Mason City IA-Austin MN",
+      "geoCode": "611",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Rochester NY",
+      "geoCode": "538",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Rockford IL",
+      "geoCode": "610",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Sacramento-Stockton-Modesto CA",
+      "geoCode": "862",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Salisbury MD",
+      "geoCode": "576",
+      "CAIN": 51
+    },
+    {
+      "geoName": "Salt Lake City UT",
+      "geoCode": "770",
+      "CAIN": 49
+    },
+    {
+      "geoName": "San Angelo TX",
+      "geoCode": "661",
+      "CAIN": 65
+    },
+    {
+      "geoName": "San Antonio TX",
+      "geoCode": "641",
+      "CAIN": 49
+    },
+    {
+      "geoName": "San Diego CA",
+      "geoCode": "825",
+      "CAIN": 62
+    },
+    {
+      "geoName": "San Francisco-Oakland-San Jose CA",
+      "geoCode": "807",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Santa Barbara-Santa Maria-San Luis Obispo CA",
+      "geoCode": "855",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Savannah GA",
+      "geoCode": "507",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Seattle-Tacoma WA",
+      "geoCode": "819",
+      "CAIN": 53
+    },
+    {
+      "geoName": "Sherman TX-Ada OK",
+      "geoCode": "657",
+      "CAIN": 74
+    },
+    {
+      "geoName": "Shreveport LA",
+      "geoCode": "612",
+      "CAIN": 67
+    },
+    {
+      "geoName": "Sioux City IA",
+      "geoCode": "624",
+      "CAIN": 45
+    },
+    {
+      "geoName": "Sioux Falls(Mitchell) SD",
+      "geoCode": "725",
+      "CAIN": 48
+    },
+    {
+      "geoName": "South Bend-Elkhart IN",
+      "geoCode": "588",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Spokane WA",
+      "geoCode": "881",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Springfield MO",
+      "geoCode": "619",
+      "CAIN": 59
+    },
+    {
+      "geoName": "Springfield-Holyoke MA",
+      "geoCode": "543",
+      "CAIN": 50
+    },
+    {
+      "geoName": "St. Joseph MO",
+      "geoCode": "638",
+      "CAIN": 52
+    },
+    {
+      "geoName": "St. Louis MO",
+      "geoCode": "609",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Syracuse NY",
+      "geoCode": "555",
+      "CAIN": 47
+    },
+    {
+      "geoName": "Tallahassee FL-Thomasville GA",
+      "geoCode": "530",
+      "CAIN": 79
+    },
+    {
+      "geoName": "Tampa-St. Petersburg (Sarasota) FL",
+      "geoCode": "539",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Terre Haute IN",
+      "geoCode": "581",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Toledo OH",
+      "geoCode": "547",
+      "CAIN": 52
+    },
+    {
+      "geoName": "Topeka KS",
+      "geoCode": "605",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Traverse City-Cadillac MI",
+      "geoCode": "540",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Tri-Cities TN-VA",
+      "geoCode": "531",
+      "CAIN": 64
+    },
+    {
+      "geoName": "Tucson (Sierra Vista) AZ",
+      "geoCode": "789",
+      "CAIN": 54
+    },
+    {
+      "geoName": "Tulsa OK",
+      "geoCode": "671",
+      "CAIN": 63
+    },
+    {
+      "geoName": "Twin Falls ID",
+      "geoCode": "760",
+      "CAIN": 44
+    },
+    {
+      "geoName": "Tyler-Longview(Lufkin & Nacogdoches) TX",
+      "geoCode": "709",
+      "CAIN": 74
+    },
+    {
+      "geoName": "Utica NY",
+      "geoCode": "526",
+      "CAIN": 48
+    },
+    {
+      "geoName": "Victoria TX",
+      "geoCode": "626",
+      "CAIN": 77
+    },
+    {
+      "geoName": "Waco-Temple-Bryan TX",
+      "geoCode": "625",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Washington DC (Hagerstown MD)",
+      "geoCode": "511",
+      "CAIN": 50
+    },
+    {
+      "geoName": "Watertown NY",
+      "geoCode": "549",
+      "CAIN": 40
+    },
+    {
+      "geoName": "Wausau-Rhinelander WI",
+      "geoCode": "705",
+      "CAIN": 47
+    },
+    {
+      "geoName": "West Palm Beach-Ft. Pierce FL",
+      "geoCode": "548",
+      "CAIN": 40
+    },
+    {
+      "geoName": "Wheeling WV-Steubenville OH",
+      "geoCode": "554",
+      "CAIN": 97
+    },
+    {
+      "geoName": "Wichita Falls TX & Lawton OK",
+      "geoCode": "627",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Wichita-Hutchinson KS",
+      "geoCode": "678",
+      "CAIN": 60
+    },
+    {
+      "geoName": "Wilkes Barre-Scranton PA",
+      "geoCode": "577",
+      "CAIN": 46
+    },
+    {
+      "geoName": "Wilmington NC",
+      "geoCode": "550",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Yakima-Pasco-Richland-Kennewick WA",
+      "geoCode": "810",
+      "CAIN": 42
+    },
+    {
+      "geoName": "Youngstown OH",
+      "geoCode": "536",
+      "CAIN": 56
+    },
+    {
+      "geoName": "Yuma AZ-El Centro CA",
+      "geoCode": "771",
+      "CAIN": 57
+    },
+    {
+      "geoName": "Zanesville OH",
+      "geoCode": "596",
+      "CAIN": 48
+    }
+  ]
+}

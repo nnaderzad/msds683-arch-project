@@ -1,0 +1,1065 @@
+{
+  "source": "google_trends",
+  "endpoint": "interest_by_region",
+  "extract_ts_utc": "2026-06-17T16:12:35+00:00",
+  "artist": "Everclear",
+  "query": "Everclear",
+  "geo": "US",
+  "geo_code": null,
+  "resolution": "DMA",
+  "timeframe": "today 12-m",
+  "granularity": "snapshot",
+  "n_records": 210,
+  "records": [
+    {
+      "geoName": "Abilene-Sweetwater TX",
+      "geoCode": "662",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Albany GA",
+      "geoCode": "525",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Albany-Schenectady-Troy NY",
+      "geoCode": "532",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Albuquerque-Santa Fe NM",
+      "geoCode": "790",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Alexandria LA",
+      "geoCode": "644",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Alpena MI",
+      "geoCode": "583",
+      "Everclear": 100
+    },
+    {
+      "geoName": "Amarillo TX",
+      "geoCode": "634",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Anchorage AK",
+      "geoCode": "743",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Atlanta GA",
+      "geoCode": "524",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Augusta GA",
+      "geoCode": "520",
+      "Everclear": 21
+    },
+    {
+      "geoName": "Austin TX",
+      "geoCode": "635",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Bakersfield CA",
+      "geoCode": "800",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Baltimore MD",
+      "geoCode": "512",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Bangor ME",
+      "geoCode": "537",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Baton Rouge LA",
+      "geoCode": "716",
+      "Everclear": 38
+    },
+    {
+      "geoName": "Beaumont-Port Arthur TX",
+      "geoCode": "692",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Bend OR",
+      "geoCode": "821",
+      "Everclear": 57
+    },
+    {
+      "geoName": "Billings, MT",
+      "geoCode": "756",
+      "Everclear": 41
+    },
+    {
+      "geoName": "Biloxi-Gulfport MS",
+      "geoCode": "746",
+      "Everclear": 49
+    },
+    {
+      "geoName": "Binghamton NY",
+      "geoCode": "502",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Birmingham AL",
+      "geoCode": "630",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Bluefield-Beckley-Oak Hill WV",
+      "geoCode": "559",
+      "Everclear": 45
+    },
+    {
+      "geoName": "Boise ID",
+      "geoCode": "757",
+      "Everclear": 38
+    },
+    {
+      "geoName": "Boston MA-Manchester NH",
+      "geoCode": "506",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Bowling Green KY",
+      "geoCode": "736",
+      "Everclear": 57
+    },
+    {
+      "geoName": "Buffalo NY",
+      "geoCode": "514",
+      "Everclear": 37
+    },
+    {
+      "geoName": "Burlington VT-Plattsburgh NY",
+      "geoCode": "523",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Butte-Bozeman MT",
+      "geoCode": "754",
+      "Everclear": 52
+    },
+    {
+      "geoName": "Casper-Riverton WY",
+      "geoCode": "767",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Cedar Rapids-Waterloo-Iowa City & Dubuque IA",
+      "geoCode": "637",
+      "Everclear": 33
+    },
+    {
+      "geoName": "Champaign & Springfield-Decatur IL",
+      "geoCode": "648",
+      "Everclear": 48
+    },
+    {
+      "geoName": "Charleston SC",
+      "geoCode": "519",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Charleston-Huntington WV",
+      "geoCode": "564",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Charlotte NC",
+      "geoCode": "517",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Charlottesville VA",
+      "geoCode": "584",
+      "Everclear": 33
+    },
+    {
+      "geoName": "Chattanooga TN",
+      "geoCode": "575",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Cheyenne WY-Scottsbluff NE",
+      "geoCode": "759",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Chicago IL",
+      "geoCode": "602",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Chico-Redding CA",
+      "geoCode": "868",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Cincinnati OH",
+      "geoCode": "515",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Clarksburg-Weston WV",
+      "geoCode": "598",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Cleveland-Akron (Canton) OH",
+      "geoCode": "510",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Colorado Springs-Pueblo CO",
+      "geoCode": "752",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Columbia SC",
+      "geoCode": "546",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Columbia-Jefferson City MO",
+      "geoCode": "604",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Columbus GA",
+      "geoCode": "522",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Columbus OH",
+      "geoCode": "535",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Columbus-Tupelo-West Point MS",
+      "geoCode": "673",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Corpus Christi TX",
+      "geoCode": "600",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Dallas-Ft. Worth TX",
+      "geoCode": "623",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Davenport IA-Rock Island-Moline IL",
+      "geoCode": "682",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Dayton OH",
+      "geoCode": "542",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Denver CO",
+      "geoCode": "751",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Des Moines-Ames IA",
+      "geoCode": "679",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Detroit MI",
+      "geoCode": "505",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Dothan AL",
+      "geoCode": "606",
+      "Everclear": 21
+    },
+    {
+      "geoName": "Duluth MN-Superior WI",
+      "geoCode": "676",
+      "Everclear": 32
+    },
+    {
+      "geoName": "El Paso TX",
+      "geoCode": "765",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Elmira NY",
+      "geoCode": "565",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Erie PA",
+      "geoCode": "516",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Eugene OR",
+      "geoCode": "801",
+      "Everclear": 51
+    },
+    {
+      "geoName": "Eureka CA",
+      "geoCode": "802",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Evansville IN",
+      "geoCode": "649",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Fairbanks AK",
+      "geoCode": "745",
+      "Everclear": 41
+    },
+    {
+      "geoName": "Fargo-Valley City ND",
+      "geoCode": "724",
+      "Everclear": 43
+    },
+    {
+      "geoName": "Flint-Saginaw-Bay City MI",
+      "geoCode": "513",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Florence-Myrtle Beach SC",
+      "geoCode": "570",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Fresno-Visalia CA",
+      "geoCode": "866",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Ft. Myers-Naples FL",
+      "geoCode": "571",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Ft. Smith-Fayetteville-Springdale-Rogers AR",
+      "geoCode": "670",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Ft. Wayne IN",
+      "geoCode": "509",
+      "Everclear": 40
+    },
+    {
+      "geoName": "Gainesville FL",
+      "geoCode": "592",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Glendive MT",
+      "geoCode": "798",
+      "Everclear": 0
+    },
+    {
+      "geoName": "Grand Junction-Montrose CO",
+      "geoCode": "773",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Grand Rapids-Kalamazoo-Battle Creek MI",
+      "geoCode": "563",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Great Falls MT",
+      "geoCode": "755",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Green Bay-Appleton WI",
+      "geoCode": "658",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Greensboro-High Point-Winston Salem NC",
+      "geoCode": "518",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Greenville-New Bern-Washington NC",
+      "geoCode": "545",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Greenville-Spartanburg SC-Asheville NC-Anderson SC",
+      "geoCode": "567",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Greenwood-Greenville MS",
+      "geoCode": "647",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Harlingen-Weslaco-Brownsville-McAllen TX",
+      "geoCode": "636",
+      "Everclear": 19
+    },
+    {
+      "geoName": "Harrisburg-Lancaster-Lebanon-York PA",
+      "geoCode": "566",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Harrisonburg VA",
+      "geoCode": "569",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Hartford & New Haven CT",
+      "geoCode": "533",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Hattiesburg-Laurel MS",
+      "geoCode": "710",
+      "Everclear": 44
+    },
+    {
+      "geoName": "Helena MT",
+      "geoCode": "766",
+      "Everclear": 52
+    },
+    {
+      "geoName": "Honolulu HI",
+      "geoCode": "744",
+      "Everclear": 22
+    },
+    {
+      "geoName": "Houston TX",
+      "geoCode": "618",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Huntsville-Decatur (Florence) AL",
+      "geoCode": "691",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Idaho Falls-Pocatello ID",
+      "geoCode": "758",
+      "Everclear": 22
+    },
+    {
+      "geoName": "Indianapolis IN",
+      "geoCode": "527",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Jackson MS",
+      "geoCode": "718",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Jackson TN",
+      "geoCode": "639",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Jacksonville FL",
+      "geoCode": "561",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Johnstown-Altoona PA",
+      "geoCode": "574",
+      "Everclear": 45
+    },
+    {
+      "geoName": "Jonesboro AR",
+      "geoCode": "734",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Joplin MO-Pittsburg KS",
+      "geoCode": "603",
+      "Everclear": 18
+    },
+    {
+      "geoName": "Juneau AK",
+      "geoCode": "747",
+      "Everclear": 2
+    },
+    {
+      "geoName": "Kansas City MO",
+      "geoCode": "616",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Knoxville TN",
+      "geoCode": "557",
+      "Everclear": 32
+    },
+    {
+      "geoName": "La Crosse-Eau Claire WI",
+      "geoCode": "702",
+      "Everclear": 40
+    },
+    {
+      "geoName": "Lafayette IN",
+      "geoCode": "582",
+      "Everclear": 59
+    },
+    {
+      "geoName": "Lafayette LA",
+      "geoCode": "642",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Lake Charles LA",
+      "geoCode": "643",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Lansing MI",
+      "geoCode": "551",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Laredo TX",
+      "geoCode": "749",
+      "Everclear": 18
+    },
+    {
+      "geoName": "Las Vegas NV",
+      "geoCode": "839",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Lexington KY",
+      "geoCode": "541",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Lima OH",
+      "geoCode": "558",
+      "Everclear": 33
+    },
+    {
+      "geoName": "Lincoln & Hastings-Kearney NE",
+      "geoCode": "722",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Little Rock-Pine Bluff AR",
+      "geoCode": "693",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Los Angeles CA",
+      "geoCode": "803",
+      "Everclear": 19
+    },
+    {
+      "geoName": "Louisville KY",
+      "geoCode": "529",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Lubbock TX",
+      "geoCode": "651",
+      "Everclear": 65
+    },
+    {
+      "geoName": "Macon GA",
+      "geoCode": "503",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Madison WI",
+      "geoCode": "669",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Mankato MN",
+      "geoCode": "737",
+      "Everclear": 55
+    },
+    {
+      "geoName": "Marquette MI",
+      "geoCode": "553",
+      "Everclear": 50
+    },
+    {
+      "geoName": "Medford-Klamath Falls OR",
+      "geoCode": "813",
+      "Everclear": 51
+    },
+    {
+      "geoName": "Memphis TN",
+      "geoCode": "640",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Meridian MS",
+      "geoCode": "711",
+      "Everclear": 0
+    },
+    {
+      "geoName": "Miami-Ft. Lauderdale FL",
+      "geoCode": "528",
+      "Everclear": 16
+    },
+    {
+      "geoName": "Milwaukee WI",
+      "geoCode": "617",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Minneapolis-St. Paul MN",
+      "geoCode": "613",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Minot-Bismarck-Dickinson(Williston) ND",
+      "geoCode": "687",
+      "Everclear": 44
+    },
+    {
+      "geoName": "Missoula MT",
+      "geoCode": "762",
+      "Everclear": 44
+    },
+    {
+      "geoName": "Mobile AL-Pensacola (Ft. Walton Beach) FL",
+      "geoCode": "686",
+      "Everclear": 33
+    },
+    {
+      "geoName": "Monroe LA-El Dorado AR",
+      "geoCode": "628",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Monterey-Salinas CA",
+      "geoCode": "828",
+      "Everclear": 21
+    },
+    {
+      "geoName": "Montgomery (Selma) AL",
+      "geoCode": "698",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Nashville TN",
+      "geoCode": "659",
+      "Everclear": 28
+    },
+    {
+      "geoName": "New Orleans LA",
+      "geoCode": "622",
+      "Everclear": 34
+    },
+    {
+      "geoName": "New York NY",
+      "geoCode": "501",
+      "Everclear": 20
+    },
+    {
+      "geoName": "Norfolk-Portsmouth-Newport News VA",
+      "geoCode": "544",
+      "Everclear": 34
+    },
+    {
+      "geoName": "North Platte NE",
+      "geoCode": "740",
+      "Everclear": 0
+    },
+    {
+      "geoName": "Odessa-Midland TX",
+      "geoCode": "633",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Oklahoma City OK",
+      "geoCode": "650",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Omaha NE",
+      "geoCode": "652",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Orlando-Daytona Beach-Melbourne FL",
+      "geoCode": "534",
+      "Everclear": 24
+    },
+    {
+      "geoName": "Ottumwa IA-Kirksville MO",
+      "geoCode": "631",
+      "Everclear": 0
+    },
+    {
+      "geoName": "Paducah KY-Cape Girardeau MO-Harrisburg-Mount Vernon IL",
+      "geoCode": "632",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Palm Springs CA",
+      "geoCode": "804",
+      "Everclear": 13
+    },
+    {
+      "geoName": "Panama City FL",
+      "geoCode": "656",
+      "Everclear": 32
+    },
+    {
+      "geoName": "Parkersburg WV",
+      "geoCode": "597",
+      "Everclear": 1
+    },
+    {
+      "geoName": "Peoria-Bloomington IL",
+      "geoCode": "675",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Philadelphia PA",
+      "geoCode": "504",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Phoenix AZ",
+      "geoCode": "753",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Pittsburgh PA",
+      "geoCode": "508",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Portland OR",
+      "geoCode": "820",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Portland-Auburn ME",
+      "geoCode": "500",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Presque Isle ME",
+      "geoCode": "552",
+      "Everclear": 0
+    },
+    {
+      "geoName": "Providence RI-New Bedford MA",
+      "geoCode": "521",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Quincy IL-Hannibal MO-Keokuk IA",
+      "geoCode": "717",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Raleigh-Durham (Fayetteville) NC",
+      "geoCode": "560",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Rapid City SD",
+      "geoCode": "764",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Reno NV",
+      "geoCode": "811",
+      "Everclear": 41
+    },
+    {
+      "geoName": "Richmond-Petersburg VA",
+      "geoCode": "556",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Roanoke-Lynchburg VA",
+      "geoCode": "573",
+      "Everclear": 47
+    },
+    {
+      "geoName": "Rochester MN-Mason City IA-Austin MN",
+      "geoCode": "611",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Rochester NY",
+      "geoCode": "538",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Rockford IL",
+      "geoCode": "610",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Sacramento-Stockton-Modesto CA",
+      "geoCode": "862",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Salisbury MD",
+      "geoCode": "576",
+      "Everclear": 31
+    },
+    {
+      "geoName": "Salt Lake City UT",
+      "geoCode": "770",
+      "Everclear": 25
+    },
+    {
+      "geoName": "San Angelo TX",
+      "geoCode": "661",
+      "Everclear": 19
+    },
+    {
+      "geoName": "San Antonio TX",
+      "geoCode": "641",
+      "Everclear": 29
+    },
+    {
+      "geoName": "San Diego CA",
+      "geoCode": "825",
+      "Everclear": 24
+    },
+    {
+      "geoName": "San Francisco-Oakland-San Jose CA",
+      "geoCode": "807",
+      "Everclear": 19
+    },
+    {
+      "geoName": "Santa Barbara-Santa Maria-San Luis Obispo CA",
+      "geoCode": "855",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Savannah GA",
+      "geoCode": "507",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Seattle-Tacoma WA",
+      "geoCode": "819",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Sherman TX-Ada OK",
+      "geoCode": "657",
+      "Everclear": 36
+    },
+    {
+      "geoName": "Shreveport LA",
+      "geoCode": "612",
+      "Everclear": 25
+    },
+    {
+      "geoName": "Sioux City IA",
+      "geoCode": "624",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Sioux Falls(Mitchell) SD",
+      "geoCode": "725",
+      "Everclear": 28
+    },
+    {
+      "geoName": "South Bend-Elkhart IN",
+      "geoCode": "588",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Spokane WA",
+      "geoCode": "881",
+      "Everclear": 37
+    },
+    {
+      "geoName": "Springfield MO",
+      "geoCode": "619",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Springfield-Holyoke MA",
+      "geoCode": "543",
+      "Everclear": 24
+    },
+    {
+      "geoName": "St. Joseph MO",
+      "geoCode": "638",
+      "Everclear": 0
+    },
+    {
+      "geoName": "St. Louis MO",
+      "geoCode": "609",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Syracuse NY",
+      "geoCode": "555",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Tallahassee FL-Thomasville GA",
+      "geoCode": "530",
+      "Everclear": 29
+    },
+    {
+      "geoName": "Tampa-St. Petersburg (Sarasota) FL",
+      "geoCode": "539",
+      "Everclear": 20
+    },
+    {
+      "geoName": "Terre Haute IN",
+      "geoCode": "581",
+      "Everclear": 26
+    },
+    {
+      "geoName": "Toledo OH",
+      "geoCode": "547",
+      "Everclear": 30
+    },
+    {
+      "geoName": "Topeka KS",
+      "geoCode": "605",
+      "Everclear": 37
+    },
+    {
+      "geoName": "Traverse City-Cadillac MI",
+      "geoCode": "540",
+      "Everclear": 45
+    },
+    {
+      "geoName": "Tri-Cities TN-VA",
+      "geoCode": "531",
+      "Everclear": 28
+    },
+    {
+      "geoName": "Tucson (Sierra Vista) AZ",
+      "geoCode": "789",
+      "Everclear": 23
+    },
+    {
+      "geoName": "Tulsa OK",
+      "geoCode": "671",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Twin Falls ID",
+      "geoCode": "760",
+      "Everclear": 43
+    },
+    {
+      "geoName": "Tyler-Longview(Lufkin & Nacogdoches) TX",
+      "geoCode": "709",
+      "Everclear": 20
+    },
+    {
+      "geoName": "Utica NY",
+      "geoCode": "526",
+      "Everclear": 22
+    },
+    {
+      "geoName": "Victoria TX",
+      "geoCode": "626",
+      "Everclear": 47
+    },
+    {
+      "geoName": "Waco-Temple-Bryan TX",
+      "geoCode": "625",
+      "Everclear": 34
+    },
+    {
+      "geoName": "Washington DC (Hagerstown MD)",
+      "geoCode": "511",
+      "Everclear": 20
+    },
+    {
+      "geoName": "Watertown NY",
+      "geoCode": "549",
+      "Everclear": 35
+    },
+    {
+      "geoName": "Wausau-Rhinelander WI",
+      "geoCode": "705",
+      "Everclear": 31
+    },
+    {
+      "geoName": "West Palm Beach-Ft. Pierce FL",
+      "geoCode": "548",
+      "Everclear": 19
+    },
+    {
+      "geoName": "Wheeling WV-Steubenville OH",
+      "geoCode": "554",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Wichita Falls TX & Lawton OK",
+      "geoCode": "627",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Wichita-Hutchinson KS",
+      "geoCode": "678",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Wilkes Barre-Scranton PA",
+      "geoCode": "577",
+      "Everclear": 33
+    },
+    {
+      "geoName": "Wilmington NC",
+      "geoCode": "550",
+      "Everclear": 41
+    },
+    {
+      "geoName": "Yakima-Pasco-Richland-Kennewick WA",
+      "geoCode": "810",
+      "Everclear": 27
+    },
+    {
+      "geoName": "Youngstown OH",
+      "geoCode": "536",
+      "Everclear": 38
+    },
+    {
+      "geoName": "Yuma AZ-El Centro CA",
+      "geoCode": "771",
+      "Everclear": 19
+    },
+    {
+      "geoName": "Zanesville OH",
+      "geoCode": "596",
+      "Everclear": 0
+    }
+  ]
+}

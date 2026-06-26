@@ -184,11 +184,16 @@ Each task:
 
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
-- [ ] **T0 · Test harness & seed fixtures**  ·  Owner: `____`
+- [x] **T0 · Test harness & seed fixtures**  ·  Owner: `TK`  ·  ✅ PR #12
    - Prereqs: none — ready
-   - Build: a tiny committed sample slice (a handful of events/artists across all
-     three sources) + shared pytest fixtures; confirm CI runs them.
-   - Tests / done-when: fixtures import clean; `pytest` collects them; CI green.
+   - Built: `tests/fixtures/build_seed.py` (deterministic, ADC-gated; reuses
+     `eda/tm_price_eda.py`) carves a small **real** slice — 5 artists with a
+     complete 16-day TM price series, present in **all three** sources (4 Bay Area
+     + 1 national) — into `tests/fixtures/seed/` with a provenance `manifest.json`.
+     Shared pytest fixtures in `tests/conftest.py`; `tests/test_seed_fixtures.py`
+     unit-tests the pure selectors **and** asserts the cross-source guarantee
+     A1/A2/A3 + INT-1 rely on. Pure-stdlib, offline; refreshable to diff over time.
+   - Tests / done-when: ✅ offline (`pytest tests/`, no new deps, CI green).
 
 - [ ] **C1 · Great Expectations scaffold**  ·  Owner: `____`
    - Prereqs: none — ready
@@ -362,8 +367,8 @@ Each task:
 
 ## Dependency quick-reference (what's unblocked)
 
-- **Ready now:** `T0`, `C1`, `G0`, `F1`, `E1` (stub).  _(`H1` ✅ done — PR #10)_
-- **After `T0`:** `A1`, `A2`, `A3` → then `C3`, `INT-1`.
+- **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
+- **After `T0` ✅:** `A1`, `A2`, `A3` now unblocked → then `C3`, `INT-1`.
 - **After `C1`:** `C2`, `C3`.
 - **After `A1`+`A2`+`A3`:** `B1` → then `C4`, `D1`, `INT-2`, `G1`.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.

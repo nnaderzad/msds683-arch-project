@@ -1,0 +1,1065 @@
+{
+  "source": "google_trends",
+  "endpoint": "interest_by_region",
+  "extract_ts_utc": "2026-06-24T16:49:36+00:00",
+  "artist": "Turnover",
+  "query": "Turnover",
+  "geo": "US",
+  "geo_code": null,
+  "resolution": "DMA",
+  "timeframe": "today 12-m",
+  "granularity": "snapshot",
+  "n_records": 210,
+  "records": [
+    {
+      "geoName": "Abilene-Sweetwater TX",
+      "geoCode": "662",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Albany GA",
+      "geoCode": "525",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Albany-Schenectady-Troy NY",
+      "geoCode": "532",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Albuquerque-Santa Fe NM",
+      "geoCode": "790",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Alexandria LA",
+      "geoCode": "644",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Alpena MI",
+      "geoCode": "583",
+      "Turnover": 0
+    },
+    {
+      "geoName": "Amarillo TX",
+      "geoCode": "634",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Anchorage AK",
+      "geoCode": "743",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Atlanta GA",
+      "geoCode": "524",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Augusta GA",
+      "geoCode": "520",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Austin TX",
+      "geoCode": "635",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Bakersfield CA",
+      "geoCode": "800",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Baltimore MD",
+      "geoCode": "512",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Bangor ME",
+      "geoCode": "537",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Baton Rouge LA",
+      "geoCode": "716",
+      "Turnover": 13
+    },
+    {
+      "geoName": "Beaumont-Port Arthur TX",
+      "geoCode": "692",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Bend OR",
+      "geoCode": "821",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Billings, MT",
+      "geoCode": "756",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Biloxi-Gulfport MS",
+      "geoCode": "746",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Binghamton NY",
+      "geoCode": "502",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Birmingham AL",
+      "geoCode": "630",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Bluefield-Beckley-Oak Hill WV",
+      "geoCode": "559",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Boise ID",
+      "geoCode": "757",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Boston MA-Manchester NH",
+      "geoCode": "506",
+      "Turnover": 13
+    },
+    {
+      "geoName": "Bowling Green KY",
+      "geoCode": "736",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Buffalo NY",
+      "geoCode": "514",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Burlington VT-Plattsburgh NY",
+      "geoCode": "523",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Butte-Bozeman MT",
+      "geoCode": "754",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Casper-Riverton WY",
+      "geoCode": "767",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Cedar Rapids-Waterloo-Iowa City & Dubuque IA",
+      "geoCode": "637",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Champaign & Springfield-Decatur IL",
+      "geoCode": "648",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Charleston SC",
+      "geoCode": "519",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Charleston-Huntington WV",
+      "geoCode": "564",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Charlotte NC",
+      "geoCode": "517",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Charlottesville VA",
+      "geoCode": "584",
+      "Turnover": 15
+    },
+    {
+      "geoName": "Chattanooga TN",
+      "geoCode": "575",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Cheyenne WY-Scottsbluff NE",
+      "geoCode": "759",
+      "Turnover": 100
+    },
+    {
+      "geoName": "Chicago IL",
+      "geoCode": "602",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Chico-Redding CA",
+      "geoCode": "868",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Cincinnati OH",
+      "geoCode": "515",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Clarksburg-Weston WV",
+      "geoCode": "598",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Cleveland-Akron (Canton) OH",
+      "geoCode": "510",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Colorado Springs-Pueblo CO",
+      "geoCode": "752",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Columbia SC",
+      "geoCode": "546",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Columbia-Jefferson City MO",
+      "geoCode": "604",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Columbus GA",
+      "geoCode": "522",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Columbus OH",
+      "geoCode": "535",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Columbus-Tupelo-West Point MS",
+      "geoCode": "673",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Corpus Christi TX",
+      "geoCode": "600",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Dallas-Ft. Worth TX",
+      "geoCode": "623",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Davenport IA-Rock Island-Moline IL",
+      "geoCode": "682",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Dayton OH",
+      "geoCode": "542",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Denver CO",
+      "geoCode": "751",
+      "Turnover": 16
+    },
+    {
+      "geoName": "Des Moines-Ames IA",
+      "geoCode": "679",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Detroit MI",
+      "geoCode": "505",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Dothan AL",
+      "geoCode": "606",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Duluth MN-Superior WI",
+      "geoCode": "676",
+      "Turnover": 7
+    },
+    {
+      "geoName": "El Paso TX",
+      "geoCode": "765",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Elmira NY",
+      "geoCode": "565",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Erie PA",
+      "geoCode": "516",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Eugene OR",
+      "geoCode": "801",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Eureka CA",
+      "geoCode": "802",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Evansville IN",
+      "geoCode": "649",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Fairbanks AK",
+      "geoCode": "745",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Fargo-Valley City ND",
+      "geoCode": "724",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Flint-Saginaw-Bay City MI",
+      "geoCode": "513",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Florence-Myrtle Beach SC",
+      "geoCode": "570",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Fresno-Visalia CA",
+      "geoCode": "866",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Ft. Myers-Naples FL",
+      "geoCode": "571",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Ft. Smith-Fayetteville-Springdale-Rogers AR",
+      "geoCode": "670",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Ft. Wayne IN",
+      "geoCode": "509",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Gainesville FL",
+      "geoCode": "592",
+      "Turnover": 18
+    },
+    {
+      "geoName": "Glendive MT",
+      "geoCode": "798",
+      "Turnover": 0
+    },
+    {
+      "geoName": "Grand Junction-Montrose CO",
+      "geoCode": "773",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Grand Rapids-Kalamazoo-Battle Creek MI",
+      "geoCode": "563",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Great Falls MT",
+      "geoCode": "755",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Green Bay-Appleton WI",
+      "geoCode": "658",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Greensboro-High Point-Winston Salem NC",
+      "geoCode": "518",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Greenville-New Bern-Washington NC",
+      "geoCode": "545",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Greenville-Spartanburg SC-Asheville NC-Anderson SC",
+      "geoCode": "567",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Greenwood-Greenville MS",
+      "geoCode": "647",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Harlingen-Weslaco-Brownsville-McAllen TX",
+      "geoCode": "636",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Harrisburg-Lancaster-Lebanon-York PA",
+      "geoCode": "566",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Harrisonburg VA",
+      "geoCode": "569",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Hartford & New Haven CT",
+      "geoCode": "533",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Hattiesburg-Laurel MS",
+      "geoCode": "710",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Helena MT",
+      "geoCode": "766",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Honolulu HI",
+      "geoCode": "744",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Houston TX",
+      "geoCode": "618",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Huntsville-Decatur (Florence) AL",
+      "geoCode": "691",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Idaho Falls-Pocatello ID",
+      "geoCode": "758",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Indianapolis IN",
+      "geoCode": "527",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Jackson MS",
+      "geoCode": "718",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Jackson TN",
+      "geoCode": "639",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Jacksonville FL",
+      "geoCode": "561",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Johnstown-Altoona PA",
+      "geoCode": "574",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Jonesboro AR",
+      "geoCode": "734",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Joplin MO-Pittsburg KS",
+      "geoCode": "603",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Juneau AK",
+      "geoCode": "747",
+      "Turnover": 5
+    },
+    {
+      "geoName": "Kansas City MO",
+      "geoCode": "616",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Knoxville TN",
+      "geoCode": "557",
+      "Turnover": 9
+    },
+    {
+      "geoName": "La Crosse-Eau Claire WI",
+      "geoCode": "702",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Lafayette IN",
+      "geoCode": "582",
+      "Turnover": 20
+    },
+    {
+      "geoName": "Lafayette LA",
+      "geoCode": "642",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Lake Charles LA",
+      "geoCode": "643",
+      "Turnover": 6
+    },
+    {
+      "geoName": "Lansing MI",
+      "geoCode": "551",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Laredo TX",
+      "geoCode": "749",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Las Vegas NV",
+      "geoCode": "839",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Lexington KY",
+      "geoCode": "541",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Lima OH",
+      "geoCode": "558",
+      "Turnover": 4
+    },
+    {
+      "geoName": "Lincoln & Hastings-Kearney NE",
+      "geoCode": "722",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Little Rock-Pine Bluff AR",
+      "geoCode": "693",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Los Angeles CA",
+      "geoCode": "803",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Louisville KY",
+      "geoCode": "529",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Lubbock TX",
+      "geoCode": "651",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Macon GA",
+      "geoCode": "503",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Madison WI",
+      "geoCode": "669",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Mankato MN",
+      "geoCode": "737",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Marquette MI",
+      "geoCode": "553",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Medford-Klamath Falls OR",
+      "geoCode": "813",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Memphis TN",
+      "geoCode": "640",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Meridian MS",
+      "geoCode": "711",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Miami-Ft. Lauderdale FL",
+      "geoCode": "528",
+      "Turnover": 13
+    },
+    {
+      "geoName": "Milwaukee WI",
+      "geoCode": "617",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Minneapolis-St. Paul MN",
+      "geoCode": "613",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Minot-Bismarck-Dickinson(Williston) ND",
+      "geoCode": "687",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Missoula MT",
+      "geoCode": "762",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Mobile AL-Pensacola (Ft. Walton Beach) FL",
+      "geoCode": "686",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Monroe LA-El Dorado AR",
+      "geoCode": "628",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Monterey-Salinas CA",
+      "geoCode": "828",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Montgomery (Selma) AL",
+      "geoCode": "698",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Nashville TN",
+      "geoCode": "659",
+      "Turnover": 10
+    },
+    {
+      "geoName": "New Orleans LA",
+      "geoCode": "622",
+      "Turnover": 9
+    },
+    {
+      "geoName": "New York NY",
+      "geoCode": "501",
+      "Turnover": 15
+    },
+    {
+      "geoName": "Norfolk-Portsmouth-Newport News VA",
+      "geoCode": "544",
+      "Turnover": 10
+    },
+    {
+      "geoName": "North Platte NE",
+      "geoCode": "740",
+      "Turnover": 0
+    },
+    {
+      "geoName": "Odessa-Midland TX",
+      "geoCode": "633",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Oklahoma City OK",
+      "geoCode": "650",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Omaha NE",
+      "geoCode": "652",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Orlando-Daytona Beach-Melbourne FL",
+      "geoCode": "534",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Ottumwa IA-Kirksville MO",
+      "geoCode": "631",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Paducah KY-Cape Girardeau MO-Harrisburg-Mount Vernon IL",
+      "geoCode": "632",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Palm Springs CA",
+      "geoCode": "804",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Panama City FL",
+      "geoCode": "656",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Parkersburg WV",
+      "geoCode": "597",
+      "Turnover": 5
+    },
+    {
+      "geoName": "Peoria-Bloomington IL",
+      "geoCode": "675",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Philadelphia PA",
+      "geoCode": "504",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Phoenix AZ",
+      "geoCode": "753",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Pittsburgh PA",
+      "geoCode": "508",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Portland OR",
+      "geoCode": "820",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Portland-Auburn ME",
+      "geoCode": "500",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Presque Isle ME",
+      "geoCode": "552",
+      "Turnover": 0
+    },
+    {
+      "geoName": "Providence RI-New Bedford MA",
+      "geoCode": "521",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Quincy IL-Hannibal MO-Keokuk IA",
+      "geoCode": "717",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Raleigh-Durham (Fayetteville) NC",
+      "geoCode": "560",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Rapid City SD",
+      "geoCode": "764",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Reno NV",
+      "geoCode": "811",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Richmond-Petersburg VA",
+      "geoCode": "556",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Roanoke-Lynchburg VA",
+      "geoCode": "573",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Rochester MN-Mason City IA-Austin MN",
+      "geoCode": "611",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Rochester NY",
+      "geoCode": "538",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Rockford IL",
+      "geoCode": "610",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Sacramento-Stockton-Modesto CA",
+      "geoCode": "862",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Salisbury MD",
+      "geoCode": "576",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Salt Lake City UT",
+      "geoCode": "770",
+      "Turnover": 10
+    },
+    {
+      "geoName": "San Angelo TX",
+      "geoCode": "661",
+      "Turnover": 9
+    },
+    {
+      "geoName": "San Antonio TX",
+      "geoCode": "641",
+      "Turnover": 9
+    },
+    {
+      "geoName": "San Diego CA",
+      "geoCode": "825",
+      "Turnover": 10
+    },
+    {
+      "geoName": "San Francisco-Oakland-San Jose CA",
+      "geoCode": "807",
+      "Turnover": 20
+    },
+    {
+      "geoName": "Santa Barbara-Santa Maria-San Luis Obispo CA",
+      "geoCode": "855",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Savannah GA",
+      "geoCode": "507",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Seattle-Tacoma WA",
+      "geoCode": "819",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Sherman TX-Ada OK",
+      "geoCode": "657",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Shreveport LA",
+      "geoCode": "612",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Sioux City IA",
+      "geoCode": "624",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Sioux Falls(Mitchell) SD",
+      "geoCode": "725",
+      "Turnover": 9
+    },
+    {
+      "geoName": "South Bend-Elkhart IN",
+      "geoCode": "588",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Spokane WA",
+      "geoCode": "881",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Springfield MO",
+      "geoCode": "619",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Springfield-Holyoke MA",
+      "geoCode": "543",
+      "Turnover": 9
+    },
+    {
+      "geoName": "St. Joseph MO",
+      "geoCode": "638",
+      "Turnover": 0
+    },
+    {
+      "geoName": "St. Louis MO",
+      "geoCode": "609",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Syracuse NY",
+      "geoCode": "555",
+      "Turnover": 12
+    },
+    {
+      "geoName": "Tallahassee FL-Thomasville GA",
+      "geoCode": "530",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Tampa-St. Petersburg (Sarasota) FL",
+      "geoCode": "539",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Terre Haute IN",
+      "geoCode": "581",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Toledo OH",
+      "geoCode": "547",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Topeka KS",
+      "geoCode": "605",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Traverse City-Cadillac MI",
+      "geoCode": "540",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Tri-Cities TN-VA",
+      "geoCode": "531",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Tucson (Sierra Vista) AZ",
+      "geoCode": "789",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Tulsa OK",
+      "geoCode": "671",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Twin Falls ID",
+      "geoCode": "760",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Tyler-Longview(Lufkin & Nacogdoches) TX",
+      "geoCode": "709",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Utica NY",
+      "geoCode": "526",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Victoria TX",
+      "geoCode": "626",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Waco-Temple-Bryan TX",
+      "geoCode": "625",
+      "Turnover": 11
+    },
+    {
+      "geoName": "Washington DC (Hagerstown MD)",
+      "geoCode": "511",
+      "Turnover": 14
+    },
+    {
+      "geoName": "Watertown NY",
+      "geoCode": "549",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Wausau-Rhinelander WI",
+      "geoCode": "705",
+      "Turnover": 7
+    },
+    {
+      "geoName": "West Palm Beach-Ft. Pierce FL",
+      "geoCode": "548",
+      "Turnover": 10
+    },
+    {
+      "geoName": "Wheeling WV-Steubenville OH",
+      "geoCode": "554",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Wichita Falls TX & Lawton OK",
+      "geoCode": "627",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Wichita-Hutchinson KS",
+      "geoCode": "678",
+      "Turnover": 30
+    },
+    {
+      "geoName": "Wilkes Barre-Scranton PA",
+      "geoCode": "577",
+      "Turnover": 8
+    },
+    {
+      "geoName": "Wilmington NC",
+      "geoCode": "550",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Yakima-Pasco-Richland-Kennewick WA",
+      "geoCode": "810",
+      "Turnover": 7
+    },
+    {
+      "geoName": "Youngstown OH",
+      "geoCode": "536",
+      "Turnover": 9
+    },
+    {
+      "geoName": "Yuma AZ-El Centro CA",
+      "geoCode": "771",
+      "Turnover": 6
+    },
+    {
+      "geoName": "Zanesville OH",
+      "geoCode": "596",
+      "Turnover": 6
+    }
+  ]
+}
