@@ -1,6 +1,12 @@
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
-from api.app import app
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from api.app import app  # noqa: E402
 
 
 client = TestClient(app)
