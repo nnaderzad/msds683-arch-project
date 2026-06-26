@@ -197,6 +197,33 @@ Each task:
 > Each task's **Tests / done-when** is *on top of* the universal Definition of Done
 > above — including hands-on verification and being able to explain the change.
 
+### ⭐ HIGH PRIORITY — Source collection coverage
+
+The pipeline now runs end-to-end, but **gold demand-signal is capped by ingestion
+coverage, not the warehouse**: only ~281 Trends artists and ~656 YouTube artists are
+collected vs ~40k events, and Ticketmaster + Trends are both rate-limited. Lifting
+coverage where it matters is the single biggest lever on demo/model quality — so this
+sits above the medallion build tasks.
+
+- [ ] **COLLECT-1 · Prioritized, continuous source collection (TM + Trends)**  ·  Owner: `____`  ·  ⭐ HIGH
+   - Prereqs: none — ready (improves the already-deployed collectors)
+   - Build:
+     - **Priority queue** — rank events/artists by **historical price/signal consistency**
+       (reuse `eda/tm_price_eda.py` `price_completeness`) and spend the existing call-budget
+       headroom (a run uses ~659 of 780 calls; ~4,680 of 5,000/day) re-fetching the
+       high-value set first by id (`events/{id}.json`), guaranteeing **daily continuity** for
+       demo-grade shows. Mirror the Google Trends roster/queue (`google_trends_api/`).
+     - **TM tail** — finer slicing / per-genre or per-market filters in dense states so the
+       1,000-event-per-slice deep-paging cap stops dropping events.
+     - **Trends coverage** — grow the collected-artist roster (281 today) toward the events
+       that actually have shows + price history; keep the per-pull 0–100 discipline.
+     - **Prune post-show** events (`show_date + ~3d`) from `tm_events`/exports — removes the
+       ~7% negative-`days_to_show` rows and shrinks the daily snapshot. Fix the stale
+       "twice a day" docstring in `cloud_functions/ticketmaster_daily/main.py` (it's 6×/day).
+   - Tests / done-when: measurably higher event-signal coverage in `fact_event_demand`
+     (rows with non-NULL `local_interest` / `yt_*`); daily continuity for a curated demo
+     set; total call budget stays < 5,000/day. Reasoning notes live with the team.
+
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
 - [x] **T0 · Test harness & seed fixtures**  ·  Owner: `TK`  ·  ✅ PR #12
@@ -448,6 +475,7 @@ Each task:
 
 ## Dependency quick-reference (what's unblocked)
 
+- **⭐ HIGH PRIORITY, ready now:** `COLLECT-1` (source coverage — the demand-signal bottleneck).
 - **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
 - **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
 - **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
