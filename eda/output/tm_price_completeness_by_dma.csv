@@ -1,0 +1,16 @@
+dimension,value,n_events,n_any_price,n_complete,pct_complete,median_days_with_price
+metro,New York NY,3756,1608,1385,36.9,0.0
+metro,Los Angeles CA,2609,808,700,26.8,0.0
+metro,Chicago IL,1838,767,660,35.9,0.0
+metro,Nashville TN,1223,556,486,39.7,0.0
+metro,Seattle-Tacoma WA,988,376,341,34.5,0.0
+metro,Detroit MI,832,393,330,39.7,0.0
+metro,San Francisco-Oakland-San Jose CA,1319,362,293,22.2,0.0
+metro,Denver CO,1360,321,285,21.0,0.0
+metro,San Diego CA,870,292,260,29.9,0.0
+metro,Cleveland-Akron (Canton) OH,677,270,225,33.2,0.0
+metro,Portland OR,548,276,222,40.5,1.5
+metro,Boston MA-Manchester NH,1666,217,182,10.9,0.0
+metro,Phoenix AZ,898,224,168,18.7,0.0
+metro,Syracuse NY,266,197,166,62.4,15.0
+metro,Orlando-Daytona Beach-Melbourne FL,401,206,158,39.4,3.0

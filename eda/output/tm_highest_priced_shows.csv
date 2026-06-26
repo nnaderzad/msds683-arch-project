@@ -1,0 +1,11 @@
+region,event_id,event_name,headliner,genre,venue_name,venue_city,venue_state_code,metro,show_date,days_to_show,snapshot_days,days_with_price,price_min_last,price_max_max,price_changed,latest_status
+bay_area,rZ7HnEZ1Af0o4K,"Revocation, Defeated Sanity, Fuming Mouth, Weeping",Revocation,Metal,The Ritz,San Jose,CA,San Francisco-Oakland-San Jose CA,2026-09-25,92,15,15,28.77,521.11,False,onsale
+bay_area,rZ7HnEZ1Af-P_K,"Turnover, Narrow Head, She's Green",Turnover,Alternative,The Ritz,San Jose,CA,San Francisco-Oakland-San Jose CA,2026-07-04,9,15,15,263.35,520.85,True,onsale
+bay_area,rZ7HnEZ1Af-fJK,"DevilDriver, Upon a Burning Body, Ov Sulfur",DevilDriver,Metal,The Ritz,San Jose,CA,San Francisco-Oakland-San Jose CA,2026-09-04,71,15,15,263.35,520.85,False,onsale
+bay_area,rZ7HnEZ1AfFF-V,"Hail The Sun, A Lot Like Birds, Blight Town, Murals",Hail the Sun,Rock,The Ritz,San Jose,CA,San Francisco-Oakland-San Jose CA,2026-09-09,76,2,2,263.35,520.85,False,onsale
+bay_area,rZ7HnEZ1AfFk0f,House Party,,Dance/Electronic,The Ritz,San Jose,CA,San Francisco-Oakland-San Jose CA,2026-08-28,64,7,7,263.35,520.85,False,onsale
+us,rZ7HnEZ1AfqYaK,MISSION BAYFEST 2026 - 3DAY,The Offspring,Alternative,Mariner’s Point Park,San Diego,CA,San Diego CA,2026-10-16,113,15,15,235.0,3560.0,False,onsale
+us,rZ7HnEZ1AfqYFS,MISSION BAYFEST 2026 - Saturday,Kolohe Kai,World,Mariner’s Point Park,San Diego,CA,San Diego CA,2026-10-17,114,15,15,105.0,3300.0,False,onsale
+us,rZ7HnEZ1AfqYad,MISSION BAYFEST 2026 - Sunday,The Offspring,Alternative,Mariner’s Point Park,San Diego,CA,San Diego CA,2026-10-18,115,15,15,105.0,3300.0,False,onsale
+us,rZ7HnEZ1AfqYkK,MISSION BAYFEST 2026 - Friday,Rebelution,World,Mariner’s Point Park,San Diego,CA,San Diego CA,2026-10-16,113,15,15,105.0,3300.0,False,onsale
+us,rZ7HnEZ1AfONfd,Ivy Queen,Ivy Queen,World,The Forge,Joliet,IL,Chicago IL,2026-06-18,-7,15,15,61.25,1417.25,False,onsale

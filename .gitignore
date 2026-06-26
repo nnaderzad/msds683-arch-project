@@ -29,6 +29,10 @@ downloads/
 *.parquet
 *.csv.gz
 
+# Large EDA per-event panel (~10MB; regenerate via eda/tm_price_eda.py).
+# The small summaries, markdown report, and plots ARE committed.
+eda/output/tm_price_history_by_event.csv
+
 # IDE / OS
 .vscode/
 .idea/
