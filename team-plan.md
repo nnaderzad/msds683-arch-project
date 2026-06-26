@@ -184,7 +184,7 @@ Each task:
 
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
-- [x] **T0 · Test harness & seed fixtures**  ·  Owner: `TK`
+- [x] **T0 · Test harness & seed fixtures**  ·  Owner: `TK`  ·  ✅ PR #12
    - Prereqs: none — ready
    - Built: `tests/fixtures/build_seed.py` (deterministic, ADC-gated; reuses
      `eda/tm_price_eda.py`) carves a small **real** slice — 5 artists with a
