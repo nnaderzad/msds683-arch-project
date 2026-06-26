@@ -19,3 +19,19 @@ sources:
           location: 'gs://data-architecture-498123-processed/ticketmaster/*.parquet'
           options:
             format: parquet
+
+  - name: silver
+    description: >
+      Silver facts + conformed dimensions built by the Python transforms (A1/A2/A3).
+      Referenced as dbt sources until MIG-1/2/3 migrate them to dbt models (after which
+      gold flips these `source()`s to `ref()`s with no change to the join logic).
+    database: "{{ env_var('DBT_GCP_PROJECT', 'data-architecture-498123') }}"
+    schema: "{{ env_var('DBT_BQ_DATASET', 'event_demand_analytics') }}"
+    tables:
+      - name: fact_trends
+      - name: fact_youtube
+      - name: dim_event
+      - name: dim_venue
+      - name: dim_geo
+      - name: dim_artist
+      - name: bridge_event_artist

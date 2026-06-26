@@ -26,3 +26,7 @@ models:
     silver:
       +materialized: incremental
       +on_schema_change: append_new_columns
+    # Gold star — same materialization; pre-joined model-ready table.
+    gold:
+      +materialized: incremental
+      +on_schema_change: append_new_columns

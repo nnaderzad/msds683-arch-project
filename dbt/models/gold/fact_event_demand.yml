@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: fact_event_demand
+    description: >
+      Gold star — one wide row per event per daily snapshot (docs/data-model.md §4),
+      the model-ready table the forecast + API read. The fact_ticketmaster spine kept
+      whole; Trends/YouTube signals LEFT-joined on the headliner artist (NULL where not
+      yet collected). Grain = event_id × snapshot_date.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - event_id
+              - snapshot_date
+    columns:
+      - name: event_id
+        description: "FK -> dim_event (a few historical events predate current-state dim_event -> warn)."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('silver', 'dim_event')
+                field: event_id
+              config:
+                severity: warn
+      - name: snapshot_date
+        tests:
+          - not_null
+      - name: artist_id
+        description: "Headliner (via bridge_event_artist.is_headliner); NULL if the event has no attraction."
+        tests:
+          - relationships:
+              arguments:
+                to: source('silver', 'dim_artist')
+                field: artist_id
+      - name: venue_id
+        tests:
+          - relationships:
+              arguments:
+                to: source('silver', 'dim_venue')
+                field: venue_id
+      - name: dma_code
+        tests:
+          - relationships:
+              arguments:
+                to: source('silver', 'dim_geo')
+                field: dma_code
+      - name: local_interest
+        description: "fact_trends.interest (0-100, per-pull) for headliner+dma+date; NULL if uncollected."
+      - name: yt_subscribers
+      - name: yt_views
