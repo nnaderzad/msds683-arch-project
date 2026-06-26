@@ -1,0 +1,7 @@
+# Runtime deps for the silver/gold transforms when they actually load BigQuery
+# (locally, or in the Cloud Run transform job — task G1).
+#
+# The transforms' *pure* functions are stdlib-only and unit-test offline (CI never
+# installs this), so importing a transform module stays import-safe without these;
+# only upsert_to_silver / the BigQuery load path needs the client.
+google-cloud-bigquery>=3.0
