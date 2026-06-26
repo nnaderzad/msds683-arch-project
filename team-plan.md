@@ -161,7 +161,7 @@ api/                 app.py (FastAPI) · Dockerfile
 web/                 React (Vite) app
 great_expectations/  GX project (suites per layer)
 terraform/           extend: api Cloud Run service · transform/model job · gold BQ tables
-analysis/            tm_price_eda.py  (curates the demo-ready show list)
+eda/                 tm_price_eda.py · profile_schema.py · _common.py (deterministic EDA)
 tests/               extend existing pytest suites + shared fixtures
 docs/                pipeline_walkthrough.md
 ```
@@ -206,12 +206,18 @@ Each task:
    - Build: Vite React app, artist/show dropdown, chart shell — all on mock JSON.
    - Tests / done-when: component renders with mock JSON; `npm test` + build pass in CI.
 
-- [ ] **H1 · Ticketmaster price-coverage EDA → demo-ready show list**  ·  Owner: `____`
+- [x] **H1 · Ticketmaster historical price-coverage EDA**  ·  Owner: `TK`  ·  ✅ PR #10
    - Prereqs: none — ready
-   - Build: `analysis/tm_price_eda.py` (read-only, deterministic; extends
-     `analysis/profile_schema.py`): which shows have price + trends + youtube
-     coverage → emit a curated **demo-ready show list** the UI prioritizes.
-   - Tests / done-when: unit test on the coverage/scoring function over a fixture.
+   - Built: `eda/tm_price_eda.py` (read-only, deterministic; extends
+     `eda/profile_schema.py`) — stacks the 15 daily `tm_events` parquet snapshots
+     into one panel and measures **per-show price completeness**; emits summaries,
+     a `price_type`/status breakdown, and price-trajectory plots (most-complete +
+     highest-priced, Bay Area + nationwide) to `eda/output/`.
+   - Findings: price history is the bottleneck — only ~24% of events are ever
+     priced, ~20% have a complete daily series; **0% resale** (face value only);
+     no sold-out flag (`offsale` status is ambiguous). The cross-source
+     **demo-ready show list is deferred to I2** (needs silver Trends/YouTube).
+   - Tests / done-when: ✅ offline unit tests in `tests/test_tm_price_eda.py`.
 
 ### Phase 1 — Silver  *(per source, parallel)*
 
@@ -348,7 +354,7 @@ Each task:
    - Tests / done-when: another teammate can reproduce it from the doc.
 
 - [ ] **I2 · Demo-show curation**  ·  Owner: `____`
-   - Prereqs: H1, B1
+   - Prereqs: H1 ✅, B1
    - Build: finalize the high-quality shows the UI defaults to.
    - Tests / done-when: list committed; each show verified to render in the app.
 
@@ -356,7 +362,7 @@ Each task:
 
 ## Dependency quick-reference (what's unblocked)
 
-- **Ready now:** `T0`, `C1`, `G0`, `F1`, `H1`, `E1` (stub).
+- **Ready now:** `T0`, `C1`, `G0`, `F1`, `E1` (stub).  _(`H1` ✅ done — PR #10)_
 - **After `T0`:** `A1`, `A2`, `A3` → then `C3`, `INT-1`.
 - **After `C1`:** `C2`, `C3`.
 - **After `A1`+`A2`+`A3`:** `B1` → then `C4`, `D1`, `INT-2`, `G1`.
