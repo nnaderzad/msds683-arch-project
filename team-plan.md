@@ -124,7 +124,7 @@ sure its row is true and you can expand on it live.
 | Layer | Ticketmaster | Google Trends | YouTube |
 |---|---|---|---|
 | Bronze (raw JSON → GCS) | ✅ deployed | ✅ deployed | ✅ deployed |
-| Silver (BigQuery) | ✅ `tm_events` (MERGE-upsert) | ❌ to build | ❌ to build |
+| Silver (BigQuery) | ✅ `tm_events` (MERGE-upsert) | ✅ `fact_trends` (A1) | ❌ to build |
 | Gold (`fact_event_demand`) | ❌ designed, to build |||
 
 > **Honest model constraint:** daily snapshots only started ~mid-June, so per-show
@@ -226,14 +226,20 @@ Each task:
 
 ### Phase 1 — Silver  *(per source, parallel)*
 
-- [ ] **A1 · Trends bronze→silver (`fact_trends`)**  ·  Owner: `____`
-   - Prereqs: T0
-   - Build: `pipeline/silver/trends_to_silver.py` — read raw `google_trends/` JSON →
-     `fact_trends` (artist × dma × snapshot_date); map DMA via `geo_lookup.py`;
-     keep `interest` 0–100 **per-pull** (never average across artists/metros).
-     Mirror the `tm_events` Python+BQ pattern; re-runnable via `python -m`.
-   - Tests / done-when: unit test on the transform over a T0 fixture; row-count +
-     schema assertions; GX silver-trends suite green.
+- [x] **A1 · Trends bronze→silver (`fact_trends`)**  ·  Owner: `TK`  ·  ✅ PR #13
+   - Prereqs: T0 ✅
+   - Built: `pipeline/silver/trends_to_silver.py` flattens the raw `ibr_DMA`
+     (`interest_by_region`) captures → `fact_trends` (artist × dma × snapshot_date),
+     `interest` kept 0–100 **per-pull**. DMA comes **natively** from the pytrends
+     `geoCode` (no `geo_lookup` needed here — that's venue→DMA for A3). Deterministic
+     surrogate keys in `common/keys.py` (`artist_id` = hash of normalized name) so
+     A1/A2/A3 build independently yet join. Idempotent staging+MERGE, mirroring the
+     `tm_events` pattern; re-runnable via `python pipeline/silver/trends_to_silver.py`.
+   - Verified: offline unit tests in `tests/test_trends_to_silver.py` (pure transform
+     over the T0 seed) + a real BigQuery load (seed = 4,200 rows, 5 artists × 210 DMAs
+     × 11 days, interest ∈ [0,100], PK unique, idempotent on re-run). Full bronze
+     backfill (1,031 files) is the same command / future G1 job.
+   - **GX silver-trends suite deferred to C3** (no GX scaffold yet — folds in there).
 
 - [ ] **A2 · YouTube bronze→silver (`fact_youtube`)**  ·  Owner: `____`
    - Prereqs: T0
@@ -368,7 +374,7 @@ Each task:
 ## Dependency quick-reference (what's unblocked)
 
 - **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
-- **After `T0` ✅:** `A1`, `A2`, `A3` now unblocked → then `C3`, `INT-1`.
+- **After `T0` ✅:** `A1` ✅ done; `A2`, `A3` unblocked → then `C3`, `INT-1`.
 - **After `C1`:** `C2`, `C3`.
 - **After `A1`+`A2`+`A3`:** `B1` → then `C4`, `D1`, `INT-2`, `G1`.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
