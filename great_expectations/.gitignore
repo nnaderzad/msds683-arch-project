@@ -1,0 +1,5 @@
+# The GX file-context home is materialized deterministically from gx_project.py
+# (config-as-code, like the A1/A2/A3 Python builders). It's a generated cache —
+# the Python modules are the source of truth — so it is not committed. Recreate it
+# anytime with:  python great_expectations/run_checkpoints.py
+gx/
