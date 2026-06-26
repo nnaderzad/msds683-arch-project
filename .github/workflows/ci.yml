@@ -20,7 +20,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ruff pytest
-          pip install -r google_trends_api/requirements.txt -r youtube_api/requirements.txt -r great_expectations/requirements.txt
+          pip install -r google_trends_api/requirements.txt -r youtube_api/requirements.txt -r great_expectations/requirements.txt -r api/requirements.txt
       - name: Lint (ruff)
         run: ruff check .
       - name: Tests (pytest)
