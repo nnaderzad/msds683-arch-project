@@ -1,0 +1,19 @@
+{
+  "source": "youtube",
+  "extract_ts_utc": "2026-06-14T18:23:35+00:00",
+  "n_records": 1,
+  "records": [
+    {
+      "query": "Bingo Loco",
+      "official_channel_id": "UC3TUWSdOmCvbCxpV45T4BfQ",
+      "official_channel_title": "Bingo Loco",
+      "official_subscribers": 2260,
+      "official_total_views": 2154808,
+      "official_video_count": 197,
+      "topic_channel_id": "UCJR9mQKfPMV15jFlZdR8ODA",
+      "topic_channel_title": "bongo cat - Topic",
+      "topic_total_views": 1508983,
+      "topic_video_count": 223
+    }
+  ]
+}

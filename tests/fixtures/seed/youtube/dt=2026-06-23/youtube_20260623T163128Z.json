@@ -1,0 +1,67 @@
+{
+  "source": "youtube",
+  "extract_ts_utc": "2026-06-23T16:31:28+00:00",
+  "n_records": 5,
+  "records": [
+    {
+      "query": "Bingo Loco",
+      "official_channel_id": "UC3TUWSdOmCvbCxpV45T4BfQ",
+      "official_channel_title": "Bingo Loco",
+      "official_subscribers": 2270,
+      "official_total_views": 2163198,
+      "official_video_count": 197,
+      "topic_channel_id": "UCJR9mQKfPMV15jFlZdR8ODA",
+      "topic_channel_title": "bongo cat - Topic",
+      "topic_total_views": 1972734,
+      "topic_video_count": 224
+    },
+    {
+      "query": "Rolling Quartz",
+      "official_channel_id": "UCA_NMesSILCEBUJ3Qqw8muw",
+      "official_channel_title": "ROLLING QUARTZ official",
+      "official_subscribers": 820000,
+      "official_total_views": 32500406,
+      "official_video_count": 217,
+      "topic_channel_id": "UC3Ju7gtvPx9Kj6mhH8U1qRw",
+      "topic_channel_title": "Rolling Quartz - Topic",
+      "topic_total_views": 716656,
+      "topic_video_count": 60
+    },
+    {
+      "query": "Turnover",
+      "official_channel_id": "UCDSRMjlJ0tKe7Yc6MA4y3zQ",
+      "official_channel_title": "Turnover",
+      "official_subscribers": 23900,
+      "official_total_views": 17765661,
+      "official_video_count": 56,
+      "topic_channel_id": "UCgj3hV0CRBXI3XzaM_Uketg",
+      "topic_channel_title": "Turnover - Topic",
+      "topic_total_views": 17190724,
+      "topic_video_count": 280
+    },
+    {
+      "query": "Everclear",
+      "official_channel_id": "UClxjm6JR5j7Wc_uP20OjUCA",
+      "official_channel_title": "Everclear",
+      "official_subscribers": 113000,
+      "official_total_views": 206632645,
+      "official_video_count": 11,
+      "topic_channel_id": "UClBVV9ZvFRdEGTDCGSkNysA",
+      "topic_channel_title": "Everclear - Topic",
+      "topic_total_views": 92860267,
+      "topic_video_count": 498
+    },
+    {
+      "query": "CAIN",
+      "official_channel_id": "UCz524w0N9-deeqi3Y_BET3A",
+      "official_channel_title": "CAIN",
+      "official_subscribers": 273000,
+      "official_total_views": 147138116,
+      "official_video_count": 488,
+      "topic_channel_id": "UCehCMpdPubIcwhhD_oUnDUQ",
+      "topic_channel_title": "CAIN - Topic",
+      "topic_total_views": 45377394,
+      "topic_video_count": 191
+    }
+  ]
+}

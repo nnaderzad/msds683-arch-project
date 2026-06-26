@@ -1,0 +1,1065 @@
+{
+  "source": "google_trends",
+  "endpoint": "interest_by_region",
+  "extract_ts_utc": "2026-06-14T02:16:59+00:00",
+  "artist": "Bingo Loco",
+  "query": "Bingo Loco",
+  "geo": "US",
+  "geo_code": null,
+  "resolution": "DMA",
+  "timeframe": "today 12-m",
+  "granularity": "snapshot",
+  "n_records": 210,
+  "records": [
+    {
+      "geoName": "Abilene-Sweetwater TX",
+      "geoCode": "662",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Albany GA",
+      "geoCode": "525",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Albany-Schenectady-Troy NY",
+      "geoCode": "532",
+      "Bingo Loco": 21
+    },
+    {
+      "geoName": "Albuquerque-Santa Fe NM",
+      "geoCode": "790",
+      "Bingo Loco": 62
+    },
+    {
+      "geoName": "Alexandria LA",
+      "geoCode": "644",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Alpena MI",
+      "geoCode": "583",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Amarillo TX",
+      "geoCode": "634",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Anchorage AK",
+      "geoCode": "743",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Atlanta GA",
+      "geoCode": "524",
+      "Bingo Loco": 23
+    },
+    {
+      "geoName": "Augusta GA",
+      "geoCode": "520",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Austin TX",
+      "geoCode": "635",
+      "Bingo Loco": 60
+    },
+    {
+      "geoName": "Bakersfield CA",
+      "geoCode": "800",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Baltimore MD",
+      "geoCode": "512",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Bangor ME",
+      "geoCode": "537",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Baton Rouge LA",
+      "geoCode": "716",
+      "Bingo Loco": 39
+    },
+    {
+      "geoName": "Beaumont-Port Arthur TX",
+      "geoCode": "692",
+      "Bingo Loco": 5
+    },
+    {
+      "geoName": "Bend OR",
+      "geoCode": "821",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Billings, MT",
+      "geoCode": "756",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Biloxi-Gulfport MS",
+      "geoCode": "746",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Binghamton NY",
+      "geoCode": "502",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Birmingham AL",
+      "geoCode": "630",
+      "Bingo Loco": 28
+    },
+    {
+      "geoName": "Bluefield-Beckley-Oak Hill WV",
+      "geoCode": "559",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Boise ID",
+      "geoCode": "757",
+      "Bingo Loco": 93
+    },
+    {
+      "geoName": "Boston MA-Manchester NH",
+      "geoCode": "506",
+      "Bingo Loco": 33
+    },
+    {
+      "geoName": "Bowling Green KY",
+      "geoCode": "736",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Buffalo NY",
+      "geoCode": "514",
+      "Bingo Loco": 25
+    },
+    {
+      "geoName": "Burlington VT-Plattsburgh NY",
+      "geoCode": "523",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Butte-Bozeman MT",
+      "geoCode": "754",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Casper-Riverton WY",
+      "geoCode": "767",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Cedar Rapids-Waterloo-Iowa City & Dubuque IA",
+      "geoCode": "637",
+      "Bingo Loco": 21
+    },
+    {
+      "geoName": "Champaign & Springfield-Decatur IL",
+      "geoCode": "648",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Charleston SC",
+      "geoCode": "519",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Charleston-Huntington WV",
+      "geoCode": "564",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Charlotte NC",
+      "geoCode": "517",
+      "Bingo Loco": 46
+    },
+    {
+      "geoName": "Charlottesville VA",
+      "geoCode": "584",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Chattanooga TN",
+      "geoCode": "575",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Cheyenne WY-Scottsbluff NE",
+      "geoCode": "759",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Chicago IL",
+      "geoCode": "602",
+      "Bingo Loco": 50
+    },
+    {
+      "geoName": "Chico-Redding CA",
+      "geoCode": "868",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Cincinnati OH",
+      "geoCode": "515",
+      "Bingo Loco": 39
+    },
+    {
+      "geoName": "Clarksburg-Weston WV",
+      "geoCode": "598",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Cleveland-Akron (Canton) OH",
+      "geoCode": "510",
+      "Bingo Loco": 48
+    },
+    {
+      "geoName": "Colorado Springs-Pueblo CO",
+      "geoCode": "752",
+      "Bingo Loco": 100
+    },
+    {
+      "geoName": "Columbia SC",
+      "geoCode": "546",
+      "Bingo Loco": 47
+    },
+    {
+      "geoName": "Columbia-Jefferson City MO",
+      "geoCode": "604",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Columbus GA",
+      "geoCode": "522",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Columbus OH",
+      "geoCode": "535",
+      "Bingo Loco": 10
+    },
+    {
+      "geoName": "Columbus-Tupelo-West Point MS",
+      "geoCode": "673",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Corpus Christi TX",
+      "geoCode": "600",
+      "Bingo Loco": 88
+    },
+    {
+      "geoName": "Dallas-Ft. Worth TX",
+      "geoCode": "623",
+      "Bingo Loco": 64
+    },
+    {
+      "geoName": "Davenport IA-Rock Island-Moline IL",
+      "geoCode": "682",
+      "Bingo Loco": 53
+    },
+    {
+      "geoName": "Dayton OH",
+      "geoCode": "542",
+      "Bingo Loco": 12
+    },
+    {
+      "geoName": "Denver CO",
+      "geoCode": "751",
+      "Bingo Loco": 57
+    },
+    {
+      "geoName": "Des Moines-Ames IA",
+      "geoCode": "679",
+      "Bingo Loco": 56
+    },
+    {
+      "geoName": "Detroit MI",
+      "geoCode": "505",
+      "Bingo Loco": 46
+    },
+    {
+      "geoName": "Dothan AL",
+      "geoCode": "606",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Duluth MN-Superior WI",
+      "geoCode": "676",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "El Paso TX",
+      "geoCode": "765",
+      "Bingo Loco": 97
+    },
+    {
+      "geoName": "Elmira NY",
+      "geoCode": "565",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Erie PA",
+      "geoCode": "516",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Eugene OR",
+      "geoCode": "801",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Eureka CA",
+      "geoCode": "802",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Evansville IN",
+      "geoCode": "649",
+      "Bingo Loco": 20
+    },
+    {
+      "geoName": "Fairbanks AK",
+      "geoCode": "745",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Fargo-Valley City ND",
+      "geoCode": "724",
+      "Bingo Loco": 32
+    },
+    {
+      "geoName": "Flint-Saginaw-Bay City MI",
+      "geoCode": "513",
+      "Bingo Loco": 25
+    },
+    {
+      "geoName": "Florence-Myrtle Beach SC",
+      "geoCode": "570",
+      "Bingo Loco": 16
+    },
+    {
+      "geoName": "Fresno-Visalia CA",
+      "geoCode": "866",
+      "Bingo Loco": 35
+    },
+    {
+      "geoName": "Ft. Myers-Naples FL",
+      "geoCode": "571",
+      "Bingo Loco": 44
+    },
+    {
+      "geoName": "Ft. Smith-Fayetteville-Springdale-Rogers AR",
+      "geoCode": "670",
+      "Bingo Loco": 76
+    },
+    {
+      "geoName": "Ft. Wayne IN",
+      "geoCode": "509",
+      "Bingo Loco": 30
+    },
+    {
+      "geoName": "Gainesville FL",
+      "geoCode": "592",
+      "Bingo Loco": 52
+    },
+    {
+      "geoName": "Glendive MT",
+      "geoCode": "798",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Grand Junction-Montrose CO",
+      "geoCode": "773",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Grand Rapids-Kalamazoo-Battle Creek MI",
+      "geoCode": "563",
+      "Bingo Loco": 66
+    },
+    {
+      "geoName": "Great Falls MT",
+      "geoCode": "755",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Green Bay-Appleton WI",
+      "geoCode": "658",
+      "Bingo Loco": 46
+    },
+    {
+      "geoName": "Greensboro-High Point-Winston Salem NC",
+      "geoCode": "518",
+      "Bingo Loco": 14
+    },
+    {
+      "geoName": "Greenville-New Bern-Washington NC",
+      "geoCode": "545",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Greenville-Spartanburg SC-Asheville NC-Anderson SC",
+      "geoCode": "567",
+      "Bingo Loco": 24
+    },
+    {
+      "geoName": "Greenwood-Greenville MS",
+      "geoCode": "647",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Harlingen-Weslaco-Brownsville-McAllen TX",
+      "geoCode": "636",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Harrisburg-Lancaster-Lebanon-York PA",
+      "geoCode": "566",
+      "Bingo Loco": 20
+    },
+    {
+      "geoName": "Harrisonburg VA",
+      "geoCode": "569",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Hartford & New Haven CT",
+      "geoCode": "533",
+      "Bingo Loco": 51
+    },
+    {
+      "geoName": "Hattiesburg-Laurel MS",
+      "geoCode": "710",
+      "Bingo Loco": 2
+    },
+    {
+      "geoName": "Helena MT",
+      "geoCode": "766",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Honolulu HI",
+      "geoCode": "744",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Houston TX",
+      "geoCode": "618",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Huntsville-Decatur (Florence) AL",
+      "geoCode": "691",
+      "Bingo Loco": 43
+    },
+    {
+      "geoName": "Idaho Falls-Pocatello ID",
+      "geoCode": "758",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Indianapolis IN",
+      "geoCode": "527",
+      "Bingo Loco": 39
+    },
+    {
+      "geoName": "Jackson MS",
+      "geoCode": "718",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Jackson TN",
+      "geoCode": "639",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Jacksonville FL",
+      "geoCode": "561",
+      "Bingo Loco": 35
+    },
+    {
+      "geoName": "Johnstown-Altoona PA",
+      "geoCode": "574",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Jonesboro AR",
+      "geoCode": "734",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Joplin MO-Pittsburg KS",
+      "geoCode": "603",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Juneau AK",
+      "geoCode": "747",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Kansas City MO",
+      "geoCode": "616",
+      "Bingo Loco": 52
+    },
+    {
+      "geoName": "Knoxville TN",
+      "geoCode": "557",
+      "Bingo Loco": 23
+    },
+    {
+      "geoName": "La Crosse-Eau Claire WI",
+      "geoCode": "702",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Lafayette IN",
+      "geoCode": "582",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Lafayette LA",
+      "geoCode": "642",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Lake Charles LA",
+      "geoCode": "643",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Lansing MI",
+      "geoCode": "551",
+      "Bingo Loco": 52
+    },
+    {
+      "geoName": "Laredo TX",
+      "geoCode": "749",
+      "Bingo Loco": 87
+    },
+    {
+      "geoName": "Las Vegas NV",
+      "geoCode": "839",
+      "Bingo Loco": 74
+    },
+    {
+      "geoName": "Lexington KY",
+      "geoCode": "541",
+      "Bingo Loco": 32
+    },
+    {
+      "geoName": "Lima OH",
+      "geoCode": "558",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Lincoln & Hastings-Kearney NE",
+      "geoCode": "722",
+      "Bingo Loco": 46
+    },
+    {
+      "geoName": "Little Rock-Pine Bluff AR",
+      "geoCode": "693",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Los Angeles CA",
+      "geoCode": "803",
+      "Bingo Loco": 35
+    },
+    {
+      "geoName": "Louisville KY",
+      "geoCode": "529",
+      "Bingo Loco": 44
+    },
+    {
+      "geoName": "Lubbock TX",
+      "geoCode": "651",
+      "Bingo Loco": 35
+    },
+    {
+      "geoName": "Macon GA",
+      "geoCode": "503",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Madison WI",
+      "geoCode": "669",
+      "Bingo Loco": 29
+    },
+    {
+      "geoName": "Mankato MN",
+      "geoCode": "737",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Marquette MI",
+      "geoCode": "553",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Medford-Klamath Falls OR",
+      "geoCode": "813",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Memphis TN",
+      "geoCode": "640",
+      "Bingo Loco": 25
+    },
+    {
+      "geoName": "Meridian MS",
+      "geoCode": "711",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Miami-Ft. Lauderdale FL",
+      "geoCode": "528",
+      "Bingo Loco": 24
+    },
+    {
+      "geoName": "Milwaukee WI",
+      "geoCode": "617",
+      "Bingo Loco": 34
+    },
+    {
+      "geoName": "Minneapolis-St. Paul MN",
+      "geoCode": "613",
+      "Bingo Loco": 24
+    },
+    {
+      "geoName": "Minot-Bismarck-Dickinson(Williston) ND",
+      "geoCode": "687",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Missoula MT",
+      "geoCode": "762",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Mobile AL-Pensacola (Ft. Walton Beach) FL",
+      "geoCode": "686",
+      "Bingo Loco": 19
+    },
+    {
+      "geoName": "Monroe LA-El Dorado AR",
+      "geoCode": "628",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Monterey-Salinas CA",
+      "geoCode": "828",
+      "Bingo Loco": 26
+    },
+    {
+      "geoName": "Montgomery (Selma) AL",
+      "geoCode": "698",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Nashville TN",
+      "geoCode": "659",
+      "Bingo Loco": 61
+    },
+    {
+      "geoName": "New Orleans LA",
+      "geoCode": "622",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "New York NY",
+      "geoCode": "501",
+      "Bingo Loco": 42
+    },
+    {
+      "geoName": "Norfolk-Portsmouth-Newport News VA",
+      "geoCode": "544",
+      "Bingo Loco": 47
+    },
+    {
+      "geoName": "North Platte NE",
+      "geoCode": "740",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Odessa-Midland TX",
+      "geoCode": "633",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Oklahoma City OK",
+      "geoCode": "650",
+      "Bingo Loco": 78
+    },
+    {
+      "geoName": "Omaha NE",
+      "geoCode": "652",
+      "Bingo Loco": 82
+    },
+    {
+      "geoName": "Orlando-Daytona Beach-Melbourne FL",
+      "geoCode": "534",
+      "Bingo Loco": 17
+    },
+    {
+      "geoName": "Ottumwa IA-Kirksville MO",
+      "geoCode": "631",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Paducah KY-Cape Girardeau MO-Harrisburg-Mount Vernon IL",
+      "geoCode": "632",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Palm Springs CA",
+      "geoCode": "804",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Panama City FL",
+      "geoCode": "656",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Parkersburg WV",
+      "geoCode": "597",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Peoria-Bloomington IL",
+      "geoCode": "675",
+      "Bingo Loco": 51
+    },
+    {
+      "geoName": "Philadelphia PA",
+      "geoCode": "504",
+      "Bingo Loco": 50
+    },
+    {
+      "geoName": "Phoenix AZ",
+      "geoCode": "753",
+      "Bingo Loco": 32
+    },
+    {
+      "geoName": "Pittsburgh PA",
+      "geoCode": "508",
+      "Bingo Loco": 30
+    },
+    {
+      "geoName": "Portland OR",
+      "geoCode": "820",
+      "Bingo Loco": 69
+    },
+    {
+      "geoName": "Portland-Auburn ME",
+      "geoCode": "500",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Presque Isle ME",
+      "geoCode": "552",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Providence RI-New Bedford MA",
+      "geoCode": "521",
+      "Bingo Loco": 56
+    },
+    {
+      "geoName": "Quincy IL-Hannibal MO-Keokuk IA",
+      "geoCode": "717",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Raleigh-Durham (Fayetteville) NC",
+      "geoCode": "560",
+      "Bingo Loco": 23
+    },
+    {
+      "geoName": "Rapid City SD",
+      "geoCode": "764",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Reno NV",
+      "geoCode": "811",
+      "Bingo Loco": 57
+    },
+    {
+      "geoName": "Richmond-Petersburg VA",
+      "geoCode": "556",
+      "Bingo Loco": 19
+    },
+    {
+      "geoName": "Roanoke-Lynchburg VA",
+      "geoCode": "573",
+      "Bingo Loco": 32
+    },
+    {
+      "geoName": "Rochester MN-Mason City IA-Austin MN",
+      "geoCode": "611",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Rochester NY",
+      "geoCode": "538",
+      "Bingo Loco": 39
+    },
+    {
+      "geoName": "Rockford IL",
+      "geoCode": "610",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Sacramento-Stockton-Modesto CA",
+      "geoCode": "862",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Salisbury MD",
+      "geoCode": "576",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Salt Lake City UT",
+      "geoCode": "770",
+      "Bingo Loco": 30
+    },
+    {
+      "geoName": "San Angelo TX",
+      "geoCode": "661",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "San Antonio TX",
+      "geoCode": "641",
+      "Bingo Loco": 56
+    },
+    {
+      "geoName": "San Diego CA",
+      "geoCode": "825",
+      "Bingo Loco": 50
+    },
+    {
+      "geoName": "San Francisco-Oakland-San Jose CA",
+      "geoCode": "807",
+      "Bingo Loco": 28
+    },
+    {
+      "geoName": "Santa Barbara-Santa Maria-San Luis Obispo CA",
+      "geoCode": "855",
+      "Bingo Loco": 55
+    },
+    {
+      "geoName": "Savannah GA",
+      "geoCode": "507",
+      "Bingo Loco": 34
+    },
+    {
+      "geoName": "Seattle-Tacoma WA",
+      "geoCode": "819",
+      "Bingo Loco": 26
+    },
+    {
+      "geoName": "Sherman TX-Ada OK",
+      "geoCode": "657",
+      "Bingo Loco": 47
+    },
+    {
+      "geoName": "Shreveport LA",
+      "geoCode": "612",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Sioux City IA",
+      "geoCode": "624",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Sioux Falls(Mitchell) SD",
+      "geoCode": "725",
+      "Bingo Loco": 20
+    },
+    {
+      "geoName": "South Bend-Elkhart IN",
+      "geoCode": "588",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Spokane WA",
+      "geoCode": "881",
+      "Bingo Loco": 20
+    },
+    {
+      "geoName": "Springfield MO",
+      "geoCode": "619",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Springfield-Holyoke MA",
+      "geoCode": "543",
+      "Bingo Loco": 19
+    },
+    {
+      "geoName": "St. Joseph MO",
+      "geoCode": "638",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "St. Louis MO",
+      "geoCode": "609",
+      "Bingo Loco": 32
+    },
+    {
+      "geoName": "Syracuse NY",
+      "geoCode": "555",
+      "Bingo Loco": 19
+    },
+    {
+      "geoName": "Tallahassee FL-Thomasville GA",
+      "geoCode": "530",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Tampa-St. Petersburg (Sarasota) FL",
+      "geoCode": "539",
+      "Bingo Loco": 37
+    },
+    {
+      "geoName": "Terre Haute IN",
+      "geoCode": "581",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Toledo OH",
+      "geoCode": "547",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Topeka KS",
+      "geoCode": "605",
+      "Bingo Loco": 42
+    },
+    {
+      "geoName": "Traverse City-Cadillac MI",
+      "geoCode": "540",
+      "Bingo Loco": 92
+    },
+    {
+      "geoName": "Tri-Cities TN-VA",
+      "geoCode": "531",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Tucson (Sierra Vista) AZ",
+      "geoCode": "789",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Tulsa OK",
+      "geoCode": "671",
+      "Bingo Loco": 76
+    },
+    {
+      "geoName": "Twin Falls ID",
+      "geoCode": "760",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Tyler-Longview(Lufkin & Nacogdoches) TX",
+      "geoCode": "709",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Utica NY",
+      "geoCode": "526",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Victoria TX",
+      "geoCode": "626",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Waco-Temple-Bryan TX",
+      "geoCode": "625",
+      "Bingo Loco": 24
+    },
+    {
+      "geoName": "Washington DC (Hagerstown MD)",
+      "geoCode": "511",
+      "Bingo Loco": 26
+    },
+    {
+      "geoName": "Watertown NY",
+      "geoCode": "549",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Wausau-Rhinelander WI",
+      "geoCode": "705",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "West Palm Beach-Ft. Pierce FL",
+      "geoCode": "548",
+      "Bingo Loco": 17
+    },
+    {
+      "geoName": "Wheeling WV-Steubenville OH",
+      "geoCode": "554",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Wichita Falls TX & Lawton OK",
+      "geoCode": "627",
+      "Bingo Loco": 41
+    },
+    {
+      "geoName": "Wichita-Hutchinson KS",
+      "geoCode": "678",
+      "Bingo Loco": 66
+    },
+    {
+      "geoName": "Wilkes Barre-Scranton PA",
+      "geoCode": "577",
+      "Bingo Loco": 93
+    },
+    {
+      "geoName": "Wilmington NC",
+      "geoCode": "550",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Yakima-Pasco-Richland-Kennewick WA",
+      "geoCode": "810",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Youngstown OH",
+      "geoCode": "536",
+      "Bingo Loco": 50
+    },
+    {
+      "geoName": "Yuma AZ-El Centro CA",
+      "geoCode": "771",
+      "Bingo Loco": 0
+    },
+    {
+      "geoName": "Zanesville OH",
+      "geoCode": "596",
+      "Bingo Loco": 0
+    }
+  ]
+}
