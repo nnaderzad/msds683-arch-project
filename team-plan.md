@@ -237,11 +237,16 @@ sits above the medallion build tasks.
      A1/A2/A3 + INT-1 rely on. Pure-stdlib, offline; refreshable to diff over time.
    - Tests / done-when: ✅ offline (`pytest tests/`, no new deps, CI green).
 
-- [ ] **C1 · Great Expectations scaffold**  ·  Owner: `____`
+- [x] **C1 · Great Expectations scaffold**  ·  Owner: `NN`  ·  ✅ PR #21
    - Prereqs: none — ready
-   - Build: init `great_expectations/`; wire BigQuery + GCS datasources.
-   - Tests / done-when: `great_expectations checkpoint list` runs; a trivial suite
-     passes in CI.
+   - Built: `great_expectations/` GX 1.18 project driven from Python (`gx_project.py`)
+     — the 0.18 CLI was removed in 1.x, so config is code. Offline **pandas** datasource
+     over the seed fixtures (the CI substrate) + **BigQuery**/**GCS** datasources wired
+     for the live warehouse (C3/C4), guarded behind ADC like `dbt/profiles.yml`. The
+     `gx/` file-context home is generated (config-as-code) and gitignored.
+   - Verified: `run_checkpoints.py` runs the smoke checkpoint (exit-code gate) and
+     `--list` replaces `great_expectations checkpoint list`; `tests/test_gx_smoke.py`
+     runs it offline in CI (`ruff` clean, `pytest tests/` 76 passed / 1 pre-existing skip).
 
 - [ ] **G0 · Terraform: gold dataset + IAM (+ external tables)**  ·  Owner: `____`
    - Prereqs: none — ready
@@ -478,10 +483,10 @@ sits above the medallion build tasks.
 ## Dependency quick-reference (what's unblocked)
 
 - **⭐ HIGH PRIORITY, ready now:** `COLLECT-1` (source coverage — the demand-signal bottleneck).
-- **Ready now:** `C1`, `G0`, `F1`, `E1` (stub).  _(`H1`, `T0` ✅ done)_
+- **Ready now:** `G0`, `F1`, `E1` (stub).  _(`C1`, `H1`, `T0` ✅ done)_
 - **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
 - **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
-- **After `C1`:** `C2`, `C3`.
+- **After `C1` ✅:** `C2`, `C3` now unblocked.
 - **After `A1`+`A2`+`A3`+`A4` ✅:** `B1` ✅ done → `C4`, `D1`, `INT-2`, `G1` **now unblocked**.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
