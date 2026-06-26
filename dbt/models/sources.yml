@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: ticketmaster_raw
+    description: >
+      Processed Ticketmaster landing, read zero-copy as a BigQuery **external table**
+      over the daily parquet snapshots in GCS. Created/refreshed by dbt-external-tables
+      (`dbt run-operation stage_external_sources`). This is the price *history* source for
+      `fact_ticketmaster` — distinct from the current-state `tm_events` table.
+    database: "{{ env_var('DBT_GCP_PROJECT', 'data-architecture-498123') }}"
+    schema: "{{ env_var('DBT_BQ_DATASET', 'event_demand_analytics') }}"
+    loader: gcs
+    tables:
+      - name: tm_snapshots_ext
+        description: >
+          One row per event per daily snapshot file. The `snapshot_date` is the `dt=`
+          partition, recovered in the model from the `_FILE_NAME` pseudo-column.
+        external:
+          location: 'gs://data-architecture-498123-processed/ticketmaster/*.parquet'
+          options:
+            format: parquet

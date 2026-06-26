@@ -1,0 +1,28 @@
+name: 'event_demand'
+version: '1.0.0'
+config-version: 2
+require-dbt-version: [">=1.8.0", "<2.0.0"]
+
+# The transform engine for silver + gold (see team-plan.md "Transform engine = dbt").
+# dbt owns the analytical table DDL / materialization / tests / lineage; Terraform owns
+# the containers (dataset, buckets, IAM, external tables).
+profile: 'event_demand'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+snapshot-paths: ["snapshots"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  event_demand:
+    # Silver source facts are partitioned, incremental BigQuery tables built in-warehouse.
+    silver:
+      +materialized: incremental
+      +on_schema_change: append_new_columns
