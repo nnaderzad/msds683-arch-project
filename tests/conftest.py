@@ -88,3 +88,77 @@ def base_env(monkeypatch):
     monkeypatch.setenv("GCS_RAW_BUCKET", "test-project-raw")
     monkeypatch.setenv("GCS_PROCESSED_BUCKET", "test-project-processed")
     monkeypatch.setenv("BQ_DATASET", "test_dataset")
+
+
+# ---------------------------------------------------------------------------
+# Cross-source seed slice (task T0) — committed, real, offline.
+#
+# A small real slice (a handful of artists present in all three sources) carved
+# from the landed bronze by tests/fixtures/build_seed.py, so silver transforms
+# (A1/A2/A3) and the bronze->silver integration test (INT-1) have a deterministic,
+# network-free fixture. Pure stdlib json/csv — nothing here touches GCP. Regenerate
+# with `python tests/fixtures/build_seed.py`; see tests/fixtures/README.md.
+# ---------------------------------------------------------------------------
+
+import csv  # noqa: E402
+import json  # noqa: E402
+
+SEED_DIR = Path(__file__).resolve().parent / "fixtures" / "seed"
+
+
+def _load_json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_json_glob(pattern: str) -> list:
+    return [_load_json(p) for p in sorted(SEED_DIR.glob(pattern))]
+
+
+@pytest.fixture(scope="session")
+def seed_dir() -> Path:
+    """Root of the committed cross-source seed slice."""
+    return SEED_DIR
+
+
+@pytest.fixture(scope="session")
+def seed_manifest() -> dict:
+    """Provenance + selection record for the seed (build_seed.py output)."""
+    return _load_json(SEED_DIR / "manifest.json")
+
+
+@pytest.fixture(scope="session")
+def seed_artists(seed_manifest) -> set:
+    """The seed artist display names — the join key across all three sources."""
+    return set(seed_manifest["seed_artists"])
+
+
+@pytest.fixture(scope="session")
+def seed_event_ids(seed_manifest) -> set:
+    """Ticketmaster event ids in the seed."""
+    return {e["event_id"] for e in seed_manifest["seed_events"]}
+
+
+@pytest.fixture(scope="session")
+def seed_tm_events() -> list:
+    """Seed events' tm_events rows across every snapshot day (real price series)."""
+    path = SEED_DIR / "ticketmaster" / "tm_events_seed.csv"
+    with path.open(encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+@pytest.fixture(scope="session")
+def seed_tm_raw() -> list:
+    """Trimmed raw bronze Ticketmaster event objects (one per seed event)."""
+    return _load_json(next((SEED_DIR / "ticketmaster").glob("dt=*/ticketmaster_seed.json")))
+
+
+@pytest.fixture(scope="session")
+def seed_youtube_raw() -> list:
+    """Per-day YouTube payloads with records trimmed to the seed artists."""
+    return _load_json_glob("youtube/dt=*/*.json")
+
+
+@pytest.fixture(scope="session")
+def seed_trends_raw() -> list:
+    """Seed artists' Trends payloads (national iot + DMA-snapshot ibr), verbatim."""
+    return _load_json_glob("google_trends/dt=*/*.json")
