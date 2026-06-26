@@ -133,9 +133,9 @@ sure its row is true and you can expand on it live.
 | Layer | Ticketmaster | Google Trends | YouTube |
 |---|---|---|---|
 | Bronze (raw JSON → GCS) | ✅ deployed | ✅ deployed | ✅ deployed |
-| Silver (BigQuery) | ⚠️ `tm_events` current-state → dims; `fact_ticketmaster` history **to build (A4)** | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
+| Silver (BigQuery) | ✅ `fact_ticketmaster` (A4, dbt); `tm_events` current-state → dims | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
 | Dims + bridge | ✅ `dim_*` + `bridge_event_artist` (A3, from `tm_events`) |||
-| Gold (`fact_event_demand`) | ❌ designed, to build (B1, dbt) |||
+| Gold (`fact_event_demand`) | ✅ `fact_event_demand` (B1, dbt) — signals fill in with collection coverage (COLLECT-1) |||
 
 > `tm_events` (current-state, MERGE-upsert) feeds the **dims** (A3). The silver TM **fact**
 > `fact_ticketmaster` — event × snapshot_date price *history*, sourced from the processed
@@ -310,18 +310,18 @@ sits above the medallion build tasks.
      exactly one headliner/event; 586 artists carry a YouTube channel id.
    - **GX dim suites deferred to C3.**
 
-- [ ] **A4 · Ticketmaster bronze→silver (`fact_ticketmaster`)**  ·  Owner: `____`  ·  *(first dbt model)*
+- [x] **A4 · Ticketmaster bronze→silver (`fact_ticketmaster`)**  ·  Owner: `TK`  ·  ✅ PR #17  ·  *(first dbt model)*
    - Prereqs: T0 ✅
-   - Build: stand up the `dbt/` project (dbt-bigquery) **and** `models/silver/fact_ticketmaster.sql`
+   - Built: stood up the `dbt/` project (dbt-bigquery) **and** `models/silver/fact_ticketmaster.sql`
      — the event × snapshot_date price **history**, sourced from the processed parquet
-     snapshots (`gs://<proj>-processed/ticketmaster/dt=*/*.parquet`, declared as a dbt
-     source; `snapshot_date` recovered from `_FILE_NAME`, same pattern as `eda/tm_price_eda.py`).
-     Schema per `docs/data-model.md` §3; derive `days_to_show`. Materialized **incremental**,
-     `partition_by=snapshot_date`, `unique_key=tm_snapshot_id` (idempotent). This is the
-     silver fact the gold spine (B1) joins onto — **distinct from current-state `tm_events`**.
-   - Tests / done-when: dbt `unique`/`not_null` on `tm_snapshot_id`, `not_null` keys,
-     `days_to_show ≥ 0`; **real `dbt build` verified by hand** (row count ≈ Σ snapshot_days,
-     idempotent re-run). GX silver suite → C3. *(dbt-in-CI is `G3`.)*
+     snapshots (`gs://<proj>-processed/ticketmaster/*.parquet`, declared as a dbt source via
+     dbt-external-tables; `snapshot_date` recovered from `_FILE_NAME`). Schema per
+     `docs/data-model.md` §3; `days_to_show` derived. Materialized **incremental**,
+     `partition_by=snapshot_date`, `unique_key=tm_snapshot_id` (idempotent). The silver fact
+     the gold spine (B1) joins onto — **distinct from current-state `tm_events`**.
+   - Verified: real `dbt build` — **609,728 rows = distinct (event_id, snapshot_date)** (PK
+     unique), 40,770 events × 16 snapshot days, ~23% priced (matches the H1 EDA), idempotent
+     re-run (MERGE 0 rows); dbt tests pass. **GX silver suite → C3; dbt-in-CI → G3.**
 
 - [ ] **C2 · GX bronze suites**  ·  Owner: `____`
    - Prereqs: C1
@@ -370,16 +370,18 @@ sits above the medallion build tasks.
 
 ### Phase 2 — Gold + scaffolds
 
-- [ ] **B1 · Gold star `fact_event_demand`**  ·  Owner: `____`
-   - Prereqs: A1 ✅, A2 ✅, A3 ✅, **A4**
-   - Build: `dbt/models/gold/fact_event_demand.sql` — keep the `fact_ticketmaster` spine
-     (`ref`); **LEFT JOIN** `fact_trends` on (headliner `artist_id`, venue `dma_code`,
+- [x] **B1 · Gold star `fact_event_demand`**  ·  Owner: `TK`  ·  ✅ PR #18
+   - Prereqs: A1 ✅, A2 ✅, A3 ✅, A4 ✅
+   - Built: `dbt/models/gold/fact_event_demand.sql` — keeps the `fact_ticketmaster` spine
+     (`ref`); **LEFT JOINs** `fact_trends` on (headliner `artist_id`, venue `dma_code`,
      `snapshot_date`) and `fact_youtube` on (headliner `artist_id`, `snapshot_date`);
-     headliner via `bridge_event_artist.is_headliner`; keep every event (NULL where
-     uncollected); carry `days_to_show`. Materialized incremental, partitioned by `snapshot_date`.
-   - Tests / done-when: dbt data test **no row drop vs the spine** (gold rows ==
-     `fact_ticketmaster` rows) + FK `relationships` to dims; **real `dbt build` verified by
-     hand**. GX gold suite → C4.
+     headliner via `bridge_event_artist.is_headliner`; every event kept (NULL where
+     uncollected). Silver facts/dims referenced as dbt `source()`s until `MIG-1/2/3`.
+   - Verified: real `dbt build` — gold **609,728 == `fact_ticketmaster`** (no-row-drop test
+     passes), grain unique, join value-exact vs source; FK tests pass (warn-level **36-event
+     `dim_event` gap** — current-state, see `MIG-3`). After the silver backfill + a gold
+     full-refresh: `local_interest` on 22,863 rows / 5,629 events, `yt_*` on 80,049 / 9,577.
+     **GX gold suite → C4.**
 
 - [ ] **C4 · GX gold suites**  ·  Owner: `____`
    - Prereqs: C1, B1
@@ -480,7 +482,7 @@ sits above the medallion build tasks.
 - **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
 - **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
 - **After `C1`:** `C2`, `C3`.
-- **After `A1`+`A2`+`A3`+`A4`:** `B1` (gold) → then `C4`, `D1`, `INT-2`, `G1`.
+- **After `A1`+`A2`+`A3`+`A4` ✅:** `B1` ✅ done → `C4`, `D1`, `INT-2`, `G1` **now unblocked**.
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
 - **Last:** `E2E-1` → `SCALE-1`, `I1`, `I2`.
