@@ -1,0 +1,13 @@
+# Great Expectations — data-quality gates for bronze / silver / gold (tasks C1–C4).
+#
+# Pinned to the current stable 1.x line. The legacy 0.18 *CLI* (`great_expectations
+# checkpoint list`, etc.) was removed in 1.x; we drive GX from Python instead via
+# great_expectations/run_checkpoints.py (see the README for the why).
+great-expectations==1.18.2
+
+# BigQuery datasource — used only to validate the live silver/gold warehouse
+# (C3/C4) with ADC. The offline seed suite that runs in CI never touches these,
+# and register_bigquery_datasource() imports the driver lazily, so a machine
+# without them can still run the offline checkpoint.
+sqlalchemy-bigquery>=1.11
+google-cloud-bigquery>=3.20
