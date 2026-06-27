@@ -328,10 +328,18 @@ sits above the medallion build tasks.
      unique), 40,770 events × 16 snapshot days, ~23% priced (matches the H1 EDA), idempotent
      re-run (MERGE 0 rows); dbt tests pass. **GX silver suite → C3; dbt-in-CI → G3.**
 
-- [ ] **C2 · GX bronze suites**  ·  Owner: `____`
-   - Prereqs: C1
-   - Build: raw-JSON landing checks per source (required keys, types, non-empty).
-   - Tests / done-when: suites pass on the T0 sample; **fail** on a corrupted fixture.
+- [x] **C2 · GX bronze suites**  ·  Owner: `NN`  ·  ✅ PR #23
+   - Prereqs: C1 ✅
+   - Built: `great_expectations/bronze_suites.py` — per-source extractors (raw JSON →
+     dataframe; normalizes the query-named Trends interest column) + four suites:
+     `bronze_ticketmaster` (event_id/name not null; `dates`+`_embedded` present),
+     `bronze_trends_national` / `bronze_trends_dma` (artist/query + date|geo_code not
+     null; `interest` ∈ [0,100]), `bronze_youtube` (query/channel not null; counts ≥ 0,
+     subscribers ≥ 0 when present). Reuses `gx_project.run_suite_on_dataframe`.
+   - Verified: `tests/test_gx_bronze.py` — suites pass on the T0 seed **and fail on
+     corrupted fixtures** (null id, interest=200, null date, negative views). Offline;
+     `ruff` clean; `pytest tests/` 85 passed / 1 pre-existing skip; `run_checkpoints.py`
+     PASSED on all 5 checkpoints.
 
 - [ ] **C3 · GX silver suites**  ·  Owner: `____`
    - Prereqs: C1 + (A1 | A2 | A3 for the table being validated)
