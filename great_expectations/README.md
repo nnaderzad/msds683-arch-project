@@ -8,7 +8,7 @@ top of it:
 | Task | Layer | Checks | Status |
 |---|---|---|---|
 | **C2** | bronze | raw-JSON landing shape (required keys, value ranges, non-empty) — one suite per source (`bronze_suites.py`) | ✅ done |
-| **C3** | silver | schema, nulls, value ranges (`interest` ∈ [0,100]), join-key integrity | to build |
+| **C3** | silver | schema, nulls, value ranges (`interest` ∈ [0,100]), join-key integrity — one suite per fact/dim (`silver_suites.py`) | ✅ done |
 | **C4** | gold | `fact_event_demand` integrity + forecast sanity | to build |
 
 ## Why it's built this way (Q&A defense)
@@ -39,13 +39,14 @@ top of it:
 great_expectations/
   gx_project.py        # context + datasources (seed/BQ/GCS) + suite/checkpoint runners
   bronze_suites.py     # C2: per-source bronze extractors + raw-JSON landing suites
+  silver_suites.py     # C3: silver tables (rebuilt from seed) + schema/null/range/FK suites
   run_checkpoints.py   # CLI: run all offline checkpoints, or --list checkpoints
   requirements.txt     # great-expectations==1.18.2 (+ BigQuery driver for C3/C4)
   gx/                  # generated GX file-context home (gitignored)
 ```
 
-The CI gates live in `tests/test_gx_smoke.py` (C1) and `tests/test_gx_bronze.py`
-(C2) — both run in the existing pytest step.
+The CI gates live in `tests/test_gx_smoke.py` (C1), `tests/test_gx_bronze.py` (C2),
+and `tests/test_gx_silver.py` (C3) — all run in the existing pytest step.
 
 ## Run it
 
