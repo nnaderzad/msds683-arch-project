@@ -165,6 +165,38 @@ def list_checkpoints(context) -> list[str]:
     return [cp.name for cp in context.checkpoints.all()]
 
 
+def run_suite_on_dataframe(context, df, suite, *, key: str):
+    """Validate an in-memory dataframe against ``suite`` and return the result.
+
+    Generalizes the smoke flow so any layer (C2 bronze, C3 silver, …) can run a
+    suite over a dataframe with one call. ``key`` namespaces the per-run GX
+    resources (datasource / asset / batch / validation / checkpoint) so several
+    suites coexist in one context. Idempotent.
+    """
+    ds_name, asset_name, batch_name = f"{key}_pandas", f"{key}_asset", f"{key}_batch"
+    validation_name, checkpoint_name = f"{key}_validation", f"{key}_checkpoint"
+
+    try:
+        ds = context.data_sources.add_pandas(name=ds_name)
+    except Exception:
+        ds = context.data_sources.get(ds_name)
+    try:
+        asset = ds.add_dataframe_asset(name=asset_name)
+    except Exception:
+        asset = ds.get_asset(asset_name)
+    try:
+        batch = asset.add_batch_definition_whole_dataframe(batch_name)
+    except Exception:
+        batch = asset.get_batch_definition(batch_name)
+
+    suite = context.suites.add_or_update(suite)
+    validation = gx.ValidationDefinition(name=validation_name, data=batch, suite=suite)
+    validation = _add_or_replace(context.validation_definitions, validation, validation_name)
+    checkpoint = gx.Checkpoint(name=checkpoint_name, validation_definitions=[validation])
+    checkpoint = _add_or_replace(context.checkpoints, checkpoint, checkpoint_name)
+    return checkpoint.run(batch_parameters={"dataframe": df})
+
+
 # ---------------------------------------------------------------------------
 # Offline run (used by run_checkpoints.py and the CI smoke test)
 # ---------------------------------------------------------------------------

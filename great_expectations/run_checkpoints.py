@@ -3,17 +3,21 @@
 removed ``great_expectations checkpoint ...`` CLI.
 
 Usage (from the repo root):
-    python great_expectations/run_checkpoints.py            # run the offline smoke checkpoint
+    python great_expectations/run_checkpoints.py            # run all offline checkpoints
     python great_expectations/run_checkpoints.py --list     # list checkpoints in the project
 
-Exit code is non-zero if any validation fails, so this doubles as a CI / pre-load
-gate. The offline path uses only the committed seed fixtures — no creds, no network.
+Runs, offline against the seed fixtures (no creds, no network):
+  * the C1 scaffold smoke checkpoint, and
+  * the C2 bronze raw-JSON landing checks (one per source).
+
+Exit code is non-zero if any validation fails, so this doubles as a CI / pre-load gate.
 """
 
 from __future__ import annotations
 
 import argparse
 
+import bronze_suites
 import gx_project
 
 
@@ -25,19 +29,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.list:
-        context = gx_project.get_context()
-        # Ensure the scaffold checkpoint exists before listing (idempotent).
-        batch = gx_project.register_seed_datasource(context)
-        suite = gx_project.build_smoke_suite(context)
-        gx_project.build_smoke_checkpoint(context, batch, suite)
-        for name in gx_project.list_checkpoints(context):
+        names = [gx_project.SMOKE_CHECKPOINT] + [f"{key}_checkpoint" for key in bronze_suites.BRONZE_SOURCES]
+        for name in names:
             print(name)
         return 0
 
-    result = gx_project.run_offline()
-    status = "PASSED" if result.success else "FAILED"
-    print(f"checkpoint {gx_project.SMOKE_CHECKPOINT}: {status}")
-    return 0 if result.success else 1
+    ok = True
+
+    smoke = gx_project.run_offline()
+    print(f"checkpoint {gx_project.SMOKE_CHECKPOINT}: {'PASSED' if smoke.success else 'FAILED'}")
+    ok &= smoke.success
+
+    for key, result in bronze_suites.run_bronze_offline().items():
+        print(f"checkpoint {key}_checkpoint: {'PASSED' if result.success else 'FAILED'}")
+        ok &= result.success
+
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
