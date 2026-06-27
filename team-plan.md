@@ -341,11 +341,20 @@ sits above the medallion build tasks.
      `ruff` clean; `pytest tests/` 85 passed / 1 pre-existing skip; `run_checkpoints.py`
      PASSED on all 5 checkpoints.
 
-- [ ] **C3 · GX silver suites**  ·  Owner: `____`
-   - Prereqs: C1 + (A1 | A2 | A3 for the table being validated)
-   - Build: schema, nulls, value ranges (`interest` ∈ [0,100]), join-key integrity
-     per fact + dim.
-   - Tests / done-when: suites green in CI.
+- [x] **C3 · GX silver suites**  ·  Owner: `NN`  ·  ✅ PR #24
+   - Prereqs: C1 ✅ + A1/A2/A3 ✅
+   - Built: `great_expectations/silver_suites.py` — one suite per fact + dim. Silver
+     tables are rebuilt offline from the seed via the A1/A2/A3 transforms, so CI
+     validates real transform output with no warehouse. Schema-existence is driven off
+     the transforms' own schema constants (can't drift); PK not-null + uniqueness
+     (compound where needed); value ranges (`interest` ∈ [0,100], counts ≥ 0,
+     `price_min ≤ price_max`); FK integrity (bridge→artist/event, event→venue,
+     venue→geo, fact→artist, fact_trends→geo).
+   - Verified: `tests/test_gx_silver.py` — suites pass on seed-built tables **and catch
+     violations** (out-of-range interest, dup PK, orphan FK, negative price). Offline;
+     `ruff` clean; `pytest tests/` 90 passed / 1 pre-existing skip; `run_checkpoints.py`
+     PASSED on all 14 checkpoints. `fact_ticketmaster` (dbt) validated via its seed
+     panel here + dbt tests + the live BQ datasource.
 
 - [ ] **INT-1 · Integration: bronze→silver**  ·  Owner: `____`
    - Prereqs: A1, A2, A3, A4, T0
