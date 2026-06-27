@@ -405,11 +405,20 @@ sits above the medallion build tasks.
      full-refresh: `local_interest` on 22,863 rows / 5,629 events, `yt_*` on 80,049 / 9,577.
      **GX gold suite → C4.**
 
-- [ ] **C4 · GX gold suites**  ·  Owner: `____`
-   - Prereqs: C1, B1
-   - Build: `fact_event_demand` integrity + (later) forecast sanity — non-negative
-     price, `days_to_show` monotone toward show date.
-   - Tests / done-when: suites green in CI.
+- [x] **C4 · GX gold suites**  ·  Owner: `NN`  ·  ✅ PR #25
+   - Prereqs: C1 ✅, B1 ✅
+   - Built: `great_expectations/gold_suites.py` — `build_gold_frame()` replicates the dbt
+     gold join (`fact_event_demand.sql`) in pandas over the C3 seed-built silver (spine
+     kept whole; headliner artist + venue DMA + fact_trends/fact_youtube LEFT-JOINed), so
+     the integrity suite runs offline in CI; same suite validates live gold via the BQ
+     datasource. Checks: **no-row-drop** (rows == spine), unique `(event_id, snapshot_date)`,
+     non-negative price, `local_interest` ∈ [0,100] / `yt_*` ≥ 0 when present, FK back to
+     dim_event/dim_artist/dim_venue.
+   - Verified: `tests/test_gx_gold.py` — suite passes on seed-built gold; explicit
+     no-row-drop + per-event `days_to_show` monotone-toward-show-date checks; negative
+     tests (row drop, out-of-range interest) fail. `ruff` clean; `pytest tests/` 95 passed
+     / 1 pre-existing skip; `run_checkpoints.py` PASSED on all 15 checkpoints. Forecast
+     sanity deferred until D2 builds `forecast_event_price`.
 
 - [ ] **D1 · Model feature build**  ·  Owner: `____`
    - Prereqs: B1
@@ -504,7 +513,8 @@ sits above the medallion build tasks.
 - **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
 - **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
 - **After `C1` ✅:** `C2`, `C3` now unblocked.
-- **After `A1`+`A2`+`A3`+`A4` ✅:** `B1` ✅ done → `C4`, `D1`, `INT-2`, `G1` **now unblocked**.
+- **After `A1`+`A2`+`A3`+`A4` ✅:** `B1` ✅ done → `C4` ✅ done; `D1`, `INT-2`, `G1` **now unblocked**.
+- **Data validation:** `C1`–`C4` ✅ all done — GX bronze/silver/gold suites green in CI (15 checkpoints).
 - **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
 - **Last:** `E2E-1` → `SCALE-1`, `I1`, `I2`.
