@@ -43,6 +43,7 @@ terraform validate).
 │   └── ticketmaster_daily/   # deployed nationwide TM extractor (Cloud Run fn)
 ├── google_trends_api/        # Google Trends ingestion (roster, geo, jobs) — see its README
 ├── youtube_api/              # YouTube POC + collect_youtube.py (deployed collector)
+├── great_expectations/       # data-quality suites: bronze/silver/gold (GX) — see its README
 ├── tests/                    # pytest
 ├── terraform/                # main root: buckets, BigQuery, TM pipeline, monitoring
 │   └── gtrends/              # isolated root (remote GCS state): Trends + YouTube jobs
@@ -56,6 +57,7 @@ terraform validate).
 - Ticketmaster: [`ticketmaster_api/README.md`](ticketmaster_api/README.md) ·
   [`cloud_functions/ticketmaster_daily/README.md`](cloud_functions/ticketmaster_daily/README.md)
 - YouTube: [`youtube_api/README.md`](youtube_api/README.md)
+- Data quality (Great Expectations, bronze/silver/gold): [`great_expectations/README.md`](great_expectations/README.md)
 
 ## Terraform layout (two roots)
 

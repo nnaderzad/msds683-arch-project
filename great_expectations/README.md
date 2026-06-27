@@ -1,9 +1,9 @@
-# Great Expectations — data-quality gates (C1 scaffold)
+# Great Expectations — data-quality gates (C1–C4)
 
-Declarative, documented data-quality checks on every medallion layer. This is the
-**C1 scaffold**: the shared GX context, datasources, and a trivial smoke suite that
-proves the wiring end-to-end and runs green in CI. The real per-layer suites land on
-top of it:
+Declarative, documented data-quality checks on every medallion layer, run as a CI gate
+(offline against the seed) and able to validate the live BigQuery/GCS warehouse via ADC.
+The **C1** scaffold (`gx_project.py`) provides the shared context + datasources; the
+per-layer suites build on it — **all implemented** (15 checkpoints total):
 
 | Task | Layer | Checks | Status |
 |---|---|---|---|
@@ -55,22 +55,28 @@ existing pytest step.
 ```bash
 pip install -r great_expectations/requirements.txt
 
-# Run the offline smoke checkpoint over the seed (exit code is the gate):
+# Run ALL offline checkpoints over the seed — smoke + bronze + silver + gold
+# (exit code is the gate):
 python great_expectations/run_checkpoints.py
 
-# List checkpoints (the 1.x `great_expectations checkpoint list`):
+# List every checkpoint (the 1.x `great_expectations checkpoint list`):
 python great_expectations/run_checkpoints.py --list
 
-# The CI gate, locally:
-pytest tests/test_gx_smoke.py -q
+# The CI gates, locally:
+pytest tests/test_gx_smoke.py tests/test_gx_bronze.py tests/test_gx_silver.py tests/test_gx_gold.py -q
 ```
 
-## Extending it (C2 / C3 / C4)
+## Extending it (new checks / live-warehouse validation)
 
-Add a layer suite in `gx_project.py` (mirror `build_smoke_suite`), wire a checkpoint
-(mirror `build_smoke_checkpoint`), and register it in `run_checkpoints.py`. Validate
-bronze through the GCS datasource, silver/gold through the BigQuery datasource (both
-already wired); keep an offline seed-backed path so the suite stays CI-testable.
+C1–C4 are implemented. To add a check, extend the relevant `*_suites.py` builder — it
+flows through `run_checkpoints.py` and the tests automatically. To validate the **live**
+warehouse instead of the seed, register the BigQuery/GCS datasource
+(`gx_project.register_bigquery_datasource` / `register_gcs_datasource`, ADC) and point the
+suite at it; keep the offline seed-backed path so the check stays CI-testable.
+
+> **Not yet automated on GCP.** These suites run in CI and locally; wiring
+> `run_checkpoints.py` into the pipeline as a pre-load gate (e.g. the dbt/transform
+> Cloud Run job) is a separate `G`-series task, not part of C1–C4.
 
 > **dbt-test vs GX division of labor (decide in G3):** dbt tests guard
 > in-warehouse model invariants (PK uniqueness, FK `relationships`, accepted values);
