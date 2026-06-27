@@ -8,8 +8,9 @@ Usage (from the repo root):
 
 Runs, offline against the seed fixtures (no creds, no network):
   * the C1 scaffold smoke checkpoint,
-  * the C2 bronze raw-JSON landing checks (one per source), and
-  * the C3 silver schema / null / value-range / join-key checks (one per table).
+  * the C2 bronze raw-JSON landing checks (one per source),
+  * the C3 silver schema / null / value-range / join-key checks (one per table), and
+  * the C4 gold fact_event_demand integrity check.
 
 Exit code is non-zero if any validation fails, so this doubles as a CI / pre-load gate.
 """
@@ -19,6 +20,7 @@ from __future__ import annotations
 import argparse
 
 import bronze_suites
+import gold_suites
 import gx_project
 import silver_suites
 
@@ -35,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
             [gx_project.SMOKE_CHECKPOINT]
             + [f"{key}_checkpoint" for key in bronze_suites.BRONZE_SOURCES]
             + [f"silver_{table}_checkpoint" for table in silver_suites.SILVER_TABLES]
+            + [f"gold_{table}_checkpoint" for table in gold_suites.GOLD_TABLES]
         )
         for name in names:
             print(name)
@@ -52,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for table, result in silver_suites.run_silver_offline().items():
         print(f"checkpoint silver_{table}_checkpoint: {'PASSED' if result.success else 'FAILED'}")
+        ok &= result.success
+
+    for table, result in gold_suites.run_gold_offline().items():
+        print(f"checkpoint gold_{table}_checkpoint: {'PASSED' if result.success else 'FAILED'}")
         ok &= result.success
 
     return 0 if ok else 1
