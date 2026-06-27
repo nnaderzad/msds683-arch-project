@@ -7,8 +7,9 @@ Usage (from the repo root):
     python great_expectations/run_checkpoints.py --list     # list checkpoints in the project
 
 Runs, offline against the seed fixtures (no creds, no network):
-  * the C1 scaffold smoke checkpoint, and
-  * the C2 bronze raw-JSON landing checks (one per source).
+  * the C1 scaffold smoke checkpoint,
+  * the C2 bronze raw-JSON landing checks (one per source), and
+  * the C3 silver schema / null / value-range / join-key checks (one per table).
 
 Exit code is non-zero if any validation fails, so this doubles as a CI / pre-load gate.
 """
@@ -19,6 +20,7 @@ import argparse
 
 import bronze_suites
 import gx_project
+import silver_suites
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,7 +31,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.list:
-        names = [gx_project.SMOKE_CHECKPOINT] + [f"{key}_checkpoint" for key in bronze_suites.BRONZE_SOURCES]
+        names = (
+            [gx_project.SMOKE_CHECKPOINT]
+            + [f"{key}_checkpoint" for key in bronze_suites.BRONZE_SOURCES]
+            + [f"silver_{table}_checkpoint" for table in silver_suites.SILVER_TABLES]
+        )
         for name in names:
             print(name)
         return 0
@@ -42,6 +48,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for key, result in bronze_suites.run_bronze_offline().items():
         print(f"checkpoint {key}_checkpoint: {'PASSED' if result.success else 'FAILED'}")
+        ok &= result.success
+
+    for table, result in silver_suites.run_silver_offline().items():
+        print(f"checkpoint silver_{table}_checkpoint: {'PASSED' if result.success else 'FAILED'}")
         ok &= result.success
 
     return 0 if ok else 1
