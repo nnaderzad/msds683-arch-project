@@ -204,7 +204,7 @@ resource "google_cloudfunctions2_function" "ticketmaster_daily" {
 
 resource "google_cloud_scheduler_job" "ticketmaster_daily" {
   name             = "ticketmaster-daily-extract"
-  description      = "Triggers the twice-daily nationwide Ticketmaster raw extract."
+  description      = "Triggers the every-4-hours (6 runs/day) nationwide Ticketmaster raw extract."
   region           = var.region
   schedule         = var.ticketmaster_schedule
   time_zone        = "America/Los_Angeles"

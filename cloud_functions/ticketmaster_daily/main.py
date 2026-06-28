@@ -1,6 +1,6 @@
 """Nationwide Ticketmaster extractor — runs as a Cloud Run function (gen2).
 
-Cloud Scheduler hits this function twice a day (see
+Cloud Scheduler hits this function every 4 hours — 6 runs/day (see
 terraform/ticketmaster_scheduler.tf). It sweeps every US state (plus DC),
 fetches upcoming events from the Ticketmaster Discovery API, and lands one
 raw JSON file per state in the bronze (raw) bucket:
