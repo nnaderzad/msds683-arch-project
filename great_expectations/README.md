@@ -41,6 +41,7 @@ great_expectations/
   bronze_suites.py     # C2: per-source bronze extractors + raw-JSON landing suites
   silver_suites.py     # C3: silver tables (rebuilt from seed) + schema/null/range/FK suites
   gold_suites.py       # C4: gold fact_event_demand (replicated dbt join) + integrity suite
+  forecast_suites.py   # D2: forecast_event_price sanity suite (non-negative, valid horizon)
   run_checkpoints.py   # CLI: run all offline checkpoints, or --list checkpoints
   requirements.txt     # great-expectations==1.18.2 (+ BigQuery driver for C3/C4)
   gx/                  # generated GX file-context home (gitignored)

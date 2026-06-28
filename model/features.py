@@ -59,6 +59,11 @@ def build_training_frame(
     df["has_youtube"] = df["yt_views"].notna()
     df["genre"] = df["genre"].astype("category")
 
+    # Force numeric dtype: an all-null column (e.g. capacity — Ticketmaster rarely
+    # exposes it) otherwise stays `object`, which the regressor can't ingest. NaN is fine.
+    for col in NUMERIC_FEATURES:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
     # Train only on priced, pre-show observations.
     keep = df[target].notna() & (df["days_to_show"] >= 0)
     return df.loc[keep, ID_COLUMNS + FEATURE_COLUMNS + [target]].reset_index(drop=True)
