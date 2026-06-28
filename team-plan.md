@@ -420,11 +420,19 @@ sits above the medallion build tasks.
      / 1 pre-existing skip; `run_checkpoints.py` PASSED on all 15 checkpoints. Forecast
      sanity deferred until D2 builds `forecast_event_price`.
 
-- [ ] **D1 · Model feature build**  ·  Owner: `____`
-   - Prereqs: B1
-   - Build: `model/features.py` — assemble the training frame from gold
-     (days_to_show, interest trajectory, yt signals, capacity, genre, etc.).
-   - Tests / done-when: unit on feature shapes + no target leakage, over a fixture.
+- [x] **D1 · Model feature build**  ·  Owner: `NN`  ·  ✅ PR #26
+   - Prereqs: B1 ✅
+   - Built: `model/features.py` — pooled cross-sectional training frame from gold (one
+     row per priced (event, snapshot)). Features: `days_to_show`, **Google Trends local
+     (DMA) popularity** (`local_interest`), YouTube signals (`yt_subscribers`/`yt_views`),
+     `capacity`, `genre`, + missingness flags (coverage is partial). No target leakage —
+     `price_*` never enter the feature matrix; `split_X_y` returns only `FEATURE_COLUMNS`.
+     Keeps priced, pre-show rows; NaN preserved for D2's HGB regressor. `read_gold_and_dims`
+     is the BigQuery I/O layer.
+   - Verified: `tests/test_features.py` — feature shapes, priced/pre-show filtering,
+     missingness, and the no-leakage invariant. `ruff` clean; `pytest tests/` 103 passed.
+   - Note: the richer **national daily Trends series** (`iot_US`) is in bronze but not
+     yet in silver/gold (A1 loaded DMA only) — small A1 extension if the chart wants it.
 
 - [ ] **E1 · FastAPI skeleton**  ·  Owner: `NF`  ·  PR #22
    - Prereqs: none — ready (stub responses)
