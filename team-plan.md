@@ -205,30 +205,42 @@ Each task:
 
 ### ⭐ HIGH PRIORITY — Source collection coverage
 
-The pipeline now runs end-to-end, but **gold demand-signal is capped by ingestion
-coverage, not the warehouse**: only ~281 Trends artists and ~656 YouTube artists are
-collected vs ~40k events, and Ticketmaster + Trends are both rate-limited. Lifting
-coverage where it matters is the single biggest lever on demo/model quality — so this
-sits above the medallion build tasks.
+A deterministic diagnostic (`eda/diagnose_price_gaps.py`) re-scoped this. **TM price
+continuity is a non-problem:** the processed parquet exports current-state `tm_events`
+(MERGE-upsert, never deletes), so every priced show is **forward-filled** gap-free —
+**0 interior coverage gaps** across 9,661 priced events. And broad **DMA-local Trends
+coverage is rate-bound** (the 20s anti-429 cap ≈ 165 calls/day → collecting the ~1,711
+uncollected priced-event headliners deeply is *weeks*). The achievable lever is loading
+the **daily interest trajectory we already backfilled** and **retargeting the roster** at
+priced events.
 
-- [ ] **COLLECT-1 · Prioritized, continuous source collection (TM + Trends)**  ·  Owner: `____`  ·  ⭐ HIGH
+- [x] **COLLECT-1 · Trends daily-trajectory coverage + roster retarget**  ·  Owner: `TK`  ·  ⭐ HIGH
    - Prereqs: none — ready (improves the already-deployed collectors)
-   - Build:
-     - **Priority queue** — rank events/artists by **historical price/signal consistency**
-       (reuse `eda/tm_price_eda.py` `price_completeness`) and spend the existing call-budget
-       headroom (a run uses ~659 of 780 calls; ~4,680 of 5,000/day) re-fetching the
-       high-value set first by id (`events/{id}.json`), guaranteeing **daily continuity** for
-       demo-grade shows. Mirror the Google Trends roster/queue (`google_trends_api/`).
-     - **TM tail** — finer slicing / per-genre or per-market filters in dense states so the
-       1,000-event-per-slice deep-paging cap stops dropping events.
-     - **Trends coverage** — grow the collected-artist roster (281 today) toward the events
-       that actually have shows + price history; keep the per-pull 0–100 discipline.
-     - **Prune post-show** events (`show_date + ~3d`) from `tm_events`/exports — removes the
-       ~7% negative-`days_to_show` rows and shrinks the daily snapshot. Fix the stale
-       "twice a day" docstring in `cloud_functions/ticketmaster_daily/main.py` (it's 6×/day).
-   - Tests / done-when: measurably higher event-signal coverage in `fact_event_demand`
-     (rows with non-NULL `local_interest` / `yt_*`); daily continuity for a curated demo
-     set; total call budget stays < 5,000/day. Reasoning notes live with the team.
+   - Built (this pass):
+     - **`fact_trends_daily`** — new silver `pipeline/silver/trends_series_to_silver.py` loads the
+       backfillable `interest_over_time` per-DMA **daily** series (the locked-schema "daily
+       trajectory") that A1's `fact_trends` never loaded — ~9,200 already-collected iot files
+       that sat **unused** in bronze. **Additive on purpose**: iot is deep (~9 mo) but static;
+       the ibr snapshot is shallow but daily-fresh, and the two 0–100 series normalize
+       differently — so the live `fact_trends`/gold/model stay untouched.
+     - **Roster retarget** — `build_roster.py` now ranks by **priced-event headliner** (gate) +
+       Bay-Area/EDM boost + touring tiebreaker (not touring breadth), so the rate-limited
+       collector spends on modelable shows: `selected_with_priced_event` **44 → 250**, and the
+       top of the roster is now Bay-Area Dance/Electronic acts.
+     - Fixed the stale "twice a day" docstring (it's 6×/day); committed the diagnostic evidence.
+   - **Dropped:** the TM priority re-fetch-by-id queue — the diagnostic proved there are **0**
+     coverage gaps to fix (forward-fill). The TM-tail / post-show-prune ideas → COLLECT-2 if needed.
+   - **▶ Verified:** `fact_trends_daily` = **1,581,872 rows** (PK unique), 276 artists × 172 DMAs ×
+     271 days (2025-09→2026-06-15), `interest ∈ [0,100]`, idempotent MERGE; covers **109 priced
+     events** with genuine daily curves — *depth, not breadth* (fewer than the snapshot's 150
+     because iot was per-DMA-target-limited). Offline tests for both transforms + the ranking.
+   - **Follow-ons (own tasks):**
+     - **Rewire gold/model + the demo Trends chart to `fact_trends_daily`** — what actually lifts
+       `fact_event_demand` signal coverage; ties to `MIG-1` / a `D1` feature change.
+     - **Deep iot backfill of the ~1,711 uncollected priced headliners** — rate-bound (~weeks);
+       run the retargeted roster's backfill over the remaining timeline if desired.
+     - **Forward-fill honesty fix** — build silver price history from **bronze observations** (no
+       silver fill); flag any gold fill as team-derived. Own session.
 
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
@@ -574,12 +586,14 @@ sits above the medallion build tasks.
 ## Dependency quick-reference (what's unblocked)
 
 > **Frontier (what's actually next):** the whole medallion + model path is **built and
-> materialized** (silver → gold → `forecast_event_price`). The live work is now: **`COLLECT-1`**
-> (signal coverage — biggest lever), **`E2`** (live API over gold — unblocked), **`G1`**
-> (automate the gold+forecast refresh, retire the manual re-runs), and the **dbt migration**
-> (`MIG-1/2/3` + `G3`).
+> materialized** (silver → gold → `forecast_event_price`), and **`COLLECT-1` ✅** loaded the
+> daily Trends trajectory (`fact_trends_daily`) + retargeted the roster. The live work is now:
+> **rewire gold/model to `fact_trends_daily`** (converts the daily signal into gold coverage),
+> **`E2`** (live API over gold — unblocked), **`G1`** (automate the gold+forecast refresh), and
+> the **dbt migration** (`MIG-1/2/3` + `G3`).
 
-- **⭐ HIGH PRIORITY, ready now:** `COLLECT-1` (source coverage — the demand-signal bottleneck).
+- **⭐ COLLECT-1 ✅ done** (`fact_trends_daily` + roster retarget). Follow-ons: rewire gold/model
+  to `fact_trends_daily`; deep iot backfill (rate-bound); the forward-fill honesty fix.
 - **Ready now:** `G0`, `F1`, `DOC-1`, `ENV-1`.  _(`C1`, `H1`, `T0`, `E1` ✅ done)_
 - **Silver/dims ✅** (`A1`/`A2`/`A3`/`A4`) → **gold `B1` ✅** → **`D1`/`D2` ✅** (forecast materialized, PR #28).
 - **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI), `G1` (gold-refresh job).
