@@ -10,11 +10,14 @@ event's venue to a Google Trends DMA (``geo_lookup``), and aggregates to:
                      EDM/pop seed in ``config.ARTISTS``).
   - per (ARTIST,DMA): the targeted per-metro fetch queue for selected artists.
 
-Ranking favors real touring acts over single-venue residencies/tributes: distinct
-markets (DMAs) dominate, then event volume. The curated seed (``config.ARTISTS``)
-is always selected and carries ``query`` overrides that disambiguate common names
-(e.g. Fisher -> "Fisher DJ"). Backfill order is soonest-show-first (see
-``soonest_*`` columns), independent of selection.
+Ranking is **demand-priority** (COLLECT-1 retarget): artists who headline/appear on
+**priced** shows rank first (the only events we can model), then a Bay-Area + EDM boost
+(on-thesis), with the touring score (distinct DMAs, then event volume) as the tiebreaker.
+This replaces the old touring-breadth-only ranking, under which only ~16% of collected
+artists actually headlined a priced event. The curated seed (``config.ARTISTS``) is always
+selected and carries ``query`` overrides that disambiguate common names (e.g. Fisher ->
+"Fisher DJ"). Backfill order is soonest-show-first (see ``soonest_*`` columns),
+independent of selection.
 
 Artifacts (date-stamped for reproducibility):
   - sample_data/roster_artist_<date>.csv    (committed sample — top rows)
@@ -46,6 +49,9 @@ logger = logging.getLogger("build_roster")
 PROJECT_ID = "data-architecture-498123"
 TM_TABLE = f"{PROJECT_ID}.event_demand_analytics.tm_events"
 
+SF_DMA = "807"  # San Francisco-Oakland-San Jose — the Bay Area metro
+EDM_GENRES = ("Dance/Electronic", "Electronic")
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SAMPLE_DIR = Path(__file__).with_name("sample_data")
 SAMPLE_ROWS = 50
@@ -74,7 +80,7 @@ def fetch_upcoming(states: list[str] | None) -> list[bigquery.table.Row]:
         where.append("venue_state_code IN UNNEST(@states)")
     sql = f"""
         SELECT TRIM(a) AS artist, venue_postal_code AS zip,
-               venue_state_code AS state, local_date, genre
+               venue_state_code AS state, local_date, genre, price_min
         FROM `{TM_TABLE}`, UNNEST(SPLIT(attraction_names, '|')) AS a
         WHERE {' AND '.join(where)}
     """
@@ -105,6 +111,8 @@ def build_frames(
                 "dma_name": hit.dma_name,
                 "local_date": r["local_date"],
                 "genre": r["genre"],
+                "has_price": r["price_min"] is not None,
+                "is_bay": hit.dma == SF_DMA,
             }
         )
     df = pd.DataFrame.from_records(records)
@@ -124,16 +132,29 @@ def build_frames(
     artist = (
         df.groupby("artist", as_index=False)
         .agg(n_events=("local_date", "size"),
+             n_priced_events=("has_price", "sum"),
              n_dmas=("dma", "nunique"),
+             plays_bay=("is_bay", "max"),
              soonest_date=("local_date", "min"),
              top_genre=("genre", top_genre))
     )
     artist["query"] = artist["artist"].map(query_for)
     artist["in_seed"] = artist["artist"].str.lower().isin(_SEED)
-    # Touring score: markets dominate event volume; residencies (1 DMA) rank low.
+    artist["is_edm"] = artist["top_genre"].isin(EDM_GENRES)
+    # Touring score (the tiebreaker): markets dominate event volume; residencies rank low.
     artist["score"] = artist["n_dmas"] * 100 + artist["n_events"]
+    # Demand-priority ranking (COLLECT-1 retarget): GATE on headlining any priced show
+    # (the only events we can model) so priced-event headliners outrank everyone — this is
+    # the fix for the old touring-breadth-only ranking, under which just ~16% of collected
+    # artists headlined a priced event. Among priced headliners, boost on-thesis Bay-Area +
+    # EDM, then rank by touring score so real touring acts surface above high-frequency
+    # residencies (which rack up a huge priced-event COUNT at one venue), with the
+    # priced-event count only as a minor tiebreaker.
+    artist["ba_edm_boost"] = artist["plays_bay"].astype(int) + artist["is_edm"].astype(int)
+    artist["has_priced"] = artist["n_priced_events"] > 0
     artist = artist.sort_values(
-        ["score", "soonest_date"], ascending=[False, True]
+        ["has_priced", "ba_edm_boost", "score", "n_priced_events", "soonest_date"],
+        ascending=[False, False, False, False, True],
     ).reset_index(drop=True)
     artist["rank"] = artist.index + 1
     artist["selected"] = (artist["rank"] <= top_n) | artist["in_seed"]
@@ -144,8 +165,8 @@ def build_frames(
     targets = targets.sort_values(["soonest_in_dma", "artist", "dma"]).reset_index(drop=True)
 
     artist = artist[
-        ["rank", "artist", "query", "n_events", "n_dmas", "soonest_date",
-         "top_genre", "score", "in_seed", "selected"]
+        ["rank", "artist", "query", "n_events", "n_priced_events", "n_dmas",
+         "ba_edm_boost", "soonest_date", "top_genre", "score", "in_seed", "selected"]
     ]
     targets = targets[
         ["artist", "query", "dma", "geo_code", "dma_name",
@@ -156,6 +177,8 @@ def build_frames(
         "venues_unresolved": unresolved,
         "artists_total": len(artist),
         "artists_selected": int(artist["selected"].sum()),
+        "selected_with_priced_event": int(
+            (artist["selected"] & (artist["n_priced_events"] > 0)).sum()),
         "targets_selected": len(targets),
     }
     return artist, targets, stats
@@ -190,7 +213,7 @@ def main() -> int:
     write_outputs(artist, targets, run_date)
 
     logger.info("Summary: %s", stats)
-    logger.info("Top 12 selected touring artists:\n%s",
+    logger.info("Top 12 selected (priced-priority) artists:\n%s",
                 artist.head(12).to_string(index=False))
     return 0
 

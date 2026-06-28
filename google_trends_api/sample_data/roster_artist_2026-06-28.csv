@@ -1,0 +1,51 @@
+rank,artist,query,n_events,n_priced_events,n_dmas,ba_edm_boost,soonest_date,top_genre,score,in_seed,selected
+1,Chasing Abbey,Chasing Abbey,17,5,15,2,2026-09-26,Dance/Electronic,1517,False,True
+2,Temples,Temples,13,2,11,2,2026-09-15,Dance/Electronic,1113,False,True
+3,Slow Magic,Slow Magic,6,1,5,2,2026-08-15,Dance/Electronic,506,False,True
+4,Young Franco,Young Franco,5,3,4,2,2026-07-09,Dance/Electronic,405,False,True
+5,OMNOM,OMNOM,4,1,4,2,2026-07-12,Dance/Electronic,404,False,True
+6,Borgore,Borgore,2,1,2,2,2026-07-10,Dance/Electronic,202,False,True
+7,SABAI,SABAI,2,1,2,2,2026-07-10,Dance/Electronic,202,False,True
+8,Cheat Codes,Cheat Codes,2,1,2,2,2026-07-12,Dance/Electronic,202,False,True
+9,Dublon,Dublon,2,1,2,2,2026-09-19,Dance/Electronic,202,False,True
+10,veggi,veggi,1,1,1,2,2026-07-17,Dance/Electronic,101,False,True
+11,Chancha Via Circuito,Chancha Via Circuito,1,1,1,2,2026-09-18,Dance/Electronic,101,False,True
+12,Daniel Avery,Daniel Avery,1,1,1,2,2026-09-18,Dance/Electronic,101,False,True
+13,Lido Pimienta,Lido Pimienta,1,1,1,2,2026-09-18,Dance/Electronic,101,False,True
+14,Sassy 009,Sassy 009,1,1,1,2,2026-11-04,Dance/Electronic,101,False,True
+15,Paul Cauthen,Paul Cauthen,49,5,42,1,2026-07-09,Other,4249,False,True
+16,Pouya,Pouya,39,2,36,1,2026-09-26,Hip-Hop/Rap,3639,False,True
+17,Underoath,Underoath,41,4,35,1,2026-07-13,Rock,3541,False,True
+18,Air Supply,Air Supply,45,5,34,1,2026-07-09,Pop,3445,False,True
+19,GWAR,GWAR,34,8,34,1,2026-07-31,Metal,3434,False,True
+20,Lenny Pearce,Lenny Pearce,38,1,32,1,2026-09-25,Pop,3238,False,True
+21,Shakey Graves,Shakey Graves,35,1,32,1,2026-07-16,Country,3235,False,True
+22,Ramirez,Ramirez,33,2,31,1,2026-09-26,Hip-Hop/Rap,3133,False,True
+23,Leonid & Friends,Leonid & Friends,44,2,30,1,2026-09-18,Rock,3044,False,True
+24,Jonah Kagen,Jonah Kagen,37,1,29,1,2026-08-12,Rock,2937,False,True
+25,Rolling Quartz,Rolling Quartz,29,29,29,1,2026-07-15,Pop,2929,False,True
+26,Bingo Loco,Bingo Loco,44,13,28,1,2026-07-10,Pop,2844,False,True
+27,Bowling for Soup,Bowling for Soup,35,2,28,1,2026-07-24,Rock,2835,False,True
+28,Eslabon Armado,Eslabon Armado,31,1,28,1,2026-07-24,Latin,2831,False,True
+29,Thousand Below,Thousand Below,33,2,27,1,2026-07-07,Metal,2733,False,True
+30,Atreyu,Atreyu,30,1,27,1,2026-09-20,Rock,2730,False,True
+31,Charles Wesley Godwin,Charles Wesley Godwin,28,2,27,1,2026-07-10,Country,2728,False,True
+32,Masego,Masego,29,1,26,1,2026-08-04,Hip-Hop/Rap,2629,False,True
+33,almost monday,almost monday,28,1,26,1,2026-09-27,Pop,2628,False,True
+34,Citizen,Citizen,27,3,26,1,2026-08-18,Other,2627,False,True
+35,Turnover,Turnover,32,4,25,1,2026-06-29,Rock,2532,False,True
+36,6LACK,6LACK,28,1,25,1,2026-10-21,Hip-Hop/Rap,2528,False,True
+37,August Burns Red,August Burns Red,28,1,25,1,2026-11-05,Rock,2528,False,True
+38,The Menzingers,The Menzingers,27,1,25,1,2026-07-17,Rock,2527,False,True
+39,Madeon,Madeon,27,1,25,1,2026-08-15,Pop,2527,False,True
+40,Poppy,Poppy,30,1,24,1,2026-07-07,Metal,2430,False,True
+41,Everclear,Everclear,28,1,24,1,2026-07-03,Rock,2428,False,True
+42,The Funeral Portrait,The Funeral Portrait,27,3,24,1,2026-09-19,Rock,2427,False,True
+43,BossMan Dlow,BossMan Dlow,25,3,24,1,2026-07-17,Hip-Hop/Rap,2425,False,True
+44,LUCKI,LUCKI,27,1,23,1,2026-08-20,Hip-Hop/Rap,2327,False,True
+45,The Fixx,The Fixx,25,1,23,1,2026-07-11,Rock,2325,False,True
+46,Hotline TNT,Hotline TNT,24,3,23,1,2026-07-24,Rock,2324,False,True
+47,LANDMVRKS,LANDMVRKS,24,1,23,1,2026-07-07,Metal,2324,False,True
+48,Tab Benoit,Tab Benoit,28,4,22,1,2026-07-14,Blues,2228,False,True
+49,feeble little horse,feeble little horse,25,6,22,1,2026-07-11,Alternative,2225,False,True
+50,Marcus King Band,Marcus King Band,25,2,22,1,2026-07-07,Rock,2225,False,True
