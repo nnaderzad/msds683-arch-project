@@ -451,13 +451,17 @@ sits above the medallion build tasks.
 
 ### Phase 3 — Model, live API, web wiring
 
-- [ ] **D2 · Train + predict → gold (`forecast_event_price`)**  ·  Owner: `____`
-   - Prereqs: B1, D1
-   - Build: `model/train.py` + `model/predict.py` — deterministic pooled regressor
-     (e.g. sklearn `HistGradientBoostingRegressor`, fixed seed); per-show daily
-     forecast to show date → `forecast_event_price` gold table via
-     `pipeline/gold/export_predictions_table.py`. Document thin-history/pooling
-     assumptions in a docstring/README.
+- [x] **D2 · Train + predict → gold (`forecast_event_price`)**  ·  Owner: `NN`  ·  ✅ PR #27
+   - Prereqs: B1 ✅, D1 ✅
+   - Built: `model/train.py` (deterministic `HistGradientBoostingRegressor`, fixed seed;
+     pooled cross-sectional — handles missing + categoricals natively; drops degenerate
+     all-null features) + `model/predict.py` (latest snapshot per event → sweep
+     `days_to_show` to 0, signals held constant, price floored at 0) +
+     `pipeline/gold/export_predictions_table.py` (assemble + CREATE OR REPLACE
+     `forecast_event_price`). GX forecast sanity suite in `great_expectations/forecast_suites.py`.
+   - Verified: `pytest tests/` 107 passed; ruff clean; **reproducibility** (same seed →
+     identical predictions); end-to-end on seed-built gold → 369 forecast rows / 5 events,
+     price $0–$119, forecast sanity suite PASS.
    - Tests / done-when: unit on **seeded reproducibility** (same input → same
      prediction); GX forecast sanity suite.
 
