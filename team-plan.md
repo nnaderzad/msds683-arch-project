@@ -61,6 +61,11 @@ All of these — or it's not done:
   per Ground Rule 2. Not "CI passed," not "the agent said so."
 - **You can explain what it does and why** (Ground Rules 1 & 3).
 - PR reviewed by a teammate and merged to `main`.
+- **Operationalized, not just coded.** If a task produces a **warehouse table, a deployed
+  service, or collected data**, the real artifact must actually exist and be **backfilled**
+  — table materialized in BQ, endpoint live, data collected — *not just* green on the seed
+  in CI. "Code merged" ≠ "done." Many tasks below carry an explicit **▶ Run / backfill**
+  line naming the real-data step their owner still owes.
 
 A task is not "done" just because the happy path ran once, or because a coding agent
 declared it finished.
@@ -136,6 +141,7 @@ sure its row is true and you can expand on it live.
 | Silver (BigQuery) | ✅ `fact_ticketmaster` (A4, dbt); `tm_events` current-state → dims | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
 | Dims + bridge | ✅ `dim_*` + `bridge_event_artist` (A3, from `tm_events`) |||
 | Gold (`fact_event_demand`) | ✅ `fact_event_demand` (B1, dbt) — signals fill in with collection coverage (COLLECT-1) |||
+| Gold forecast (`forecast_event_price`) | ✅ materialized (D2, PR #28) — 494,961 rows / 9,657 events; **re-run after each gold refresh until `G1` automates** |||
 
 > `tm_events` (current-state, MERGE-upsert) feeds the **dims** (A3). The silver TM **fact**
 > `fact_ticketmaster` — event × snapshot_date price *history*, sourced from the processed
@@ -286,8 +292,10 @@ sits above the medallion build tasks.
      `tm_events` pattern; re-runnable via `python pipeline/silver/trends_to_silver.py`.
    - Verified: offline unit tests in `tests/test_trends_to_silver.py` (pure transform
      over the T0 seed) + a real BigQuery load (seed = 4,200 rows, 5 artists × 210 DMAs
-     × 11 days, interest ∈ [0,100], PK unique, idempotent on re-run). Full bronze
-     backfill (1,031 files) is the same command / future G1 job.
+     × 11 days, interest ∈ [0,100], PK unique, idempotent on re-run).
+   - **▶ Run / backfill:** ✅ full bronze backfill **done** — `fact_trends` = 216,510 rows /
+     **281 artists** × 210 DMA × 12 days. Same command re-runs as bronze grows; folds into
+     `MIG-1` + `G1` when automated.
    - **GX silver-trends suite deferred to C3** (no GX scaffold yet — folds in there).
 
 - [x] **A2 · YouTube bronze→silver (`fact_youtube`)**  ·  Owner: `TK`  ·  ✅ PR #14
@@ -299,6 +307,8 @@ sits above the medallion build tasks.
      staging+MERGE; hidden subscriber counts preserved as NULL.
    - Verified: offline tests in `tests/test_youtube_to_silver.py` + a real BigQuery load
      (seed = 46 rows, 5 artists × 12 days, subs 2.3k–821k, PK unique, idempotent).
+   - **▶ Run / backfill:** ✅ full bronze backfill **done** — `fact_youtube` = 4,534 rows /
+     **656 artists**. Same command re-runs as bronze grows; folds into `MIG-2` + `G1`.
    - **GX silver-youtube suite deferred to C3.**
 
 - [x] **A3 · Conformed dimensions**  ·  Owner: `TK`  ·  ✅ PR #15
@@ -327,6 +337,9 @@ sits above the medallion build tasks.
    - Verified: real `dbt build` — **609,728 rows = distinct (event_id, snapshot_date)** (PK
      unique), 40,770 events × 16 snapshot days, ~23% priced (matches the H1 EDA), idempotent
      re-run (MERGE 0 rows); dbt tests pass. **GX silver suite → C3; dbt-in-CI → G3.**
+   - **▶ Run / backfill:** built by a **manual `dbt build`**. New daily TM parquet snapshots
+     are **not** in `fact_ticketmaster` (or downstream gold) until someone re-runs `dbt build`
+     — re-run periodically until **`G1`** automates it (incremental MERGE, idempotent).
 
 - [x] **C2 · GX bronze suites**  ·  Owner: `NN`  ·  ✅ PR #23
    - Prereqs: C1 ✅
@@ -355,6 +368,8 @@ sits above the medallion build tasks.
      `ruff` clean; `pytest tests/` 90 passed / 1 pre-existing skip; `run_checkpoints.py`
      PASSED on all 14 checkpoints. `fact_ticketmaster` (dbt) validated via its seed
      panel here + dbt tests + the live BQ datasource.
+   - **▶ Run / backfill:** CI validates seed-built tables; also run the suite against the
+     **live full BQ** silver (datasource already wired) periodically — full-volume run is `SCALE-1`.
 
 - [ ] **INT-1 · Integration: bronze→silver**  ·  Owner: `____`
    - Prereqs: A1, A2, A3, A4, T0
@@ -390,6 +405,27 @@ sits above the medallion build tasks.
      division of labor so the same checks aren't duplicated in both.
    - Tests / done-when: CI runs dbt green on a sandbox dataset; creds setup documented.
 
+### Housekeeping — developer experience / ops  *(low priority, ready now)*
+
+- [ ] **DOC-1 · Per-folder README / CLAUDE.md**  ·  Owner: `____`
+   - Prereqs: none — ready
+   - Build: a short doc in each major folder — **purpose, entry point, how to run** — for
+     `model/`, `pipeline/`, `common/`, `terraform/` (`api/`, `great_expectations/`, `dbt/`
+     already have one). Speeds human + coding-agent review of a fast-moving repo.
+   - Tests / done-when: each listed folder has a README/CLAUDE.md a teammate can follow.
+
+- [ ] **ENV-1 · Per-component Python envs + "which env for what" doc**  ·  Owner: `____`
+   - Prereqs: none — ready
+   - Build: one env **per runtime boundary**, pinned by that component's committed
+     `requirements.txt` so **local == CI == container**: `ingest` (pytrends + BQ, **pinned
+     pandas 3.0.3**), `model` (sklearn + BQ + db-dtypes), `api` (fastapi + BQ), `gx`
+     (great_expectations — **isolate**, its dep tree conflicts), dbt (own venv). **Do not**
+     build one mega-env — the pytrends pandas-pin and GX both break it. Document the mapping.
+   - Note: today `music-demand` doubles as ingest **and** model (scikit-learn was added there
+     to run D2) — split it into `ingest` + `model` here.
+   - Tests / done-when: each env solves from its `requirements.txt`; the run command for each
+     component names its env; the doc lists "which env for what."
+
 ### Phase 2 — Gold + scaffolds
 
 - [x] **B1 · Gold star `fact_event_demand`**  ·  Owner: `TK`  ·  ✅ PR #18
@@ -404,6 +440,9 @@ sits above the medallion build tasks.
      `dim_event` gap** — current-state, see `MIG-3`). After the silver backfill + a gold
      full-refresh: `local_interest` on 22,863 rows / 5,629 events, `yt_*` on 80,049 / 9,577.
      **GX gold suite → C4.**
+   - **▶ Run / backfill:** rebuilt by **manual `dbt build`** (and full-refresh when silver
+     gains new artists/dates). Re-run after each silver refresh until **`G1`** automates the
+     whole gold layer; **D2's `forecast_event_price` must re-run after gold** (see D2).
 
 - [x] **C4 · GX gold suites**  ·  Owner: `NN`  ·  ✅ PR #25
    - Prereqs: C1 ✅, B1 ✅
@@ -417,8 +456,10 @@ sits above the medallion build tasks.
    - Verified: `tests/test_gx_gold.py` — suite passes on seed-built gold; explicit
      no-row-drop + per-event `days_to_show` monotone-toward-show-date checks; negative
      tests (row drop, out-of-range interest) fail. `ruff` clean; `pytest tests/` 95 passed
-     / 1 pre-existing skip; `run_checkpoints.py` PASSED on all 15 checkpoints. Forecast
-     sanity deferred until D2 builds `forecast_event_price`.
+     / 1 pre-existing skip; `run_checkpoints.py` PASSED on all 15 checkpoints.
+   - **▶ Run / backfill:** CI validates seed-built gold; also run against **live full BQ**
+     gold periodically. The **forecast sanity suite** (`forecast_suites.py`) can now run for
+     real — `forecast_event_price` is materialized (D2, PR #28); wire it into the live run.
 
 - [x] **D1 · Model feature build**  ·  Owner: `NN`  ·  ✅ PR #26
    - Prereqs: B1 ✅
@@ -434,15 +475,21 @@ sits above the medallion build tasks.
    - Note: the richer **national daily Trends series** (`iot_US`) is in bronze but not
      yet in silver/gold (A1 loaded DMA only) — small A1 extension if the chart wants it.
 
-- [ ] **E1 · FastAPI skeleton**  ·  Owner: `NF`  ·  PR #22
+- [x] **E1 · FastAPI skeleton**  ·  Owner: `NF`  ·  ✅ PR #22
    - Prereqs: none — ready (stub responses)
-   - Build: `api/app.py` — `/shows`, `/show/{id}` over gold (stubbed data OK for now).
-   - Tests / done-when: pytest via FastAPI `TestClient` on stub responses.
+   - Built: `api/app.py` — `/health`, `/shows`, `/show/{id}` serving **stub** records
+     (`tests/test_api.py` via FastAPI `TestClient`). Intentionally stubbed — **`E2` swaps the
+     stubs for live BigQuery gold reads** (same endpoint contract).
+   - Tests / done-when: ✅ pytest via FastAPI `TestClient` on stub responses.
 
-- [ ] **G1 · Terraform: dbt transform Cloud Run job**  ·  Owner: `____`
-   - Prereqs: A4/B1 dbt models exist (silver + gold)
-   - Build: a Cloud Run job that runs `dbt build` (silver + gold) (extends `terraform/`).
-   - Tests / done-when: `terraform plan` clean; dry-run job execution.
+- [ ] **G1 · Terraform: gold-refresh Cloud Run job (dbt + forecast)**  ·  Owner: `____`
+   - Prereqs: A4/B1 dbt models exist (silver + gold); D2 export entrypoint (✅ PR #28)
+   - Build: a Cloud Run job (extends `terraform/`) that refreshes the **whole gold layer** on
+     a schedule — `dbt build` (silver + gold) **then** `python pipeline/gold/export_predictions_table.py`
+     (re-materialize `forecast_event_price`). One job so gold + forecast never drift apart.
+     Removes the standing "re-run manually" debt on A4/B1/D2.
+   - Tests / done-when: `terraform plan` clean; dry-run job execution; after a run, BQ shows
+     fresh `fact_ticketmaster`/`fact_event_demand`/`forecast_event_price`.
 
 - [ ] **INT-2 · Integration: silver→gold**  ·  Owner: `____`
    - Prereqs: B1, T0
@@ -462,6 +509,12 @@ sits above the medallion build tasks.
    - Verified: `pytest tests/` 107 passed; ruff clean; **reproducibility** (same seed →
      identical predictions); end-to-end on seed-built gold → 369 forecast rows / 5 events,
      price $0–$119, forecast sanity suite PASS.
+   - **▶ Run / backfill:** ✅ **materialized against real gold** (PR #28) — added a runnable
+     entrypoint (`export_predictions_table.py --dry-run` / run) wiring
+     `read_gold_and_dims → assemble_forecast → to_bigquery`, and fixed a BQ nullable-dtype
+     read bug. Result: **494,961 rows / 9,657 events**, price $0.74–$92.27, no nulls/negatives,
+     idempotent (WRITE_TRUNCATE + fixed seed). **Must re-run after each gold refresh** until
+     `G1` folds it in.
    - Tests / done-when: unit on **seeded reproducibility** (same input → same
      prediction); GX forecast sanity suite.
 
@@ -520,14 +573,18 @@ sits above the medallion build tasks.
 
 ## Dependency quick-reference (what's unblocked)
 
+> **Frontier (what's actually next):** the whole medallion + model path is **built and
+> materialized** (silver → gold → `forecast_event_price`). The live work is now: **`COLLECT-1`**
+> (signal coverage — biggest lever), **`E2`** (live API over gold — unblocked), **`G1`**
+> (automate the gold+forecast refresh, retire the manual re-runs), and the **dbt migration**
+> (`MIG-1/2/3` + `G3`).
+
 - **⭐ HIGH PRIORITY, ready now:** `COLLECT-1` (source coverage — the demand-signal bottleneck).
-- **Ready now:** `G0`, `F1`, `E1` (stub).  _(`C1`, `H1`, `T0` ✅ done)_
-- **After `T0` ✅:** `A1` ✅, `A2` ✅, `A3` ✅ done; **`A4`** (first dbt model) unblocked → then `C3`, `INT-1`.
-- **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI).
-- **After `C1` ✅:** `C2`, `C3` now unblocked.
-- **After `A1`+`A2`+`A3`+`A4` ✅:** `B1` ✅ done → `C4` ✅ done; `D1`, `INT-2`, `G1` **now unblocked**.
+- **Ready now:** `G0`, `F1`, `DOC-1`, `ENV-1`.  _(`C1`, `H1`, `T0`, `E1` ✅ done)_
+- **Silver/dims ✅** (`A1`/`A2`/`A3`/`A4`) → **gold `B1` ✅** → **`D1`/`D2` ✅** (forecast materialized, PR #28).
+- **After `A4`:** `MIG-1`/`MIG-2`/`MIG-3` (migrate A1/A2/A3 to dbt), `G3` (dbt-in-CI), `G1` (gold-refresh job).
 - **Data validation:** `C1`–`C4` ✅ all done — GX bronze/silver/gold suites green in CI (15 checkpoints).
-- **After `B1`:** `D1`; **after `D1`+`B1`:** `D2` → then `E2`, `INT-3`, `F3`.
+- **Now unblocked:** `E2` (live API — needs `B1`✅+`D2`✅+`E1`✅), `INT-2`, `INT-3`, `G1`.
 - **After `F1`:** `F2`; **after `E2`+`F2`+`H1`:** `F3`.
 - **Last:** `E2E-1` → `SCALE-1`, `I1`, `I2`.
 - **Shared hotspots (one owner per PR, announce first):** `terraform/`, `common/`, `dbt/`, shared SQL.
