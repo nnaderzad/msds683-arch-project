@@ -53,3 +53,40 @@ def to_bigquery(df: pd.DataFrame, project: str | None = None, dataset: str | Non
     )
     job.result()
     return len(df)
+
+
+# ---------------------------------------------------------------------------
+# Entrypoint — the real run: read gold from BQ → forecast → write gold table.
+# Deterministic + idempotent (fixed seed; WRITE_TRUNCATE). Re-runnable, no LLM.
+#   python pipeline/gold/export_predictions_table.py --dry-run   # report only
+#   python pipeline/gold/export_predictions_table.py             # materialize
+# ---------------------------------------------------------------------------
+
+def run(*, dry_run: bool = False, project: str | None = None, dataset: str | None = None) -> int:
+    """Read gold + dims from BigQuery, assemble the forecast, and (unless dry_run) write
+    the `forecast_event_price` gold table. Returns the forecast row count."""
+    gold, dim_venue, dim_event = features.read_gold_and_dims(project, dataset)
+    forecast = assemble_forecast(gold, dim_venue, dim_event)
+    n_rows, n_events = len(forecast), forecast["event_id"].nunique()
+    if dry_run:
+        print(f"[forecast] DRY-RUN: assembled {n_rows} rows / {n_events} events; nothing written.")
+        return n_rows
+    written = to_bigquery(forecast, project, dataset)
+    print(f"[forecast] wrote {written} rows / {n_events} events to {FORECAST_TABLE}.")
+    return written
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Materialize the gold forecast_event_price table.")
+    parser.add_argument("--dry-run", action="store_true", help="Assemble + report counts; write nothing.")
+    parser.add_argument("--project", default=None, help="GCP project (default: $DBT_GCP_PROJECT).")
+    parser.add_argument("--dataset", default=None, help="BQ dataset (default: $DBT_BQ_DATASET).")
+    args = parser.parse_args(argv)
+    run(dry_run=args.dry_run, project=args.project, dataset=args.dataset)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

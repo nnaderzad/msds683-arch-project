@@ -83,6 +83,26 @@ def categorical_mask() -> list[bool]:
 # BigQuery I/O (the real run; unit tests use an in-memory fixture instead)
 # ---------------------------------------------------------------------------
 
+def _to_numpy_backed(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize BigQuery's pandas *nullable* extension dtypes to numpy-backed columns.
+
+    `to_dataframe()` returns INTEGER/FLOAT/BOOL as `Int64`/`Float64`/`boolean` carrying
+    `pd.NA`; sklearn/numpy require `np.nan` in a float array. Numeric/bool extension
+    columns → `float64` (NA→NaN); other extension columns (nullable string, `dbdate`)
+    → `object`. No-op on already-numpy columns. (The model was unit-tested on plain-numpy
+    seed fixtures, so this quirk only surfaces on the live read.)
+    """
+    for col in df.columns:
+        dtype = df[col].dtype
+        if not pd.api.types.is_extension_array_dtype(dtype):
+            continue
+        if pd.api.types.is_numeric_dtype(dtype) or pd.api.types.is_bool_dtype(dtype):
+            df[col] = df[col].astype("float64")
+        else:
+            df[col] = df[col].astype("object")
+    return df
+
+
 def read_gold_and_dims(
     project: str | None = None, dataset: str | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -94,6 +114,7 @@ def read_gold_and_dims(
     client = bigquery.Client(project=project)
 
     def q(table: str) -> pd.DataFrame:
-        return client.query(f"SELECT * FROM `{project}.{dataset}.{table}`").to_dataframe()
+        df = client.query(f"SELECT * FROM `{project}.{dataset}.{table}`").to_dataframe()
+        return _to_numpy_backed(df)
 
     return q("fact_event_demand"), q("dim_venue"), q("dim_event")
