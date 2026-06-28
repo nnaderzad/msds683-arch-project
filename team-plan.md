@@ -494,14 +494,27 @@ priced events.
      stubs for live BigQuery gold reads** (same endpoint contract).
    - Tests / done-when: ✅ pytest via FastAPI `TestClient` on stub responses.
 
-- [ ] **G1 · Terraform: gold-refresh Cloud Run job (dbt + forecast)**  ·  Owner: `____`
+- [x] **G1 · Terraform: gold-refresh Cloud Run job (dbt + forecast)**  ·  Owner: `NN`
    - Prereqs: A4/B1 dbt models exist (silver + gold); D2 export entrypoint (✅ PR #28)
-   - Build: a Cloud Run job (extends `terraform/`) that refreshes the **whole gold layer** on
-     a schedule — `dbt build` (silver + gold) **then** `python pipeline/gold/export_predictions_table.py`
-     (re-materialize `forecast_event_price`). One job so gold + forecast never drift apart.
-     Removes the standing "re-run manually" debt on A4/B1/D2.
-   - Tests / done-when: `terraform plan` clean; dry-run job execution; after a run, BQ shows
-     fresh `fact_ticketmaster`/`fact_event_demand`/`forecast_event_price`.
+   - Built: a single **Cloud Run Job** (`terraform/gold_refresh_job.tf`) running
+     `pipeline/gold_refresh.py`, which chains the **whole refresh in one execution** so the
+     three source signals + gold + forecast never drift apart:
+     `trends_to_silver` → `youtube_to_silver` → `build_dimensions` → **`dbt build`** (silver +
+     gold) → **`export_predictions_table.py`** (`forecast_event_price`) → **GX forecast sanity
+     gate** (fails the run on a bad forecast). Fail-fast; deterministic + idempotent
+     (silver MERGE, dbt incremental, forecast WRITE_TRUNCATE + fixed seed), so retries
+     converge. Image built by Cloud Build from `pipeline/gold_refresh.Dockerfile`; runs as a
+     least-privilege SA (BQ dataEditor + jobUser); **Cloud Scheduler** fires it daily
+     (`var.gold_refresh_schedule`, default 09:00 LA). Removes the manual re-run debt on
+     A1–A3/A4/B1/D2.
+   - **Note — runs A1/A2/A3 itself** (not just `dbt build`) so all three datasets land in one
+     consistent state *without* waiting on the dbt migration (`MIG-1/2/3`). When MIG lands,
+     swap those three Python steps for `dbt build` covering them (the rest is unchanged).
+   - Verified: `terraform fmt`/`validate` clean; orchestrator offline unit tests
+     (`tests/test_gold_refresh.py`, 7 passed — plan order, flag propagation, `--only`/`--skip`,
+     dry-run drops the GX gate, fail-fast). **Remaining:** `terraform apply` (builds image +
+     provisions job/scheduler) + one live `gcloud run jobs execute gold-refresh` to confirm
+     fresh `fact_*`/`forecast_event_price` in BQ.
 
 - [ ] **INT-2 · Integration: silver→gold**  ·  Owner: `____`
    - Prereqs: B1, T0
