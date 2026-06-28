@@ -1,0 +1,4 @@
+# Model layer (D1 features, D2 train/predict).
+pandas>=2.0
+# D2 will use a deterministic pooled regressor (fixed seed); pinned major for repro.
+scikit-learn>=1.4
