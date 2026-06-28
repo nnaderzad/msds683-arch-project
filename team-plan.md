@@ -426,7 +426,7 @@ sits above the medallion build tasks.
      (days_to_show, interest trajectory, yt signals, capacity, genre, etc.).
    - Tests / done-when: unit on feature shapes + no target leakage, over a fixture.
 
-- [ ] **E1 · FastAPI skeleton**  ·  Owner: `____`
+- [ ] **E1 · FastAPI skeleton**  ·  Owner: `NF`  ·  PR #22
    - Prereqs: none — ready (stub responses)
    - Build: `api/app.py` — `/shows`, `/show/{id}` over gold (stubbed data OK for now).
    - Tests / done-when: pytest via FastAPI `TestClient` on stub responses.
