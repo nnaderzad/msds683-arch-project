@@ -543,7 +543,7 @@ priced events.
    - Tests / done-when: unit on **seeded reproducibility** (same input → same
      prediction); GX forecast sanity suite.
 
-- [ ] **E2 · API live endpoints**  ·  Owner: `NF`
+- [x] **E2 · API live endpoints**  ·  Owner: `NF` ✅ PR # #32
    - Prereqs: B1, D2, E1
    - Build: serve real per-show history (trends / youtube / price) + forecast; CORS;
      `api/Dockerfile`.
