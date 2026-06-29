@@ -28,6 +28,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+web/.vite/
 
 # Data — large local files shouldn't go in git (use GCS instead)
 /data/

@@ -1,6 +1,6 @@
 # Dashboard Chart Assumptions
 
-This frontend is still a scaffold for F1/F2, so it uses local mock show data shaped like the API/gold-table response we expect later.
+The F3 frontend reads live show data from the FastAPI service. The local mock show file is kept only as a fixture/reference shape for tests and development.
 
 ## Combined Signal Chart
 
@@ -13,12 +13,12 @@ This frontend is still a scaffold for F1/F2, so it uses local mock show data sha
 - YouTube views can be much larger than Trends, so the UI indexes YouTube views to the same 0-100 visual scale for comparison.
 - Missing source signals do not remove the show. The chart disables unavailable signal toggles and keeps null values visible as a data-quality issue.
 
-## Future F3/API Wiring
+## API Wiring
 
-When the FastAPI endpoint serves live or BigQuery-backed data, the chart expects the same shape:
+The chart expects the API shape from `GET /show/{event_id}`:
 
 - one selected event/show summary
 - `history[]` with dated observed price, Google Trends, and YouTube values
 - `forecast[]` with `days_to_show` and `predicted_price`
 
-The current mock forecast is demo data. The real forecast should come from the backend/model layer once that task is ready.
+The frontend uses `GET /shows` to populate the dropdown. It ranks the known hero/demo IDs first, then prefers shows with forecast, price, Trends, and YouTube coverage, and caps the dropdown to keep the UI usable. Configure the API host with `VITE_API_BASE_URL`; if unset, the app defaults to `http://127.0.0.1:8000`.
