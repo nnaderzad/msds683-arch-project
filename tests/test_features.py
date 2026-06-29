@@ -75,3 +75,23 @@ def test_missingness_flags_and_enrichment():
     # capacity joined from dim_venue; genre joined from dim_event.
     assert by_key.loc[("e1", "2026-06-20"), "capacity"] == 2000
     assert by_key.loc[("e1", "2026-06-20"), "genre"] == "Rock"
+
+
+def test_anchor_is_earliest_price_and_delta_target():
+    """Anchor = each show's earliest observed price; target = deviation from it."""
+    frame = features.build_training_frame(*_fixture())
+    by_key = frame.set_index(["event_id", "snapshot_date"])
+    # e1's earliest priced snapshot is 06-20 @ $50 → anchor 50; delta 0 then +2 on 06-21 @ $52.
+    assert by_key.loc[("e1", "2026-06-20"), features.ANCHOR_COLUMN] == 50.0
+    assert by_key.loc[("e1", "2026-06-20"), features.DELTA_TARGET] == 0.0
+    assert by_key.loc[("e1", "2026-06-21"), features.DELTA_TARGET] == 2.0
+    # e3 has a single priced row @ $30 → anchor 30, delta 0 (the "fall back to lone price" case).
+    assert by_key.loc[("e3", "2026-06-20"), features.ANCHOR_COLUMN] == 30.0
+    assert by_key.loc[("e3", "2026-06-20"), features.DELTA_TARGET] == 0.0
+
+    # Training on the delta target still leaks no price into X.
+    X, y = features.split_X_y(frame, target=features.DELTA_TARGET)
+    assert y.name == features.DELTA_TARGET
+    assert features.ANCHOR_COLUMN not in X.columns
+    assert features.DELTA_TARGET not in X.columns
+    assert list(X.columns) == features.FEATURE_COLUMNS

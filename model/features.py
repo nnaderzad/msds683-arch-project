@@ -2,12 +2,18 @@
 
 The forecast is cross-sectional/panel, not per-show time series: with only ~2 weeks of
 snapshot history we **pool across shows**. Each row is one priced (event, snapshot)
-observation; D2 learns price as a function of `days_to_show` + exogenous demand signals
-across all shows, then forecasts each show's price toward its date.
+observation. We measured (eda/diagnose_price_movement.py) that ticket price is ~96% **flat**
+across each show's window — so this is a price-LEVEL problem, not a drift problem. The model
+therefore anchors each show at its own observed price and learns only the small DEVIATION
+(`price_delta`) from it as a function of `days_to_show` + exogenous demand signals; predict.py
+adds a real price back, so the forecast starts at each show's real level and spans the full
+price range.
 
 Design (defend in Q&A):
-  * **No target leakage.** Features deliberately EXCLUDE `price_*` (the target side) and
-    anything derived from it. `split_X_y` only ever returns `FEATURE_COLUMNS`.
+  * **No target leakage.** Features deliberately EXCLUDE `price_*` and the price-derived
+    `anchor_price`/`price_delta` (the target side). `split_X_y` only ever returns
+    `FEATURE_COLUMNS`. The anchor is each show's **earliest** observed price (a known past
+    observation), used only as a target offset — not a feature — so no future info enters X.
   * **Signals are nullable** (LEFT-joined in gold). We keep NaN — D2's
     `HistGradientBoostingRegressor` handles missing values natively — and add
     **missingness flags** so "no signal collected" is itself a feature (honest about
@@ -27,8 +33,12 @@ import os
 import pandas as pd
 
 DEFAULT_TARGET = "price_min"
-# Target side — these must NEVER appear in the feature matrix (leakage guard).
-PRICE_COLUMNS = ["price_min", "price_max", "price_currency"]
+ANCHOR_COLUMN = "anchor_price"   # per-show price anchor = earliest observed price (known past)
+DELTA_TARGET = "price_delta"     # model target = price_min - anchor_price (deviation from anchor)
+# Target side — these must NEVER appear in the feature matrix (leakage guard). The anchor
+# and delta are price-derived, so they are listed here too: they enter only as the target
+# transform / a level offset added back at predict time, never as a feature.
+PRICE_COLUMNS = ["price_min", "price_max", "price_currency", ANCHOR_COLUMN, DELTA_TARGET]
 
 NUMERIC_FEATURES = ["days_to_show", "local_interest", "yt_subscribers", "yt_views", "capacity"]
 CATEGORICAL_FEATURES = ["genre"]
@@ -66,7 +76,19 @@ def build_training_frame(
 
     # Train only on priced, pre-show observations.
     keep = df[target].notna() & (df["days_to_show"] >= 0)
-    return df.loc[keep, ID_COLUMNS + FEATURE_COLUMNS + [target]].reset_index(drop=True)
+    kept = df.loc[keep].sort_values(ID_COLUMNS).copy()
+
+    # Per-show price ANCHOR = the show's earliest observed price — a known PAST observation,
+    # so no future leakage. The model targets the DEVIATION from it (`price_delta`); at
+    # forecast time predict.py adds a real price back analytically, so predictions span the
+    # full price range (no tree-extrapolation cap → no range-compression) and start at each
+    # show's real level. Ticket prices are ~96% flat across our window (see
+    # eda/diagnose_price_movement.py): the anchor carries the level, and the pooled model
+    # only has to learn the small drift of the ~4% of shows that actually move.
+    kept[ANCHOR_COLUMN] = kept.groupby("event_id")[target].transform("first")
+    kept[DELTA_TARGET] = kept[target] - kept[ANCHOR_COLUMN]
+    cols = ID_COLUMNS + FEATURE_COLUMNS + [target, ANCHOR_COLUMN, DELTA_TARGET]
+    return kept[cols].reset_index(drop=True)
 
 
 def split_X_y(frame: pd.DataFrame, *, target: str = DEFAULT_TARGET):
