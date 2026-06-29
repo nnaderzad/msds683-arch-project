@@ -2,19 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchShow, fetchShows } from "./api/client";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
 import { MetricCard } from "./components/MetricCard";
+import { DEFAULT_HERO_EVENT_ID, HERO_EVENT_IDS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
 import { formatDate, formatMoney, formatNumber } from "./utils/formatters";
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
-const HERO_EVENT_IDS = [
-  "rZ7HnEZ1Af00jd",
-  "rZ7HnEZ1Af-P_K",
-  "rZ7HnEZ1AfP6oN",
-  "rZ7HnEZ1AfPJGS",
-  "rZ7HnEZ1AfPJGN",
-  "rZ7HnEZ1AfPtkd",
-] as const;
 const MAX_DROPDOWN_SHOWS = 250;
 
 function isAbortError(error: unknown): boolean {
@@ -26,7 +19,7 @@ function hasValue(value: number | null): boolean {
 }
 
 function showScore(show: ShowSummary): number {
-  const heroIndex = HERO_EVENT_IDS.indexOf(show.event_id as (typeof HERO_EVENT_IDS)[number]);
+  const heroIndex = HERO_EVENT_IDS.indexOf(show.event_id);
   if (heroIndex >= 0) {
     return 10_000 - heroIndex;
   }
@@ -84,7 +77,14 @@ function App() {
 
         const dropdownShows = prepareDropdownShows(liveShows);
         setShows(dropdownShows);
-        setSelectedId((current) => current || dropdownShows[0]?.event_id || "");
+        setSelectedId(
+          (current) =>
+            current ||
+            (dropdownShows.some((show) => show.event_id === DEFAULT_HERO_EVENT_ID)
+              ? DEFAULT_HERO_EVENT_ID
+              : dropdownShows[0]?.event_id) ||
+            "",
+        );
         setShowsState("success");
       })
       .catch((error: unknown) => {
