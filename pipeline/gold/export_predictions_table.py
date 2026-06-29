@@ -29,9 +29,13 @@ FORECAST_COLUMNS = ["event_id", "days_to_show", "predicted_price"]
 def assemble_forecast(
     gold: pd.DataFrame, dim_venue: pd.DataFrame, dim_event: pd.DataFrame, *, seed: int = train_mod.SEED
 ) -> pd.DataFrame:
-    """Train on priced history, forecast every event today→show date. Returns the table."""
+    """Train on priced history, forecast every event today→show date. Returns the table.
+
+    The model targets `price_delta` (deviation from each show's anchor price); predict.py
+    rebuilds the level by anchoring on the latest real price.
+    """
     frame = features.build_training_frame(gold, dim_venue, dim_event)
-    X, y = features.split_X_y(frame)
+    X, y = features.split_X_y(frame, target=features.DELTA_TARGET)
     model = train_mod.train_model(X, y, seed=seed)
 
     latest = predict_mod.latest_features_per_event(frame)

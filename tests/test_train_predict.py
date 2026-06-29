@@ -42,7 +42,7 @@ def _training_frame():
 def test_training_is_reproducible():
     """Same data + same seed → identical predictions (determinism rule)."""
     frame = _training_frame()
-    X, y = features.split_X_y(frame)
+    X, y = features.split_X_y(frame, target=features.DELTA_TARGET)
     m1 = train.train_model(X, y, seed=42)
     m2 = train.train_model(X, y, seed=42)
     np.testing.assert_array_equal(m1.predict(X), m2.predict(X))
@@ -50,7 +50,7 @@ def test_training_is_reproducible():
 
 def test_forecast_trajectory_shape_and_sanity():
     frame = _training_frame()
-    X, y = features.split_X_y(frame)
+    X, y = features.split_X_y(frame, target=features.DELTA_TARGET)
     model = train.train_model(X, y, seed=42)
 
     latest = predict.latest_features_per_event(frame)
@@ -64,3 +64,19 @@ def test_forecast_trajectory_shape_and_sanity():
     assert (out["predicted_price"] >= 0).all()       # price floor
     assert np.isfinite(out["predicted_price"]).all()
     assert not out.duplicated(["event_id", "days_to_show"]).any()
+
+
+def test_forecast_starts_at_latest_real_price():
+    """Anchor continuity: the forecast at 'today' equals each show's latest real price."""
+    frame = _training_frame()
+    X, y = features.split_X_y(frame, target=features.DELTA_TARGET)
+    model = train.train_model(X, y, seed=42)
+
+    latest = predict.latest_features_per_event(frame)
+    out = predict.predict_prices(model, predict.build_forecast_frame(latest))
+    for event_id, grp in out.groupby("event_id"):
+        row = latest.loc[latest["event_id"] == event_id]
+        current = int(row["days_to_show"].iloc[0])
+        latest_price = float(row[features.DEFAULT_TARGET].iloc[0])
+        today_pred = grp.loc[grp["days_to_show"] == current, "predicted_price"].iloc[0]
+        assert today_pred == pytest.approx(latest_price)
