@@ -1,0 +1,18 @@
+# Cloud Build config for the G1 gold-refresh job image.
+# Invoked by terraform/gold_refresh_job.tf (gcloud builds submit) from the repo
+# root, so the build context is the whole repo (minus .dockerignore/.gcloudignore).
+# _IMAGE is substituted with the Artifact Registry tag (includes the source hash).
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - pipeline/gold_refresh.Dockerfile
+      - -t
+      - ${_IMAGE}
+      - .
+images:
+  - ${_IMAGE}
+options:
+  machineType: E2_HIGHCPU_8 # the dep install (pandas/sklearn/dbt) is the slow part
+timeout: 1200s

@@ -27,3 +27,18 @@ output "ticketmaster_scheduler_job" {
   description = "Cloud Scheduler job that triggers the daily Ticketmaster extract."
   value       = google_cloud_scheduler_job.ticketmaster_daily.id
 }
+
+output "gold_refresh_job" {
+  description = "Cloud Run job that refreshes silver + gold + forecast (G1). Run on demand with: gcloud run jobs execute gold-refresh --region <region>."
+  value       = google_cloud_run_v2_job.gold_refresh.name
+}
+
+output "gold_refresh_image" {
+  description = "Artifact Registry image tag the gold-refresh job runs (rebuilt on source change)."
+  value       = local.gold_refresh_image_tag
+}
+
+output "gold_refresh_scheduler_job" {
+  description = "Cloud Scheduler job that triggers the daily gold refresh."
+  value       = google_cloud_scheduler_job.gold_refresh.id
+}

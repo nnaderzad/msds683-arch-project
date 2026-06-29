@@ -27,6 +27,12 @@ variable "ticketmaster_schedule" {
   default     = "0 */4 * * *" # every 4 hours (6 runs/day)
 }
 
+variable "gold_refresh_schedule" {
+  description = "Cron schedule for the G1 gold-refresh job (interpreted in America/Los_Angeles). Runs after the day's Ticketmaster extracts so the spine is fresh; once daily is plenty for a precomputed-forecast product."
+  type        = string
+  default     = "0 9 * * *" # 09:00 LA daily, after the overnight TM extracts
+}
+
 variable "alert_email" {
   description = "Email address that receives pipeline failure alerts (set in terraform.tfvars)."
   type        = string
