@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import sys
 from pathlib import Path
 
@@ -42,9 +43,13 @@ from _common import DEFAULT_DATASET, DEFAULT_PROJECT, bq_rows, utc_now_iso  # no
 OUT_DIR = REPO_ROOT / "final_presentation"
 WEB_HERO_TS = REPO_ROOT / "web" / "src" / "data" / "heroShows.ts"
 FLAT_PCT, STEEP_PCT = 0.05, 0.25
-# Curated default selected in the live demo dropdown (Madeon — flat ~$43 forecast, ~904k subs).
-DEFAULT_HERO_EVENT_ID = "rZ7HnEZ1Af0Z4K"
+# Curated default selected in the live demo dropdown (The Wallflowers — rising forecast,
+# 5 Trends + 11 YouTube days, ~291k subs: a recognizable act with consistent 3-source data).
+DEFAULT_HERO_EVENT_ID = "rZ7HnEZ1Af-pbS"
 HERO_LIMIT = 12
+# Floor: a hero must have at least this many days of BOTH Trends and YouTube so every dropdown
+# show demonstrates all three sources consistently (not 2-3 stray points).
+HERO_MIN_COVERAGE = 4
 
 
 def load_candidates(project: str, dataset: str) -> list[dict]:
@@ -205,19 +210,34 @@ def write_outputs(records: list[dict], out_dir: Path, as_of: str) -> tuple[Path,
     return md_path, csv_path
 
 
+def _richness_key(r: dict) -> tuple:
+    """Rank heroes so the demo shows off all three data sources as richly as possible.
+
+    The pool is already full-coverage (price + Trends + YouTube). Prefer shows with the most
+    days where BOTH Trends and YouTube are present (``min`` so neither line is sparse), then
+    total signal days, then recognizability (subscribers). The whole project is the data
+    architecture — a hero with dense Trends + YouTube trajectories best demonstrates the join.
+    """
+    ni, ny = r["n_interest"], r["n_youtube"]
+    return (min(ni, ny), ni + ny, r["yt_subs"] or 0.0)
+
+
 def select_heroes(records: list[dict], limit: int = HERO_LIMIT,
                   default_id: str = DEFAULT_HERO_EVENT_ID) -> list[dict]:
-    """Pick the dropdown hero set: credible forecasts, one per artist, top-N by YouTube subs.
+    """Pick the dropdown hero set: credible forecasts, one per artist, richest 3-source coverage.
 
-    `records` is the already-ranked candidate list. Keep only shows whose forecast
-    tracks/mildly-moves from the real price (flat/rising/falling — never `steep` overshoot),
-    keep the highest-subscriber show per artist, and take the top `limit` by subscribers.
-    The curated default is guaranteed present even if it ranks past the cutoff.
+    Keep only shows whose forecast tracks/mildly-moves from the real price (flat/rising/falling
+    — never `steep` overshoot), keep the richest-coverage show per artist, and take the top
+    `limit` by 3-source richness. The curated default is guaranteed present (pinned to the top).
+    Shows below `HERO_MIN_COVERAGE` days of BOTH Trends and YouTube are dropped so no dropdown
+    entry has a sparse signal line.
     """
-    credible = [r for r in records if r["showcase"] in ("flat", "rising", "falling")]
+    credible = [r for r in records
+                if r["showcase"] in ("flat", "rising", "falling")
+                and min(r["n_interest"], r["n_youtube"]) >= HERO_MIN_COVERAGE]
     seen: set[str] = set()
     heroes: list[dict] = []
-    for r in sorted(credible, key=lambda r: -(r["yt_subs"] or 0)):
+    for r in sorted(credible, key=_richness_key, reverse=True):
         artist_key = (r.get("artist_name") or r.get("event_name") or r["event_id"]).strip().lower()
         if artist_key in seen:
             continue
@@ -227,28 +247,70 @@ def select_heroes(records: list[dict], limit: int = HERO_LIMIT,
     if default_id and not any(r["event_id"] == default_id for r in heroes):
         match = next((r for r in records if r["event_id"] == default_id), None)
         if match is not None:
-            heroes.append(match)
+            heroes.insert(0, match)
+    # Float the curated default to the top so it is the first option as well as the default.
+    heroes.sort(key=lambda r: r["event_id"] != default_id)
     return heroes
+
+
+def _hero_summary(r: dict) -> dict:
+    """Map a candidate record to the ShowSummary shape the web dropdown consumes (pre-cached).
+
+    Only fields the generator reliably has are filled; `local_interest`/`yt_views`/`status_code`
+    are left null and get populated live from `/show/{id}` the moment a show is selected.
+    `forecast_price` uses the show-date forecast (the same endpoint the API's /shows returns).
+    """
+    return {
+        "event_id": r["event_id"],
+        "event_name": r.get("event_name") or r["event_id"],
+        "artist_name": r.get("artist_name"),
+        "venue_name": r.get("venue_name") or "",
+        "city": r.get("city") or "",
+        "state_code": r.get("state_code") or "",
+        "show_date": r.get("show_date") or "",
+        "status_code": "",
+        "price_min": r.get("anchor_price"),
+        "price_max": _f(r.get("price_max_seen")),
+        "local_interest": None,
+        "yt_subscribers": r.get("yt_subs"),
+        "yt_views": None,
+        "forecast_price": r.get("fcst_showdate"),
+        # Provenance for the comment line; stripped before it reaches the typed array.
+        "_n_interest": r["n_interest"],
+        "_n_youtube": r["n_youtube"],
+        "_showcase": r["showcase"],
+    }
 
 
 def write_hero_ts(heroes: list[dict], path: Path, as_of: str,
                   default_id: str = DEFAULT_HERO_EVENT_ID) -> Path:
-    """Emit the TS module the web dropdown imports (single source of truth)."""
+    """Emit the TS module the web dropdown imports (single source of truth, pre-cached).
+
+    Exports the full hero `ShowSummary[]` so the dropdown renders with **no network call**;
+    `HERO_EVENT_IDS` is derived from it and `DEFAULT_HERO_EVENT_ID` is the default selection.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "// Generated by eda/hero_candidates.py — do not edit by hand.",
         "// Re-run `python eda/hero_candidates.py` to refresh from the live forecast.",
-        "// Curated demo heroes: credible (flat/rising/falling) forecasts, one per artist,",
-        f"// ranked by YouTube subscribers. As of {as_of}.",
+        "// Pre-cached demo heroes: credible (flat/rising/falling) forecasts, one per artist,",
+        "// ranked by 3-source signal richness (Trends + YouTube days). The dropdown renders",
+        f"// from this with no /shows fetch. As of {as_of}.",
         "",
-        "export const HERO_EVENT_IDS: string[] = [",
+        'import type { ShowSummary } from "../types";',
+        "",
+        "export const HERO_SHOWS: ShowSummary[] = [",
     ]
     for r in heroes:
-        name = r.get("artist_name") or r.get("event_name") or "?"
-        subs = "" if r["yt_subs"] is None else f", {int(r['yt_subs']):,} subs"
-        lines.append(f'  "{r["event_id"]}", // {name} — {r["showcase"]}{subs}')
+        summary = _hero_summary(r)
+        ni, ny, sc = summary.pop("_n_interest"), summary.pop("_n_youtube"), summary.pop("_showcase")
+        name = summary["artist_name"] or summary["event_name"]
+        lines.append(f"  {json.dumps(summary, ensure_ascii=False)}, // {name}: {sc}, "
+                     f"{ni} trends + {ny} youtube days")
     lines += [
         "];",
+        "",
+        "export const HERO_EVENT_IDS: string[] = HERO_SHOWS.map((show) => show.event_id);",
         "",
         f'export const DEFAULT_HERO_EVENT_ID = "{default_id}";',
         "",
@@ -276,8 +338,20 @@ def main() -> int:
     steep = sum(1 for r in records if r["showcase"] == "steep")
     print(f"[hero_candidates] {len(records)} full-coverage candidates "
           f"({bay} Bay-Area, {steep} steep/overshoot); wrote {md_path} + {csv_path}")
-    print(f"[hero_candidates] {len(heroes)} dropdown heroes (deduped per artist, "
+    print(f"[hero_candidates] {len(heroes)} dropdown heroes (richest 3-source coverage, "
           f"default={DEFAULT_HERO_EVENT_ID}); wrote {ts_path}")
+    print("[hero_candidates] dropdown heroes (trends + youtube day-coverage):")
+    for r in heroes:
+        name = (r.get("artist_name") or r.get("event_name") or "?")[:26]
+        mark = "  <- default" if r["event_id"] == DEFAULT_HERO_EVENT_ID else ""
+        print(f"    {name:<26} {r['showcase']:>7}  trends={r['n_interest']:>2} "
+              f"youtube={r['n_youtube']:>2} snaps={r['n_snapshots']:>2} "
+              f"subs={int(r['yt_subs'] or 0):>9,}{mark}")
+    # Coverage distribution of the credible pool (for tuning the minimum-coverage floor).
+    cred = [r for r in records if r["showcase"] in ("flat", "rising", "falling")]
+    for floor in (2, 4, 6, 8, 10):
+        n = sum(1 for r in cred if min(r["n_interest"], r["n_youtube"]) >= floor)
+        print(f"[hero_candidates] credible shows with >= {floor} days of BOTH trends & youtube: {n}")
     return 0
 
 
