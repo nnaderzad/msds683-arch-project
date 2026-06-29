@@ -155,100 +155,142 @@ h3 {
   line-height: 1.15;
 }
 
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+.combined-panel {
   margin-top: 22px;
-}
-
-.chart-shell {
-  min-height: 310px;
   border: 1px solid #c6ddec;
   border-radius: 8px;
   background: #ffffff;
-  padding: 20px;
-  box-shadow: 0 12px 32px rgb(27 87 124 / 8%);
+  padding: 24px;
+  box-shadow: 0 16px 42px rgb(27 87 124 / 9%);
 }
 
-.chart-heading {
-  display: flex;
-  min-height: 52px;
+.combined-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  margin-bottom: 20px;
 }
 
-.chart-heading strong {
-  color: #2f6f96;
-  font-size: 1.2rem;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.chart-placeholder {
-  position: relative;
-  height: 150px;
-  margin: 18px 0;
-  overflow: hidden;
-  border: 1px solid #e0edf5;
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgb(244 249 252 / 0%) 0%, #eef7fc 100%),
-    repeating-linear-gradient(0deg, transparent 0, transparent 29px, #e1edf5 30px),
-    repeating-linear-gradient(90deg, transparent 0, transparent 39px, #e1edf5 40px);
-}
-
-.axis {
-  position: absolute;
-  background: #8bb8d4;
-}
-
-.axis.horizontal {
-  right: 18px;
-  bottom: 24px;
-  left: 28px;
-  height: 2px;
-}
-
-.axis.vertical {
-  top: 20px;
-  bottom: 24px;
-  left: 28px;
-  width: 2px;
-}
-
-.trend-line {
-  position: absolute;
-  right: 26px;
-  bottom: 42px;
-  left: 38px;
-  height: 70px;
-  border-top: 4px solid #2f6f96;
-  border-radius: 60% 30% 0 0;
-  transform: skewY(-10deg);
-  transform-origin: left bottom;
-}
-
-.chart-shell p {
+.combined-heading h3 {
   margin-bottom: 8px;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.combined-heading p:last-child {
+  max-width: 720px;
+  margin-bottom: 0;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.signal-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 440px;
+}
+
+.signal-controls label {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d6e7f2;
+  border-radius: 999px;
+  background: #f7fbfe;
   color: #374151;
+  padding: 0 12px;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
-.chart-shell small {
+.signal-controls input {
+  width: 14px;
+  height: 14px;
+}
+
+.combined-chart {
+  width: 100%;
+  height: 360px;
+  border: 1px solid #dcebf4;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8fc 100%);
+  padding: 14px 10px 8px;
+}
+
+.axis-note {
+  margin: 10px 0 0;
   color: #667085;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.combined-notes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.chart-tooltip {
+  min-width: 210px;
+  border: 1px solid #c6ddec;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+  box-shadow: 0 10px 28px rgb(27 87 124 / 12%);
+}
+
+.chart-tooltip > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.tooltip-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.tooltip-row span {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  margin-top: 6px;
+}
+
+.tooltip-row p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.tooltip-row small {
+  display: block;
+  color: #667085;
+  margin-top: 2px;
 }
 
 @media (max-width: 820px) {
   .app-header,
   .summary-band,
-  .chart-grid {
+  .combined-heading,
+  .combined-notes {
     grid-template-columns: 1fr;
   }
 
   .summary-band {
     padding: 20px;
+  }
+
+  .signal-controls {
+    justify-content: flex-start;
   }
 }
 
@@ -262,6 +304,10 @@ h3 {
     max-width: 31ch;
   }
 
+  .combined-heading p:last-child {
+    max-width: 31ch;
+  }
+
   .summary-band h2 {
     max-width: 14ch;
   }
@@ -270,12 +316,12 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .chart-heading {
-    display: grid;
-    gap: 6px;
+  .combined-panel {
+    padding: 18px;
   }
 
-  .chart-heading strong {
-    text-align: left;
+  .combined-chart {
+    height: 320px;
+    padding-right: 2px;
   }
 }
