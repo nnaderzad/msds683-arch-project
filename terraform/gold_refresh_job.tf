@@ -108,6 +108,20 @@ resource "google_project_iam_member" "gold_refresh_bq_jobs" {
   member  = "serviceAccount:${google_service_account.gold_refresh_job.email}"
 }
 
+# The silver transforms read bronze JSON from the raw bucket and the YouTube channel
+# cache from the processed bucket (via gsutil). Read-only, scoped to those two buckets.
+resource "google_storage_bucket_iam_member" "gold_refresh_raw_reader" {
+  bucket = google_storage_bucket.layers["raw"].name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.gold_refresh_job.email}"
+}
+
+resource "google_storage_bucket_iam_member" "gold_refresh_processed_reader" {
+  bucket = google_storage_bucket.layers["processed"].name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.gold_refresh_job.email}"
+}
+
 # Identity Cloud Scheduler uses to start the job: invoke-only.
 resource "google_service_account" "gold_refresh_scheduler" {
   account_id   = "gold-refresh-scheduler"
@@ -172,6 +186,8 @@ resource "google_cloud_run_v2_job" "gold_refresh" {
     null_resource.gold_refresh_image,
     google_bigquery_dataset_iam_member.gold_refresh_dataset_editor,
     google_project_iam_member.gold_refresh_bq_jobs,
+    google_storage_bucket_iam_member.gold_refresh_raw_reader,
+    google_storage_bucket_iam_member.gold_refresh_processed_reader,
   ]
 }
 

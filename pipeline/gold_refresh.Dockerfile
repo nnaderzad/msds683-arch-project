@@ -17,6 +17,19 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# The silver transforms (A1/A2/A3) shell out to `gsutil ls`/`gsutil cat` to read bronze
+# JSON from GCS, so the image needs the Google Cloud CLI. On Cloud Run it auto-authenticates
+# via the metadata server (the job's service account) — no config, no keys.
+# (Follow-up: migrate those scripts to the google-cloud-storage client, as
+#  pipeline/silver/trends_series_to_silver.py already does, and drop this.)
+RUN apt-get update && apt-get install -y --no-install-recommends curl gnupg ca-certificates \
+    && curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+       | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+       > /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && apt-get update && apt-get install -y --no-install-recommends google-cloud-cli \
+    && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first for layer caching.
 COPY pipeline/gold_refresh.requirements.txt /app/pipeline/gold_refresh.requirements.txt
 RUN pip install --no-cache-dir -r /app/pipeline/gold_refresh.requirements.txt
