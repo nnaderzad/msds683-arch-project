@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: fact_event_demand_continuous
+    description: >
+      **DEMO ONLY — team-derived, not raw source.** `fact_event_demand` with each event's
+      INTERIOR price gaps (days between its first and last OBSERVED day) forward-filled by
+      carrying the last-known price, so the demo chart can draw a continuous per-show price
+      line. Every carried-forward row is flagged `price_is_filled = true`. The honest star
+      `fact_event_demand` is unchanged and remains the model's training source — never train
+      or report raw coverage on this table.
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+      - name: snapshot_date
+        tests:
+          - not_null
+      - name: price_is_filled
+        description: "TRUE when the displayed price was carried forward (not observed that day)."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+              config:
+                severity: warn
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - event_id
+              - snapshot_date
