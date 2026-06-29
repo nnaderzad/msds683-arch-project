@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -43,6 +42,32 @@ type DemandTooltipProps = {
 type DemandSignalsChartProps = {
   show: ShowDetail;
 };
+
+type AxisLabelViewBox = { x?: number; y?: number; width?: number; height?: number };
+
+// Custom left-axis label so "Local" (green) and "Global" (orange) are color-matched
+// to their lines; a plain Recharts string label can only be a single color.
+function PopularityAxisLabel({ viewBox }: { viewBox?: AxisLabelViewBox }) {
+  const { x = 0, y = 0, height = 0 } = viewBox ?? {};
+  const cx = x + 14;
+  const cy = y + height / 2;
+
+  return (
+    <text
+      x={cx}
+      y={cy}
+      transform={`rotate(-90, ${cx}, ${cy})`}
+      textAnchor="middle"
+      fontSize={12}
+      fontWeight={600}
+    >
+      <tspan fill="#3f8f5f">Local</tspan>
+      <tspan fill="#475569">{" & "}</tspan>
+      <tspan fill="#dd6b20">Global</tspan>
+      <tspan fill="#475569"> popularity (0–100)</tspan>
+    </text>
+  );
+}
 
 const defaultVisibility: SignalVisibility = {
   price: true,
@@ -167,7 +192,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
           <div className="empty-chart-message">No selected signals are available for this show.</div>
         )}
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={combinedData} margin={{ top: 12, right: 56, bottom: 4, left: -16 }}>
+          <LineChart data={combinedData} margin={{ top: 12, right: 72, bottom: 4, left: 12 }}>
             <CartesianGrid stroke="#e2edf5" vertical={false} />
             <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "#bdd7e8" }} />
             <YAxis
@@ -177,6 +202,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               tickLine={false}
               axisLine={{ stroke: "#bdd7e8" }}
               tickFormatter={(value) => `${value}`}
+              label={<PopularityAxisLabel />}
             />
             <YAxis
               yAxisId="price"
@@ -186,9 +212,14 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               axisLine={{ stroke: "#8bb8d4" }}
               tickFormatter={(value) => formatAxisMoney(Number(value))}
               width={64}
+              label={{
+                value: "Ticket price ($)",
+                angle: -90,
+                position: "insideRight",
+                style: { textAnchor: "middle", fill: "#475569", fontSize: 12, fontWeight: 600 },
+              }}
             />
             <Tooltip content={<DemandTooltip />} />
-            <Legend />
             {visibleSignals.price && signalAvailability.price && (
               <Line
                 type="monotone"
@@ -221,7 +252,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="trends"
                 yAxisId="index"
-                name="Google Trends"
+                name="Local popularity"
                 stroke="#3f8f5f"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -234,8 +265,8 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="youtube"
                 yAxisId="index"
-                name="YouTube views"
-                stroke="#b7791f"
+                name="Global popularity"
+                stroke="#dd6b20"
                 strokeWidth={3}
                 dot={{ r: 4 }}
                 connectNulls={false}
@@ -257,11 +288,6 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p className="axis-note">
-        Left axis is indexed 0-100 for Trends and YouTube. Right axis shows observed and forecasted
-        lowest ticket price in dollars and auto-scales per selected show. The vertical marker labels
-        the show date.
-      </p>
 
       <div className="combined-notes">
         <MetricCard
