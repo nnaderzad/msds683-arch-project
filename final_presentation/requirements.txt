@@ -1,0 +1,6 @@
+# Presentation-only dependencies. Keep these OUT of the project envs (music-demand etc.).
+# Dedicated conda env:
+#   conda create -n presentation python=3.11 -y
+#   conda activate presentation
+#   pip install -r final_presentation/requirements.txt
+python-pptx==1.0.2
