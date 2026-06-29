@@ -23,9 +23,15 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
+# Node / frontend
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
 # Data — large local files shouldn't go in git (use GCS instead)
-data/
-downloads/
+/data/
+/downloads/
 *.parquet
 *.csv.gz
 

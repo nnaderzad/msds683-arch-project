@@ -290,7 +290,7 @@ priced events.
      them (Terraform-managed tables would drift against `dbt build`).
    - Tests / done-when: `terraform plan` clean; `bq ls` shows the dataset; dbt can build into it.
 
-- [ ] **F1 · React scaffold (mock data)**  ·  Owner: `____`
+- [ ] **F1 · React scaffold (mock data)**  ·  Owner: `NF`
    - Prereqs: none — ready
    - Build: Vite React app, artist/show dropdown, chart shell — all on mock JSON.
    - Tests / done-when: component renders with mock JSON; `npm test` + build pass in CI.
