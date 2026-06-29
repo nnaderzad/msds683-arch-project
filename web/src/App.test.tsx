@@ -2,134 +2,48 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
-import { DEFAULT_HERO_EVENT_ID } from "./data/heroShows";
+import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
 
-const heroSummary: ShowSummary = {
-  event_id: DEFAULT_HERO_EVENT_ID,
-  event_name: "Madeon presents Victory Live",
-  artist_name: "Madeon",
-  venue_name: "Cargo Concert Hall",
-  city: "Reno",
-  state_code: "NV",
-  show_date: "2026-10-06T00:00:00",
-  status_code: "onsale",
-  price_min: 41,
-  price_max: 70,
-  local_interest: 55,
-  yt_subscribers: 904000,
-  yt_views: 120000,
-  forecast_price: 43,
-};
+// The dropdown renders from the pre-cached HERO_SHOWS (no /shows fetch); only the selected
+// show is fetched live from /show/{id}. Derive fixtures from the real generated heroes.
+const defaultHero = HERO_SHOWS.find((show) => show.event_id === DEFAULT_HERO_EVENT_ID)!;
+const secondHero = HERO_SHOWS.find((show) => show.event_id !== DEFAULT_HERO_EVENT_ID)!;
 
-const soonSummary: ShowSummary = {
-  event_id: "event_soon",
-  event_name: "Soon Show",
-  artist_name: "Artist One",
-  venue_name: "Greek Theatre",
-  city: "Berkeley",
-  state_code: "CA",
-  show_date: "2026-07-04T00:00:00",
-  status_code: "onsale",
-  price_min: 85,
-  price_max: 170,
-  local_interest: 65,
-  yt_subscribers: 1100,
-  yt_views: 21000,
-  forecast_price: 120,
-};
+const rx = (value: string) => new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
-const laterSummary: ShowSummary = {
-  event_id: "event_later",
-  event_name: "Later Show",
-  artist_name: "Artist Two",
-  venue_name: "Bill Graham Civic Auditorium",
-  city: "San Francisco",
-  state_code: "CA",
-  show_date: "2026-08-04T00:00:00",
-  status_code: "onsale",
-  price_min: null,
-  price_max: null,
-  local_interest: null,
-  yt_subscribers: null,
-  yt_views: null,
-  forecast_price: 75,
-};
-
-const soonDetail: ShowDetail = {
-  ...soonSummary,
-  history: [
-    {
-      snapshot_date: "2026-06-24T00:00:00",
-      days_to_show: 10,
-      price_min: 80,
-      price_max: 160,
-      local_interest: 61,
-      yt_subscribers: 1000,
-      yt_views: 20000,
-    },
-    {
-      snapshot_date: "2026-06-25T00:00:00",
-      days_to_show: 9,
-      price_min: 85,
-      price_max: 170,
-      local_interest: 65,
-      yt_subscribers: 1100,
-      yt_views: 21000,
-    },
-  ],
-  forecast: [
-    { days_to_show: 9, predicted_price: 90 },
-    { days_to_show: 0, predicted_price: 120 },
-  ],
-};
-
-const laterDetail: ShowDetail = {
-  ...laterSummary,
-  history: [
-    {
-      snapshot_date: "2026-06-25T00:00:00",
-      days_to_show: 40,
-      price_min: null,
-      price_max: null,
-      local_interest: null,
-      yt_subscribers: null,
-      yt_views: null,
-    },
-  ],
-  forecast: [
-    { days_to_show: 40, predicted_price: 50 },
-    { days_to_show: 0, predicted_price: 75 },
-  ],
-};
-
-const heroDetail: ShowDetail = {
-  ...heroSummary,
-  history: [
-    {
-      snapshot_date: "2026-06-24T00:00:00",
-      days_to_show: 104,
-      price_min: 41,
-      price_max: 70,
-      local_interest: 50,
-      yt_subscribers: 900000,
-      yt_views: 118000,
-    },
-    {
-      snapshot_date: "2026-06-25T00:00:00",
-      days_to_show: 103,
-      price_min: 41,
-      price_max: 70,
-      local_interest: 55,
-      yt_subscribers: 904000,
-      yt_views: 120000,
-    },
-  ],
-  forecast: [
-    { days_to_show: 103, predicted_price: 41 },
-    { days_to_show: 0, predicted_price: 43 },
-  ],
-};
+function detailFor(summary: ShowSummary): ShowDetail {
+  // A full 3-source detail so every chart signal toggle is available.
+  return {
+    ...summary,
+    local_interest: 55,
+    yt_views: 21000,
+    history: [
+      {
+        snapshot_date: "2026-06-24T00:00:00",
+        days_to_show: 105,
+        price_min: summary.price_min,
+        price_max: summary.price_max,
+        local_interest: 50,
+        yt_subscribers: summary.yt_subscribers,
+        yt_views: 20000,
+      },
+      {
+        snapshot_date: "2026-06-25T00:00:00",
+        days_to_show: 104,
+        price_min: summary.price_min,
+        price_max: summary.price_max,
+        local_interest: 55,
+        yt_subscribers: summary.yt_subscribers,
+        yt_views: 21000,
+      },
+    ],
+    forecast: [
+      { days_to_show: 104, predicted_price: summary.price_min ?? 50 },
+      { days_to_show: 0, predicted_price: summary.forecast_price ?? 60 },
+    ],
+  };
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -142,20 +56,12 @@ function mockSuccessfulApi() {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
     const url = String(input);
 
-    if (url.endsWith("/shows")) {
-      return Promise.resolve(jsonResponse([heroSummary, soonSummary, laterSummary]));
+    if (url.endsWith(`/show/${defaultHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(defaultHero)));
     }
 
-    if (url.endsWith(`/show/${DEFAULT_HERO_EVENT_ID}`)) {
-      return Promise.resolve(jsonResponse(heroDetail));
-    }
-
-    if (url.endsWith("/show/event_soon")) {
-      return Promise.resolve(jsonResponse(soonDetail));
-    }
-
-    if (url.endsWith("/show/event_later")) {
-      return Promise.resolve(jsonResponse(laterDetail));
+    if (url.endsWith(`/show/${secondHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(secondHero)));
     }
 
     return Promise.resolve(jsonResponse({ detail: "Not found" }, 404));
@@ -169,41 +75,44 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("renders the dashboard from the live API contract", async () => {
+test("renders the dashboard from the pre-cached heroes and the live show detail", async () => {
   const fetchMock = mockSuccessfulApi();
   render(<App />);
 
-  expect(screen.getAllByText(/loading live shows/i).length).toBeGreaterThan(0);
-  expect(await screen.findByRole("heading", { name: /madeon presents victory live/i })).toBeInTheDocument();
+  // The curated default hero is selected without any /shows fetch.
+  expect(await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /live music demand dashboard/i })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue(DEFAULT_HERO_EVENT_ID);
-  expect(screen.getByText(/madeon at cargo concert hall/i)).toBeInTheDocument();
+  expect(screen.getByText(rx(`${defaultHero.artist_name} at ${defaultHero.venue_name}`))).toBeInTheDocument();
+
+  // The chart and all three signal series come from the live /show/{id} detail.
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /google trends/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeChecked();
-  expect(screen.getByText(/right axis shows observed and forecasted lowest ticket price/i)).toBeInTheDocument();
-  expect(screen.getAllByText(/forecasted lowest price/i).length).toBeGreaterThan(0);
-  expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
+
+  // Only the selected show is fetched — never the full /shows list.
   expect(fetchMock).toHaveBeenCalledWith(
     `http://127.0.0.1:8000/show/${DEFAULT_HERO_EVENT_ID}`,
     expect.any(Object),
   );
+  expect(fetchMock).not.toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
 });
 
-test("selecting another show fetches that show's history and forecast", async () => {
+test("selecting another hero fetches that show's history and forecast", async () => {
   const user = userEvent.setup();
   const fetchMock = mockSuccessfulApi();
   render(<App />);
 
-  await screen.findByRole("heading", { name: /madeon presents victory live/i });
-  await user.selectOptions(screen.getByRole("combobox", { name: /demo show/i }), "event_later");
+  await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
+  await user.selectOptions(screen.getByRole("combobox", { name: /demo show/i }), secondHero.event_id);
 
-  expect(await screen.findByRole("heading", { name: /later show/i })).toBeInTheDocument();
-  expect(screen.getAllByText(/bill graham civic auditorium/i).length).toBeGreaterThan(0);
-  expect(screen.getAllByText(/\$75/).length).toBeGreaterThan(0);
-  expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/show/event_later", expect.any(Object));
+  expect(await screen.findByRole("heading", { name: rx(secondHero.artist_name!) })).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith(
+    `http://127.0.0.1:8000/show/${secondHero.event_id}`,
+    expect.any(Object),
+  );
 });
 
 test("signal toggles can hide and show chart series", async () => {
@@ -211,7 +120,7 @@ test("signal toggles can hide and show chart series", async () => {
   mockSuccessfulApi();
   render(<App />);
 
-  await screen.findByRole("heading", { name: /madeon presents victory live/i });
+  await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
   const trendsToggle = await screen.findByRole("checkbox", { name: /google trends/i });
 
   expect(trendsToggle).toBeChecked();
@@ -221,7 +130,7 @@ test("signal toggles can hide and show chart series", async () => {
   expect(trendsToggle).toBeChecked();
 });
 
-test("shows a clear error when the live API is unavailable", async () => {
+test("shows a clear error when the selected show cannot be loaded", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(() => Promise.resolve(jsonResponse({ detail: "Server error" }, 500))),
@@ -229,8 +138,9 @@ test("shows a clear error when the live API is unavailable", async () => {
 
   render(<App />);
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(/could not load the live show list/i);
-  expect(screen.getByRole("combobox", { name: /demo show/i })).toBeDisabled();
+  expect(await screen.findByRole("alert")).toHaveTextContent(/could not load the selected show/i);
+  // The dropdown stays usable (heroes are pre-cached, not fetched).
+  expect(screen.getByRole("combobox", { name: /demo show/i })).toBeEnabled();
 });
 
 test("missing signals are disabled instead of crashing the chart", () => {

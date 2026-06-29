@@ -2,9 +2,13 @@
 # (the Dockerfile COPY also honors .dockerignore, so terraform/ never reaches an image).
 .git/
 .claude/
-terraform/          # local tfstate + tfvars hold secrets — never upload
-data/
-downloads/
+# Root-anchored (leading slash) so these never match a nested dir of the same name,
+# e.g. web/src/data/ must NOT be caught by the root data/ rule. Inline '#' comments are
+# literal in gitignore syntax, so keep comments on their own line.
+# terraform/ holds local tfstate + tfvars (secrets) — never upload.
+/terraform/
+/data/
+/downloads/
 **/__pycache__/
 *.pyc
 *.pyo
