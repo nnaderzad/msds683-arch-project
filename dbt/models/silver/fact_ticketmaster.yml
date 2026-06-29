@@ -4,8 +4,10 @@ models:
   - name: fact_ticketmaster
     description: >
       Silver source fact — Ticketmaster price history at **event x snapshot_date** grain
-      (docs/data-model.md §3). Built in-warehouse from the processed parquet snapshots.
-      The spine the gold star `fact_event_demand` (B1) left-joins onto.
+      (docs/data-model.md §3). Built from the HONEST `silver.tm_observations` (raw-bronze
+      observations; **no forward-fill** — a row exists only for days the sweep actually saw
+      the event, price as observed). Replaced the forward-filled processed parquet. The spine
+      the gold star `fact_event_demand` (B1) left-joins onto.
     columns:
       - name: tm_snapshot_id
         description: "PK — deterministic hash of (event_id, snapshot_date)."
@@ -41,3 +43,15 @@ models:
                 max_value: 3650
               config:
                 severity: warn
+      - name: n_captures
+        description: >
+          Provenance: how many distinct daily runs/files observed this event (~<=6 recent,
+          1 on early single-file days; raw retries can push it higher).
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+              config:
+                severity: warn
+      - name: price_disagreed
+        description: "Provenance: the day's captures conflicted on price/presence (team-derived flag)."

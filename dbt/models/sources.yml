@@ -4,17 +4,20 @@ sources:
   - name: ticketmaster_raw
     description: >
       Processed Ticketmaster landing, read zero-copy as a BigQuery **external table**
-      over the daily parquet snapshots in GCS. Created/refreshed by dbt-external-tables
-      (`dbt run-operation stage_external_sources`). This is the price *history* source for
-      `fact_ticketmaster` — distinct from the current-state `tm_events` table.
+      over the daily parquet snapshots in GCS. **VESTIGIAL for the price fact** as of the
+      forward-fill honesty fix: this parquet is an EXPORT of current-state `tm_events`
+      (MERGE-upsert, never deletes), so it carried every event's last-known price *forward*
+      into every later day — manufacturing a daily series the sweep never observed.
+      `fact_ticketmaster` now reads the honest `silver.tm_observations` instead. Kept here
+      for reference / replay; removal is a follow-on.
     database: "{{ env_var('DBT_GCP_PROJECT', 'data-architecture-498123') }}"
     schema: "{{ env_var('DBT_BQ_DATASET', 'event_demand_analytics') }}"
     loader: gcs
     tables:
       - name: tm_snapshots_ext
         description: >
-          One row per event per daily snapshot file. The `snapshot_date` is the `dt=`
-          partition, recovered in the model from the `_FILE_NAME` pseudo-column.
+          One row per event per daily snapshot file (forward-filled — see source note).
+          The `snapshot_date` is the `dt=` partition. No longer the price-fact source.
         external:
           location: 'gs://data-architecture-498123-processed/ticketmaster/*.parquet'
           options:
@@ -28,6 +31,14 @@ sources:
     database: "{{ env_var('DBT_GCP_PROJECT', 'data-architecture-498123') }}"
     schema: "{{ env_var('DBT_BQ_DATASET', 'event_demand_analytics') }}"
     tables:
+      - name: tm_observations
+        description: >
+          **Honest** Ticketmaster price history — one row per (event, snapshot_date) only for
+          days the sweep actually OBSERVED the event, price as observed (NULL if observed
+          unpriced). Built from raw bronze by `pipeline/silver/tm_observations_to_silver.py`
+          (collapses the day's up-to-6 captures: union presence, priced-if-any latest price)
+          and kept fresh by the daily cloud function. **No forward-fill.** Replaces the
+          forward-filled `ticketmaster_raw.tm_snapshots_ext` parquet as the price-fact source.
       - name: fact_trends
       - name: fact_youtube
       - name: dim_event

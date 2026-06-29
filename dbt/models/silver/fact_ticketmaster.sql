@@ -1,9 +1,13 @@
 -- Silver fact: Ticketmaster price *history* at the locked grain (event x snapshot_date).
--- Source = the processed daily parquet snapshots (read as a BigQuery external table);
--- snapshot_date is the dt= partition recovered from _FILE_NAME. This is the spine the
--- gold star (B1) left-joins onto -- distinct from current-state tm_events.
+-- Source = the HONEST `silver.tm_observations` table (built from raw bronze by
+-- pipeline/silver/tm_observations_to_silver.py): one row per event per day the sweep
+-- ACTUALLY observed it, price as observed (NULL if observed unpriced). **No forward-fill.**
+-- This replaced the old `tm_snapshots_ext` parquet, which was an export of current-state
+-- tm_events and carried last-known prices forward into days the sweep never re-observed
+-- (eda/diagnose_price_gaps.py proved that artifact: 0 interior / 0 trailing gaps).
+-- This is the spine the gold star (B1) left-joins onto -- distinct from current-state tm_events.
 --
--- Incremental + idempotent: new daily snapshots append; re-running an already-loaded day
+-- Incremental + idempotent: new observed days append; re-running an already-loaded day
 -- is a no-op. `dbt build --full-refresh` rebuilds the whole history.
 {{
   config(
@@ -16,48 +20,33 @@
   )
 }}
 
-with snapshots as (
+with observations as (
 
     select
-        regexp_extract(_FILE_NAME, r'dt=([0-9]{4}-[0-9]{2}-[0-9]{2})') as snapshot_date_str,
         event_id,
-        local_date,            -- the show date (per snapshot row)
+        snapshot_date,         -- the day the event was observed (typed DATE from the loader)
+        local_date as show_date,
         status_code,
         price_type,
         price_currency,
         price_min,
         price_max,
         public_sale_start_utc,
-        public_sale_end_utc
-    from {{ source('ticketmaster_raw', 'tm_snapshots_ext') }}
-
-),
-
-typed as (
-
-    select
-        event_id,
-        safe_cast(snapshot_date_str as date)        as snapshot_date,
-        safe_cast(local_date as date)               as show_date,
-        nullif(status_code, '')                     as status_code,
-        nullif(price_type, '')                      as price_type,
-        nullif(price_currency, '')                  as price_currency,
-        safe_cast(price_min as float64)             as price_min,
-        safe_cast(price_max as float64)             as price_max,
-        safe_cast(public_sale_start_utc as timestamp) as public_sale_start_utc,
-        safe_cast(public_sale_end_utc as timestamp)   as public_sale_end_utc
-    from snapshots
+        public_sale_end_utc,
+        n_captures,            -- provenance: how many of the day's runs saw it (1-6)
+        price_disagreed        -- provenance: the day's captures conflicted on price/presence
+    from {{ source('silver', 'tm_observations') }}
     where event_id is not null
-      and snapshot_date_str is not null
+      and snapshot_date is not null
 
 ),
 
 deduped as (
 
-    -- A daily file is already one row per event, but guard the (event_id, snapshot_date)
-    -- grain so tm_snapshot_id stays unique no matter what the source does.
+    -- The loader already collapses to one row per (event_id, snapshot_date); guard the
+    -- grain anyway so tm_snapshot_id stays unique no matter what the source does.
     select *
-    from typed
+    from observations
     qualify row_number() over (
         partition by event_id, snapshot_date
         order by show_date desc
@@ -76,7 +65,9 @@ select
     price_max,
     public_sale_start_utc,
     public_sale_end_utc,
-    date_diff(show_date, snapshot_date, day) as days_to_show
+    date_diff(show_date, snapshot_date, day) as days_to_show,
+    n_captures,
+    price_disagreed
 from deduped
 
 {% if is_incremental() %}
