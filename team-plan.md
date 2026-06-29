@@ -132,6 +132,12 @@ sure its row is true and you can expand on it live.
 - **Pooled (cross-sectional) forecast, not per-show ARIMA** — only ~2 weeks of snapshot
   history exists, too thin for per-show time series; pooling across shows + exogenous
   signals is honest and defensible. *Rejected:* per-show ARIMA/Prophet (not enough history).
+- **Anchor + drift (price-LEVEL model), not pooled-mean level** — we measured that **96% of
+  shows hold one price** all window (`eda/diagnose_price_movement.py`), so it's a price-LEVEL
+  problem. The old pooled model excluded price and regressed to the ~$23 demand mean,
+  underpricing the whole premium tail (>$90 MAE ~$98). The model now **anchors each show at
+  its real observed price** (a known past obs → no leakage) and learns only the *deviation*;
+  per-tier forecast tracks actual and premium MAE drops to ~$5 (`eda/diagnose_forecast_bias.py`).
 
 **Where we are today:**
 
@@ -141,7 +147,7 @@ sure its row is true and you can expand on it live.
 | Silver (BigQuery) | ✅ `fact_ticketmaster` (A4, dbt); `tm_events` current-state → dims | ✅ `fact_trends` (A1) | ✅ `fact_youtube` (A2) |
 | Dims + bridge | ✅ `dim_*` + `bridge_event_artist` (A3, from `tm_events`) |||
 | Gold (`fact_event_demand`) | ✅ `fact_event_demand` (B1, dbt) — signals fill in with collection coverage (COLLECT-1) |||
-| Gold forecast (`forecast_event_price`) | ✅ materialized (D2, PR #28) — 494,961 rows / 9,657 events; **re-run after each gold refresh until `G1` automates** |||
+| Gold forecast (`forecast_event_price`) | ✅ **anchor+drift model, re-exported 2026-06-29** — 499,768 rows / 9,887 events; fixes range-compression (premium MAE $98→$5). Old table backed up to `forecast_event_price_bak_20260629`. **Re-run after each gold refresh until `G1` automates** |||
 
 > `tm_events` (current-state, MERGE-upsert) feeds the **dims** (A3). The silver TM **fact**
 > `fact_ticketmaster` — event × snapshot_date price *history*, sourced from the processed
@@ -150,6 +156,16 @@ sure its row is true and you can expand on it live.
 > **Honest model constraint:** daily snapshots only started ~mid-June, so per-show
 > price *history* is thin (~2 weeks). The forecast must **pool across shows**
 > (cross-sectional/panel), not fit per-show ARIMA. Document this assumption.
+
+> **Forecast model — anchor + drift (2026-06-29).** Because ~96% of shows are price-flat,
+> the model anchors each show at its **real observed price** and adds the pooled signal-driven
+> drift; predictions start on-price and span the full range ($0–$528). Full drift is kept, so
+> a few long-horizon flat shows can overshoot — **Everclear (the old Bay-Area hero) now
+> forecasts $174 over a flat $136 history**. Use the vetted menu in
+> `final_presentation/hero-candidates.{md,csv}` (re-runnable via `eda/hero_candidates.py`):
+> prefer **flat/rising** shows for the live hero (e.g. Shakey Graves, Air Supply, Masego,
+> **Madeon** = electronic) and avoid the `steep` ones. Decision + evidence:
+> `docs/forecast_model_decision.md`.
 
 ---
 
