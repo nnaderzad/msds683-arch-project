@@ -80,6 +80,31 @@ test("builds chart rows with observed prices, future forecast points, and indexe
   expect(rows[1].youtube).toBe(85);
 });
 
+test("drops snapshots taken after the show date for popularity and observed price", () => {
+  const pastShow: ShowDetail = {
+    ...baseShow,
+    show_date: "2026-07-02T00:00:00",
+    history: [
+      ...baseShow.history,
+      {
+        snapshot_date: "2026-07-05T00:00:00",
+        days_to_show: -3,
+        price_min: 99,
+        price_max: 120,
+        local_interest: 70,
+        yt_subscribers: 1300,
+        yt_views: 15000,
+      },
+    ],
+    forecast: [],
+  };
+  const rows = buildDemandChartData(pastShow);
+
+  expect(rows.every((row) => row.date <= "2026-07-02")).toBe(true);
+  expect(rows.some((row) => row.observedPriceRaw === 99)).toBe(false);
+  expect(rows.some((row) => row.trendsRaw === 70)).toBe(false);
+});
+
 test("reports unavailable signals when source values are all null", () => {
   const missingSignalShow: ShowDetail = {
     ...baseShow,

@@ -46,6 +46,11 @@ FLAT_PCT, STEEP_PCT = 0.05, 0.25
 # Curated default selected in the live demo dropdown (The Wallflowers — rising forecast,
 # 5 Trends + 11 YouTube days, ~291k subs: a recognizable act with consistent 3-source data).
 DEFAULT_HERO_EVENT_ID = "rZ7HnEZ1Af-pbS"
+# Explicitly pinned heroes: always present in the dropdown even if auto-selection would drop
+# them (e.g. a `steep` forecast). Everclear @ The Independent (SF) is a recognizable Bay-Area
+# act with full 3-source coverage whose long-horizon forecast drifts steeply — kept on
+# request so the demo can show a steep case alongside the credible ones.
+PINNED_HERO_EVENT_IDS = ["rZ7HnEZ1Af00jd"]
 HERO_LIMIT = 12
 # Floor: a hero must have at least this many days of BOTH Trends and YouTube so every dropdown
 # show demonstrates all three sources consistently (not 2-3 stray points).
@@ -223,15 +228,19 @@ def _richness_key(r: dict) -> tuple:
 
 
 def select_heroes(records: list[dict], limit: int = HERO_LIMIT,
-                  default_id: str = DEFAULT_HERO_EVENT_ID) -> list[dict]:
+                  default_id: str = DEFAULT_HERO_EVENT_ID,
+                  pinned_ids: list[str] | None = None) -> list[dict]:
     """Pick the dropdown hero set: credible forecasts, one per artist, richest 3-source coverage.
 
     Keep only shows whose forecast tracks/mildly-moves from the real price (flat/rising/falling
     — never `steep` overshoot), keep the richest-coverage show per artist, and take the top
-    `limit` by 3-source richness. The curated default is guaranteed present (pinned to the top).
-    Shows below `HERO_MIN_COVERAGE` days of BOTH Trends and YouTube are dropped so no dropdown
+    `limit` by 3-source richness. The curated default plus any `pinned_ids` are guaranteed
+    present even if auto-selection would drop them (the default floats to the top). Shows below
+    `HERO_MIN_COVERAGE` days of BOTH Trends and YouTube are dropped so no auto-selected dropdown
     entry has a sparse signal line.
     """
+    if pinned_ids is None:
+        pinned_ids = PINNED_HERO_EVENT_IDS
     credible = [r for r in records
                 if r["showcase"] in ("flat", "rising", "falling")
                 and min(r["n_interest"], r["n_youtube"]) >= HERO_MIN_COVERAGE]
@@ -244,10 +253,13 @@ def select_heroes(records: list[dict], limit: int = HERO_LIMIT,
         seen.add(artist_key)
         heroes.append(r)
     heroes = heroes[:limit]
-    if default_id and not any(r["event_id"] == default_id for r in heroes):
-        match = next((r for r in records if r["event_id"] == default_id), None)
-        if match is not None:
-            heroes.insert(0, match)
+    # Force-include the default and any explicitly pinned shows, pulling them from the full
+    # classified pool so a `steep` (auto-dropped) show can still be shown on request.
+    for forced_id in [default_id, *pinned_ids]:
+        if forced_id and not any(r["event_id"] == forced_id for r in heroes):
+            match = next((r for r in records if r["event_id"] == forced_id), None)
+            if match is not None:
+                heroes.append(match)
     # Float the curated default to the top so it is the first option as well as the default.
     heroes.sort(key=lambda r: r["event_id"] != default_id)
     return heroes

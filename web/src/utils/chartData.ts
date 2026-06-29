@@ -78,9 +78,16 @@ export function createIndexScale(values: Array<number | null>) {
 
 export function buildDemandChartData(show: ShowDetail): ChartRow[] {
   const rowsByDate = new Map<string, RawChartRow>();
+  const showIso = dateKey(show.show_date);
 
   show.history.forEach((point) => {
     const snapshotDate = dateKey(point.snapshot_date);
+
+    // Nothing about an event should accrue after it happens: drop snapshots taken
+    // past the show date so popularity and observed price both end at the show.
+    if (snapshotDate > showIso) {
+      return;
+    }
 
     rowsByDate.set(snapshotDate, {
       date: snapshotDate,
@@ -91,9 +98,14 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
     });
   });
 
-  const latestPoint = latestHistory(show);
-  const latestDate = latestPoint ? dateKey(latestPoint.snapshot_date) : null;
-  const latestObservedPrice = latestPoint ? observedLowestPrice(latestPoint.price_min) : null;
+  // Anchor the forecast to the latest *retained* snapshot (post-show rows are filtered
+  // out above), not the raw history, so a past show's chart still ends at the show date.
+  const latestRow = Array.from(rowsByDate.values()).reduce<RawChartRow | null>(
+    (latest, row) => (latest === null || row.date > latest.date ? row : latest),
+    null,
+  );
+  const latestDate = latestRow ? latestRow.date : null;
+  const latestObservedPrice = latestRow ? latestRow.observedPriceRaw : null;
 
   if (latestDate && latestObservedPrice !== null) {
     rowsByDate.set(latestDate, {
