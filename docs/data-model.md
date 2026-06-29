@@ -188,6 +188,8 @@ erDiagram
         datetime public_sale_start_utc
         datetime public_sale_end_utc
         int days_to_show "derived: show_date - snapshot_date"
+        int n_captures "provenance: # daily runs that observed it"
+        bool price_disagreed "provenance: the day's captures conflicted"
     }
     fact_trends {
         string trends_snapshot_id PK
@@ -227,6 +229,19 @@ erDiagram
 > **Two different dates:** `dim_event.show_date` is when the concert happens;
 > `fact_*.snapshot_date` is the day we captured the snapshot. `days_to_show` is the
 > gap — a key demand feature.
+
+> 🛡️ **`fact_ticketmaster` is honest — no forward-fill.** A row exists **only for days
+> the daily sweep actually observed the event**, with the price **as observed** (NULL if
+> observed unpriced). It is built from `tm_observations` (a silver table the
+> `pipeline/silver/tm_observations_to_silver.py` backfill + the daily cloud function load
+> straight from **raw bronze**), **not** the processed parquet. The parquet was an export
+> of current-state `tm_events` (MERGE-upsert, never deletes) which carried each event's
+> last-known price **forward** into every later day — manufacturing a daily series the
+> sweep never observed (`eda/diagnose_price_gaps.py` proved the artifact: 0 interior /
+> 0 trailing gaps). The scheduler runs ~6×/day; those captures collapse to one row per day
+> by **union presence + priced-if-any (latest priced)**, with `n_captures` / `price_disagreed`
+> recording the provenance. Gap-filling for charts is **never** done here — see the gold
+> `fact_event_demand_continuous` note in §4.
 
 ---
 
@@ -272,6 +287,18 @@ erDiagram
 - **Multi-artist events:** the event-grain star uses the **headliner** for the
   artist-level signals. For full lineup analysis, use `bridge_event_artist` + the
   silver facts directly.
+- **`fact_event_demand` is honest (observed-only).** It mirrors the non-forward-filled
+  `fact_ticketmaster` spine, so the forecast trains on real observations and the
+  **no-row-drop** invariant still holds (`tests/assert_gold_rows_eq_spine.sql`).
+
+> 📈 **`fact_event_demand_continuous` — labeled fill for the demo chart (TEAM-DERIVED).**
+> A *separate* gold table for drawing a continuous per-show price line. It forward-fills
+> each event's **interior** price gaps only (days between its first and last **observed**
+> day — never before first / after last seen), carrying the last-known price and flagging
+> every carried row **`price_is_filled = true`**. The honest star is untouched; **never**
+> train a model or report coverage on this table. Demand signals (`local_interest`,
+> `yt_*`) are left observed-only (NULL on filled days) — only the price line is made
+> continuous. Contract enforced by `tests/assert_continuous_fill_labeled.sql`.
 
 ---
 

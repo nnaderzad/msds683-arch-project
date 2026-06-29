@@ -239,8 +239,25 @@ priced events.
        `fact_event_demand` signal coverage; ties to `MIG-1` / a `D1` feature change.
      - **Deep iot backfill of the ~1,711 uncollected priced headliners** — rate-bound (~weeks);
        run the retargeted roster's backfill over the remaining timeline if desired.
-     - **Forward-fill honesty fix** — build silver price history from **bronze observations** (no
-       silver fill); flag any gold fill as team-derived. Own session.
+     - **Forward-fill honesty fix** — ⏸️ **IN PROGRESS, paused — owner `TK`** (PR
+       `tk/tm-forward-fill-honesty`). Built: bronze→`tm_observations` loader (honest per-day
+       price history, no forward-fill; union presence + priced-if-any, `n_captures` /
+       `price_disagreed` provenance), the dbt `fact_ticketmaster` repoint, a labeled gold
+       `fact_event_demand_continuous` (interior-only fill, `price_is_filled`), and the daily
+       cloud-function append — all on the branch, offline-tested. **What the artifact actually
+       is:** ~**9.8%** of forward-filled priced rows are tickets to shows that already happened
+       (the never-deletes export keeps passed shows alive); the honest panel drops them. Active
+       upcoming data is ~identical, and `features.py` already drops post-show rows, so the
+       forecast barely changes — it's a coverage-honesty fix, not a forecast rescue.
+       **⚠️ COME BACK TO THIS (TK):** the `tm_observations` backfill is **paused at 9 of 19 days
+       (2026-06-08…06-18)** — a mid-run branch switch removed the loader from the working tree
+       and the remaining days 06-19…06-28 silently no-op'd. **No live tables were rebuilt**
+       (`fact_event_demand` / `forecast_event_price` unchanged; `tm_observations` is a standalone
+       additive table the UI never reads — zero UI impact). Remaining: (1) re-run the loader for
+       06-19…06-28; (2) `dbt build --full-refresh` the repoint + gold continuity (the prod
+       cutover); (3) re-materialize `forecast_event_price`; (4) re-run
+       `eda/diagnose_price_gaps.py --table tm_observations` for the before/after evidence. Do the
+       cutover **after** coordinating with the UI owners (it changes shared gold/forecast rows).
 
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 

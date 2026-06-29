@@ -33,10 +33,20 @@ updated in place (fresh status/prices, last_seen_ts_utc bumped), new ids are
 inserted (first_seen_ts_utc stamped). The bronze files stay append-only
 snapshots for replay/history; tm_events always holds exactly one current row
 per event.
+
+Honest price history (tm_observations): the run also MERGEs every event it
+observed today into <BQ_DATASET>.tm_observations at (event_id, snapshot_date)
+grain — one row per day the sweep actually saw the event, price as observed
+(NULL if unpriced), with NO forward-fill. Across the day's 6 runs the row
+converges to "priced-if-any, latest priced value" plus n_captures /
+price_disagreed provenance. This is the source the dbt fact_ticketmaster reads;
+the incremental MERGE here mirrors the batch backfill in
+pipeline/silver/tm_observations_to_silver.py (the canonical rule).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -388,6 +398,142 @@ def export_to_processed(run_ts: datetime) -> str:
     return uri
 
 
+# ---------------------------------------------------------------------------
+# Honest price history: per-day observations -> tm_observations (no forward-fill)
+# ---------------------------------------------------------------------------
+
+# (column, BigQuery type) for tm_observations — MUST match the batch backfill
+# loader pipeline/silver/tm_observations_to_silver.py:STAGING_SCHEMA.
+OBS_SCHEMA: list[tuple[str, str]] = [
+    ("tm_obs_id", "STRING"),
+    ("event_id", "STRING"),
+    ("snapshot_date", "DATE"),
+    ("local_date", "DATE"),
+    ("status_code", "STRING"),
+    ("price_type", "STRING"),
+    ("price_currency", "STRING"),
+    ("price_min", "FLOAT64"),
+    ("price_max", "FLOAT64"),
+    ("public_sale_start_utc", "TIMESTAMP"),
+    ("public_sale_end_utc", "TIMESTAMP"),
+    ("n_captures", "INT64"),
+    ("price_disagreed", "BOOL"),
+    ("load_ts_utc", "TIMESTAMP"),
+]
+# Columns the per-run staging load carries (n_captures/price_disagreed are set by the MERGE).
+_OBS_STAGING_SCHEMA = [(n, t) for n, t in OBS_SCHEMA if n not in ("n_captures", "price_disagreed")]
+
+
+def _obs_id(event_id: str, snapshot_date: str) -> str:
+    """Deterministic surrogate for an (event, day), mirroring common/keys.py:snapshot_id.
+
+    The CF source dir ships in isolation (can't import repo-root common/), so the tiny
+    stdlib hash is replicated here so CF-inserted rows match the batch loader's keys.
+    """
+    key = "|".join(("tm", str(event_id), str(snapshot_date)))
+    return hashlib.blake2b(key.encode("utf-8"), digest_size=16).hexdigest()
+
+
+def observation_rows(rows: list[dict[str, Any]], run_ts: datetime) -> list[dict[str, Any]]:
+    """Shape this run's flattened tm_events rows into tm_observations staging rows (pure).
+
+    snapshot_date = the run's UTC date (the observation day). One row per event; price is
+    exactly what this run observed (NULL when the event carried no price).
+    """
+    snapshot_date = run_ts.strftime("%Y-%m-%d")
+    load_ts = run_ts.isoformat(timespec="seconds")
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        event_id = r.get("event_id")
+        if not event_id:
+            continue
+        out.append({
+            "tm_obs_id": _obs_id(event_id, snapshot_date),
+            "event_id": event_id,
+            "snapshot_date": snapshot_date,
+            "local_date": r.get("local_date"),
+            "status_code": r.get("status_code"),
+            "price_type": r.get("price_type"),
+            "price_currency": r.get("price_currency"),
+            "price_min": r.get("price_min"),
+            "price_max": r.get("price_max"),
+            "public_sale_start_utc": r.get("public_sale_start_utc"),
+            "public_sale_end_utc": r.get("public_sale_end_utc"),
+            "load_ts_utc": load_ts,
+        })
+    return out
+
+
+def append_observations(rows: list[dict[str, Any]], run_ts: datetime) -> int:
+    """MERGE this run's observations into tm_observations; return rows affected.
+
+    Incremental form of the canonical within-day rule (batch version lives in
+    pipeline/silver/tm_observations_to_silver.py):
+      * presence  — INSERT a new (event, day) row (n_captures=1) or bump n_captures.
+      * price     — priced-if-any, latest priced wins: COALESCE(this run, stored).
+      * provenance— price_disagreed flips when a later run's price differs from the
+        stored one, or presence/price toggles between priced and unpriced.
+    Idempotent across event content; n_captures is a per-run counter (a rare Scheduler
+    retry double-counts it — provenance only, the batch backfill recomputes it exactly).
+    """
+
+    obs = observation_rows(rows, run_ts)
+    if not obs:
+        return 0
+
+    project = os.environ["GCP_PROJECT"]
+    dataset = os.environ["BQ_DATASET"]
+    table = f"{project}.{dataset}.tm_observations"
+    staging = f"{project}.{dataset}.tm_observations_cf_staging"
+
+    client = bigquery.Client(project=project)
+
+    columns_ddl = ",\n  ".join(f"{name} {bq_type}" for name, bq_type in OBS_SCHEMA)
+    client.query(
+        f"CREATE TABLE IF NOT EXISTS `{table}` (\n  {columns_ddl}\n)\n"
+        f"PARTITION BY snapshot_date CLUSTER BY event_id"
+    ).result()
+
+    schema = [
+        bigquery.SchemaField(name, _LEGACY_TYPES.get(bq_type, bq_type))
+        for name, bq_type in _OBS_STAGING_SCHEMA
+    ]
+    job_config = bigquery.LoadJobConfig(schema=schema, write_disposition="WRITE_TRUNCATE")
+    client.load_table_from_json(obs, staging, job_config=job_config).result()
+
+    merge_sql = (
+        f"MERGE `{table}` T\n"
+        f"USING `{staging}` S\n"
+        f"ON T.event_id = S.event_id AND T.snapshot_date = S.snapshot_date\n"
+        f"WHEN MATCHED THEN UPDATE SET\n"
+        f"  T.local_date = S.local_date,\n"
+        f"  T.status_code = S.status_code,\n"
+        f"  T.price_type = COALESCE(S.price_type, T.price_type),\n"
+        f"  T.price_currency = COALESCE(S.price_currency, T.price_currency),\n"
+        f"  T.price_min = COALESCE(S.price_min, T.price_min),\n"
+        f"  T.price_max = COALESCE(S.price_max, T.price_max),\n"
+        f"  T.public_sale_start_utc = S.public_sale_start_utc,\n"
+        f"  T.public_sale_end_utc = S.public_sale_end_utc,\n"
+        f"  T.n_captures = T.n_captures + 1,\n"
+        f"  T.price_disagreed = T.price_disagreed\n"
+        f"    OR (S.price_min IS NOT NULL AND T.price_min IS NOT NULL\n"
+        f"        AND (S.price_min != T.price_min OR S.price_max IS DISTINCT FROM T.price_max))\n"
+        f"    OR ((S.price_min IS NULL) != (T.price_min IS NULL)),\n"
+        f"  T.load_ts_utc = S.load_ts_utc\n"
+        f"WHEN NOT MATCHED THEN INSERT (\n"
+        f"  tm_obs_id, event_id, snapshot_date, local_date, status_code, price_type,\n"
+        f"  price_currency, price_min, price_max, public_sale_start_utc, public_sale_end_utc,\n"
+        f"  n_captures, price_disagreed, load_ts_utc)\n"
+        f"VALUES (\n"
+        f"  S.tm_obs_id, S.event_id, S.snapshot_date, S.local_date, S.status_code, S.price_type,\n"
+        f"  S.price_currency, S.price_min, S.price_max, S.public_sale_start_utc, S.public_sale_end_utc,\n"
+        f"  1, FALSE, S.load_ts_utc)"
+    )
+    merge_job = client.query(merge_sql)
+    merge_job.result()
+    return int(merge_job.num_dml_affected_rows or 0)
+
+
 @functions_framework.http
 def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
     """HTTP entry point invoked by Cloud Scheduler.
@@ -434,7 +580,9 @@ def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
         "rows_in": 0,
         "rows_upserted": None,
         "processed_export_uri": None,
+        "observations_merged": None,
         "error": None,
+        "observations_error": None,
     }
     if silver_rows:
         unique_rows = dedupe_rows(silver_rows)
@@ -445,6 +593,14 @@ def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
         except Exception as exc:
             silver["error"] = f"{type(exc).__name__}: {exc}"
             print(f"[silver] FAILED: {silver['error']}")
+
+        # Honest price history (separate failure surface: the forward-filled tm_events
+        # upsert above must not mask an observation-append failure, and vice versa).
+        try:
+            silver["observations_merged"] = append_observations(unique_rows, run_ts)
+        except Exception as exc:
+            silver["observations_error"] = f"{type(exc).__name__}: {exc}"
+            print(f"[observations] FAILED: {silver['observations_error']}")
 
     summary: dict[str, Any] = {
         "run_ts_utc": run_ts.isoformat(timespec="seconds"),
@@ -458,7 +614,7 @@ def run(request):  # noqa: ARG001 — Scheduler sends an empty POST body
     }
     print(json.dumps(summary))  # lands in Cloud Logging for run history
 
-    if failed_states or skipped_states or silver["error"]:
+    if failed_states or skipped_states or silver["error"] or silver["observations_error"]:
         # stderr lines get severity ERROR in Cloud Logging — that's what the
         # monitoring alert policy (terraform/monitoring.tf) emails on.
         # Without this, partial failures hide as INFO inside a 200 response.
