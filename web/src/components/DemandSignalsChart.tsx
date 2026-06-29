@@ -140,7 +140,13 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
   const signalAvailability = useMemo(() => getSignalAvailability(combinedData), [combinedData]);
   const priceDomain = useMemo(() => priceAxisDomain(combinedData), [combinedData]);
   const latest = latestHistory(show);
-  const showDateLabel = formatShortDate(dateKey(show.show_date));
+  const showIso = dateKey(show.show_date);
+  const showDateLabel = formatShortDate(showIso);
+  // "Today" only makes sense for upcoming shows; for past shows the series ends at the
+  // show date so today is off-chart. Anchor on the first category at/after today.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayLabel =
+    todayIso < showIso ? combinedData.find((row) => row.date >= todayIso)?.label : undefined;
   const hasVisibleSignals = signalOptions.some(
     (signal) => visibleSignals[signal.key] && signalAvailability[signal.key],
   );
@@ -271,6 +277,21 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 dot={{ r: 4 }}
                 connectNulls={false}
                 isAnimationActive={false}
+              />
+            )}
+            {todayLabel && (
+              <ReferenceLine
+                x={todayLabel}
+                stroke="#0f172a"
+                strokeWidth={2}
+                strokeDasharray="2 3"
+                label={{
+                  value: "Today",
+                  position: "insideTopRight",
+                  fill: "#0f172a",
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
               />
             )}
             <ReferenceLine
