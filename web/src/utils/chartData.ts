@@ -4,8 +4,8 @@ import { formatShortDate } from "./formatters";
 export const signalOptions = [
   { key: "price", label: "Observed lowest price", color: "#2f6f96" },
   { key: "forecast", label: "Forecast lowest price", color: "#2f6f96" },
-  { key: "trends", label: "Google Trends", color: "#3f8f5f" },
-  { key: "youtube", label: "YouTube views", color: "#b7791f" },
+  { key: "trends", label: "Local popularity", color: "#3f8f5f" },
+  { key: "youtube", label: "Global popularity", color: "#dd6b20" },
 ] as const;
 
 export type SignalKey = (typeof signalOptions)[number]["key"];
