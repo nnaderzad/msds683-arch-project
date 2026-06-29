@@ -127,6 +127,42 @@ h3 {
   color: #4b5563;
 }
 
+.status-panel {
+  border: 1px solid #c6ddec;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px 20px;
+  box-shadow: 0 14px 34px rgb(27 87 124 / 8%);
+}
+
+.status-panel + .status-panel,
+.status-panel + .summary-band,
+.summary-band + .status-panel {
+  margin-top: 16px;
+}
+
+.status-panel strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.status-panel p {
+  margin-bottom: 0;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.status-panel.is-error {
+  border-color: #f3b6b6;
+  background: #fff8f8;
+}
+
+.status-panel.is-error strong {
+  color: #9f1d1d;
+}
+
 .metric-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
