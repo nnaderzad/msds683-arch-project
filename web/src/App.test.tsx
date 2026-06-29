@@ -2,7 +2,25 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
+import { DEFAULT_HERO_EVENT_ID } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
+
+const heroSummary: ShowSummary = {
+  event_id: DEFAULT_HERO_EVENT_ID,
+  event_name: "Madeon presents Victory Live",
+  artist_name: "Madeon",
+  venue_name: "Cargo Concert Hall",
+  city: "Reno",
+  state_code: "NV",
+  show_date: "2026-10-06T00:00:00",
+  status_code: "onsale",
+  price_min: 41,
+  price_max: 70,
+  local_interest: 55,
+  yt_subscribers: 904000,
+  yt_views: 120000,
+  forecast_price: 43,
+};
 
 const soonSummary: ShowSummary = {
   event_id: "event_soon",
@@ -85,6 +103,34 @@ const laterDetail: ShowDetail = {
   ],
 };
 
+const heroDetail: ShowDetail = {
+  ...heroSummary,
+  history: [
+    {
+      snapshot_date: "2026-06-24T00:00:00",
+      days_to_show: 104,
+      price_min: 41,
+      price_max: 70,
+      local_interest: 50,
+      yt_subscribers: 900000,
+      yt_views: 118000,
+    },
+    {
+      snapshot_date: "2026-06-25T00:00:00",
+      days_to_show: 103,
+      price_min: 41,
+      price_max: 70,
+      local_interest: 55,
+      yt_subscribers: 904000,
+      yt_views: 120000,
+    },
+  ],
+  forecast: [
+    { days_to_show: 103, predicted_price: 41 },
+    { days_to_show: 0, predicted_price: 43 },
+  ],
+};
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -97,7 +143,11 @@ function mockSuccessfulApi() {
     const url = String(input);
 
     if (url.endsWith("/shows")) {
-      return Promise.resolve(jsonResponse([soonSummary, laterSummary]));
+      return Promise.resolve(jsonResponse([heroSummary, soonSummary, laterSummary]));
+    }
+
+    if (url.endsWith(`/show/${DEFAULT_HERO_EVENT_ID}`)) {
+      return Promise.resolve(jsonResponse(heroDetail));
     }
 
     if (url.endsWith("/show/event_soon")) {
@@ -124,10 +174,10 @@ test("renders the dashboard from the live API contract", async () => {
   render(<App />);
 
   expect(screen.getAllByText(/loading live shows/i).length).toBeGreaterThan(0);
-  expect(await screen.findByRole("heading", { name: /soon show/i })).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: /madeon presents victory live/i })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /live music demand dashboard/i })).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue("event_soon");
-  expect(screen.getByText(/artist one at greek theatre/i)).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue(DEFAULT_HERO_EVENT_ID);
+  expect(screen.getByText(/madeon at cargo concert hall/i)).toBeInTheDocument();
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
@@ -136,7 +186,10 @@ test("renders the dashboard from the live API contract", async () => {
   expect(screen.getByText(/right axis shows observed and forecasted lowest ticket price/i)).toBeInTheDocument();
   expect(screen.getAllByText(/forecasted lowest price/i).length).toBeGreaterThan(0);
   expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
-  expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/show/event_soon", expect.any(Object));
+  expect(fetchMock).toHaveBeenCalledWith(
+    `http://127.0.0.1:8000/show/${DEFAULT_HERO_EVENT_ID}`,
+    expect.any(Object),
+  );
 });
 
 test("selecting another show fetches that show's history and forecast", async () => {
@@ -144,7 +197,7 @@ test("selecting another show fetches that show's history and forecast", async ()
   const fetchMock = mockSuccessfulApi();
   render(<App />);
 
-  await screen.findByRole("heading", { name: /soon show/i });
+  await screen.findByRole("heading", { name: /madeon presents victory live/i });
   await user.selectOptions(screen.getByRole("combobox", { name: /demo show/i }), "event_later");
 
   expect(await screen.findByRole("heading", { name: /later show/i })).toBeInTheDocument();
@@ -158,7 +211,7 @@ test("signal toggles can hide and show chart series", async () => {
   mockSuccessfulApi();
   render(<App />);
 
-  await screen.findByRole("heading", { name: /soon show/i });
+  await screen.findByRole("heading", { name: /madeon presents victory live/i });
   const trendsToggle = await screen.findByRole("checkbox", { name: /google trends/i });
 
   expect(trendsToggle).toBeChecked();

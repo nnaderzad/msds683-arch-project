@@ -1,10 +1,14 @@
-# Keep the Cloud Build context small. The Trends image only COPYs common/ and
-# google_trends_api/, so everything else is noise — and data/ can get large.
+# Keep the build context small. Images COPY only the dirs they need (the Trends image
+# common/ + google_trends_api/; the API image web/ source + api/), so everything else is
+# noise — and data/ can get large. node_modules/ is excluded so a host (macOS) install is
+# never copied over the in-image `npm ci` (native-binary mismatch).
 .git/
 .claude/
 data/
 downloads/
 terraform/
+node_modules/
+web/dist/
 **/__pycache__/
 *.pyc
 *.pyo

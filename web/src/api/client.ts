@@ -1,9 +1,15 @@
 import type { ShowDetail, ShowSummary } from "../types";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+const DEFAULT_DEV_API_BASE_URL = "http://127.0.0.1:8000";
 
 export function apiBaseUrl(): string {
-  return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, "");
+  const override = import.meta.env.VITE_API_BASE_URL;
+  if (override) {
+    return override.replace(/\/$/, "");
+  }
+  // A production build is served same-origin by the API container, so use relative URLs.
+  // Local dev keeps the standalone FastAPI host.
+  return import.meta.env.PROD ? "" : DEFAULT_DEV_API_BASE_URL;
 }
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -13,7 +19,11 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<T>;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new Error(`API request returned malformed JSON for ${path}`);
+  }
 }
 
 export function fetchShows(signal?: AbortSignal): Promise<ShowSummary[]> {
