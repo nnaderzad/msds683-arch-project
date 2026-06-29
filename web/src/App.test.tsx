@@ -89,8 +89,8 @@ test("renders the dashboard from the pre-cached heroes and the live show detail"
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
   expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /google trends/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeChecked();
 
   // Only the selected show is fetched — never the full /shows list.
   expect(fetchMock).toHaveBeenCalledWith(
@@ -121,7 +121,7 @@ test("signal toggles can hide and show chart series", async () => {
   render(<App />);
 
   await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
-  const trendsToggle = await screen.findByRole("checkbox", { name: /google trends/i });
+  const trendsToggle = await screen.findByRole("checkbox", { name: /local popularity/i });
 
   expect(trendsToggle).toBeChecked();
   await user.click(trendsToggle);
@@ -177,7 +177,7 @@ test("missing signals are disabled instead of crashing the chart", () => {
 
   expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeDisabled();
   expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /google trends/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeDisabled();
   expect(screen.getByText(/no selected signals are available/i)).toBeInTheDocument();
 });

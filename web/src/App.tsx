@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchShow } from "./api/client";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
-import { MetricCard } from "./components/MetricCard";
 import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
-import { formatDate, formatMoney, formatNumber } from "./utils/formatters";
+import { formatDate } from "./utils/formatters";
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
@@ -117,15 +116,6 @@ function App() {
               {summaryShow.venue_name} · {summaryShow.city}, {summaryShow.state_code} ·{" "}
               {formatDate(summaryShow.show_date)}
             </p>
-          </div>
-          <div className="metric-row">
-            <MetricCard
-              label="Price range"
-              value={`${formatMoney(summaryShow.price_min)} - ${formatMoney(summaryShow.price_max)}`}
-            />
-            <MetricCard label="Local interest" value={formatNumber(summaryShow.local_interest)} />
-            <MetricCard label="YouTube views" value={formatNumber(summaryShow.yt_views)} />
-            <MetricCard label="Forecast lowest price" value={formatMoney(summaryShow.forecast_price)} />
           </div>
         </section>
       )}
