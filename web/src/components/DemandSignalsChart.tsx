@@ -211,7 +211,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 stroke="#2f6f96"
                 strokeWidth={3}
                 strokeDasharray="8 6"
-                dot={{ r: 4 }}
+                dot={false}
                 connectNulls={false}
                 isAnimationActive={false}
               />
