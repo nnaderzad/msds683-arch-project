@@ -2,8 +2,8 @@ import type { ShowDetail } from "../types";
 import {
   buildDemandChartData,
   getSignalAvailability,
+  observedLowestPrice,
   priceAxisDomain,
-  priceMidpoint,
 } from "./chartData";
 
 const baseShow: ShowDetail = {
@@ -48,11 +48,9 @@ const baseShow: ShowDetail = {
   ],
 };
 
-test("calculates a midpoint when both price bounds are present", () => {
-  expect(priceMidpoint(40, 80)).toBe(60);
-  expect(priceMidpoint(null, 80)).toBe(80);
-  expect(priceMidpoint(40, null)).toBe(40);
-  expect(priceMidpoint(null, null)).toBeNull();
+test("uses price_min as the observed lowest-price series", () => {
+  expect(observedLowestPrice(40)).toBe(40);
+  expect(observedLowestPrice(null)).toBeNull();
 });
 
 test("builds chart rows with observed prices, future forecast points, and indexed YouTube values", () => {
@@ -61,13 +59,13 @@ test("builds chart rows with observed prices, future forecast points, and indexe
   expect(rows).toHaveLength(4);
   expect(rows[0]).toMatchObject({
     label: "Jul 1",
-    observedPriceRaw: 40,
+    observedPriceRaw: 20,
     trendsRaw: 40,
   });
   expect(rows[1]).toMatchObject({
     label: "Jul 2",
-    observedPriceRaw: 50,
-    forecastPriceRaw: 50,
+    observedPriceRaw: 30,
+    forecastPriceRaw: 30,
   });
   expect(rows[2]).toMatchObject({
     label: "Jul 6",

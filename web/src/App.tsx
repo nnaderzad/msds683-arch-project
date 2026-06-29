@@ -212,7 +212,7 @@ function App() {
             />
             <MetricCard label="Local interest" value={formatNumber(summaryShow.local_interest)} />
             <MetricCard label="YouTube views" value={formatNumber(summaryShow.yt_views)} />
-            <MetricCard label="Forecast price" value={formatMoney(summaryShow.forecast_price)} />
+            <MetricCard label="Forecast lowest price" value={formatMoney(summaryShow.forecast_price)} />
           </div>
         </section>
       )}

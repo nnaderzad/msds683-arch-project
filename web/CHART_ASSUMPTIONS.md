@@ -5,8 +5,8 @@ The F3 frontend reads live show data from the FastAPI service. The local mock sh
 ## Combined Signal Chart
 
 - The x-axis uses calendar dates.
-- Observed Ticketmaster price is plotted as a midpoint: `(price_min + price_max) / 2`.
-- Forecast price is plotted on the same right-side dollar axis as observed price.
+- Observed Ticketmaster price is plotted as `price_min`, the lowest available price.
+- Forecast price is the model's predicted `price_min`, so it is plotted on the same right-side dollar axis as observed lowest price.
 - The forecast line is dashed because it is projected data, not observed API data.
 - Forecast dates are derived from `show_date - days_to_show`.
 - Google Trends is already a 0-100 local interest index, so it stays on the left 0-100 axis.

@@ -16,8 +16,8 @@ import {
   dateKey,
   getSignalAvailability,
   latestHistory,
+  observedLowestPrice,
   priceAxisDomain,
-  priceMidpoint,
   signalOptions,
   type ChartRow,
   type SignalKey,
@@ -194,7 +194,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="price"
                 yAxisId="price"
-                name="Observed price"
+                name="Observed lowest price"
                 stroke="#2f6f96"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -207,7 +207,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="forecast"
                 yAxisId="price"
-                name="Forecast price"
+                name="Forecast lowest price"
                 stroke="#2f6f96"
                 strokeWidth={3}
                 strokeDasharray="8 6"
@@ -259,18 +259,18 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
       </div>
       <p className="axis-note">
         Left axis is indexed 0-100 for Trends and YouTube. Right axis shows observed and forecasted
-        price in dollars and auto-scales per selected show. The vertical marker labels the show
-        date.
+        lowest ticket price in dollars and auto-scales per selected show. The vertical marker labels
+        the show date.
       </p>
 
       <div className="combined-notes">
         <MetricCard
-          label="Price signal"
-          value={`Midpoint ${formatMoney(priceMidpoint(latest?.price_min ?? null, latest?.price_max ?? null))}`}
+          label="Latest lowest price"
+          value={formatMoney(observedLowestPrice(latest?.price_min ?? null))}
         />
         <MetricCard label="Trend signal" value={formatNumber(latest?.local_interest ?? null)} />
         <MetricCard label="YouTube signal" value={formatNumber(latest?.yt_views ?? null)} />
-        <MetricCard label="Forecasted price" value={formatMoney(show.forecast_price)} />
+        <MetricCard label="Forecasted lowest price" value={formatMoney(show.forecast_price)} />
       </div>
     </section>
   );

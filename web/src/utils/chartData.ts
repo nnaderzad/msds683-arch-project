@@ -2,8 +2,8 @@ import type { HistoryPoint, ShowDetail } from "../types";
 import { formatShortDate } from "./formatters";
 
 export const signalOptions = [
-  { key: "price", label: "Observed price", color: "#2f6f96" },
-  { key: "forecast", label: "Forecast price", color: "#2f6f96" },
+  { key: "price", label: "Observed lowest price", color: "#2f6f96" },
+  { key: "forecast", label: "Forecast lowest price", color: "#2f6f96" },
   { key: "trends", label: "Google Trends", color: "#3f8f5f" },
   { key: "youtube", label: "YouTube views", color: "#b7791f" },
 ] as const;
@@ -37,12 +37,8 @@ export function latestHistory(show: ShowDetail): HistoryPoint | null {
   return show.history.at(-1) ?? null;
 }
 
-export function priceMidpoint(priceMin: number | null, priceMax: number | null): number | null {
-  if (priceMin !== null && priceMax !== null) {
-    return (priceMin + priceMax) / 2;
-  }
-
-  return priceMin ?? priceMax;
+export function observedLowestPrice(priceMin: number | null): number | null {
+  return priceMin;
 }
 
 export function dateKey(value: string): string {
@@ -88,7 +84,7 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
 
     rowsByDate.set(snapshotDate, {
       date: snapshotDate,
-      observedPriceRaw: priceMidpoint(point.price_min, point.price_max),
+      observedPriceRaw: observedLowestPrice(point.price_min),
       forecastPriceRaw: null,
       trendsRaw: point.local_interest,
       youtubeRaw: point.yt_views,
@@ -97,9 +93,7 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
 
   const latestPoint = latestHistory(show);
   const latestDate = latestPoint ? dateKey(latestPoint.snapshot_date) : null;
-  const latestObservedPrice = latestPoint
-    ? priceMidpoint(latestPoint.price_min, latestPoint.price_max)
-    : null;
+  const latestObservedPrice = latestPoint ? observedLowestPrice(latestPoint.price_min) : null;
 
   if (latestDate && latestObservedPrice !== null) {
     rowsByDate.set(latestDate, {

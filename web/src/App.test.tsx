@@ -129,12 +129,12 @@ test("renders the dashboard from the live API contract", async () => {
   expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue("event_soon");
   expect(screen.getByText(/artist one at greek theatre/i)).toBeInTheDocument();
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
-  expect(screen.getByRole("checkbox", { name: /observed price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /forecast price/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /google trends/i })).toBeChecked();
   expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeChecked();
-  expect(screen.getByText(/right axis shows observed and forecasted price/i)).toBeInTheDocument();
-  expect(screen.getAllByText(/forecasted price/i).length).toBeGreaterThan(0);
+  expect(screen.getByText(/right axis shows observed and forecasted lowest ticket price/i)).toBeInTheDocument();
+  expect(screen.getAllByText(/forecasted lowest price/i).length).toBeGreaterThan(0);
   expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
   expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/show/event_soon", expect.any(Object));
 });
@@ -212,8 +212,8 @@ test("missing signals are disabled instead of crashing the chart", () => {
 
   render(<DemandSignalsChart show={missingSignalShow} />);
 
-  expect(screen.getByRole("checkbox", { name: /observed price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /forecast price/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeDisabled();
   expect(screen.getByRole("checkbox", { name: /google trends/i })).toBeDisabled();
   expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeDisabled();
   expect(screen.getByText(/no selected signals are available/i)).toBeInTheDocument();
