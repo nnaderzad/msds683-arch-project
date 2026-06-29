@@ -1,0 +1,19 @@
+# Runtime deps for the G1 gold-refresh Cloud Run Job (pipeline/gold_refresh.py).
+# One image runs the whole chain: silver transforms -> dbt build -> forecast -> GX gate.
+# Pins mirror the per-component requirements files so container == local == CI.
+
+# --- silver transforms (A1/A2/A3) + forecast read (BQ -> dataframe) ---
+google-cloud-bigquery>=3.20
+db-dtypes>=1.2          # nullable BQ dtypes -> pandas for .to_dataframe()
+holidays>=0.40          # dim_date.is_us_holiday in build_dimensions.py
+
+# --- model (D1 features / D2 train+predict+forecast export) ---
+pandas>=2.0
+scikit-learn>=1.4
+
+# --- dbt build (A4 fact_ticketmaster + B1 fact_event_demand) ---
+dbt-bigquery>=1.9,<1.12
+
+# --- GX forecast sanity gate (C / D2) ---
+great-expectations==1.18.2
+sqlalchemy-bigquery>=1.11

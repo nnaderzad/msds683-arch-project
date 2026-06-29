@@ -1,0 +1,13 @@
+# Keep `gcloud builds submit` uploads small and secret-free. Mirrors .dockerignore
+# (the Dockerfile COPY also honors .dockerignore, so terraform/ never reaches an image).
+.git/
+.claude/
+terraform/          # local tfstate + tfvars hold secrets — never upload
+data/
+downloads/
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+eda/output/
