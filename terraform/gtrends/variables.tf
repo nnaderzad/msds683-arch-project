@@ -56,6 +56,18 @@ variable "gtrends_daily_max_units" {
   default     = 0
 }
 
+variable "gtrends_daily_dma_refresh_days" {
+  description = "Daily mode: re-pull each tier-1 (Bay Area / EDM) per-DMA daily series once per this many days (0 = tier-1 rotation off). One iot call returns the full ~269-day daily window, so a multi-day cycle keeps every series current at a fraction of the per-day call cost."
+  type        = number
+  default     = 4
+}
+
+variable "gtrends_snapshot_every_days" {
+  description = "Daily mode: rotate 1-in-N of the roster's all-DMA snapshots per day (1 = every artist every day). The geographic distribution moves slowly; thinning frees budget for the tier-1 per-DMA rotation."
+  type        = number
+  default     = 2
+}
+
 variable "gtrends_image_tag" {
   description = "Tag of the Google Trends job image in Artifact Registry."
   type        = string

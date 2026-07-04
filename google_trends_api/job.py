@@ -4,7 +4,12 @@
 Modes (env ``JOB_MODE``):
   backfill   national + DMA-snapshot per artist, plus per-DMA daily series for the
              metros each artist actually plays (the deep, expensive pass).
-  daily      national + DMA-snapshot refresh (daily resolution) for the roster.
+  daily      national refresh for the roster, DMA snapshots on a thinning cycle
+             (SNAPSHOT_EVERY_DAYS), and — when DAILY_DMA_REFRESH_DAYS > 0 — the
+             tier-1 per-DMA daily series (Bay Area DMA + EDM artists' metros) on a
+             rotating refresh cycle. One iot call returns the full ~269-day daily
+             series, so a pair only needs re-pulling every few days to stay fresh
+             (docs/collection_efficiency_review.md, D3).
 
 Built to run as a sharded Cloud Run Job: each task (CLOUD_RUN_TASK_INDEX of
 CLOUD_RUN_TASK_COUNT) processes a disjoint slice of the soonest-show-first queue.
@@ -18,6 +23,7 @@ Env (all optional; sensible defaults):
   JOB_MODE=backfill|daily   TOP_N=250   MAX_UNITS=0(all)   TRENDS_SLEEP=20
   STATES=ALL|CA,NY,...      CLOUD_RUN_TASK_INDEX=0   CLOUD_RUN_TASK_COUNT=1
   DAILY_CALL_BUDGET=0(off)  RUN_DEADLINE_SECONDS=0(off)  RESUME_LOOKBACK_DAYS=0
+  DAILY_DMA_REFRESH_DAYS=0(off)  SNAPSHOT_EVERY_DAYS=1(daily)
   GCS_RAW_BUCKET (via common/gcs_io)
 
 Stays under the Trends rate limit deterministically: run as ONE stream (no parallel
@@ -41,12 +47,13 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zlib import crc32
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # repo root for `common`
 from common import gcs_io  # noqa: E402
 from google.cloud import storage  # noqa: E402
 
-from build_roster import build_frames, fetch_upcoming  # noqa: E402
+from build_roster import EDM_GENRES, SF_DMA, build_frames, fetch_upcoming  # noqa: E402
 from fetch_and_land import daily_timeframe, run_unit, suffix_for  # noqa: E402
 from geo_lookup import GeoLookup  # noqa: E402
 from trends_client import TrendsClient  # noqa: E402
@@ -89,8 +96,22 @@ def landed_state(bucket: str, lookback_days: int = 0) -> tuple[set[str], int]:
     return done, calls_today
 
 
+def cycle_hit(key: str, every_days: int, today_ord: int) -> bool:
+    """Deterministic 1-in-N daily slotting: spreads keys evenly over an N-day cycle.
+
+    crc32 (not Python's salted ``hash``) so the same key lands on the same cycle
+    day across runs and machines — a skipped day self-heals next cycle.
+    """
+    return every_days <= 1 or crc32(key.encode("utf-8")) % every_days == today_ord % every_days
+
+
 def build_queue(
-    mode: str, top_n: int, states: list[str] | None, include_dma: bool = True
+    mode: str,
+    top_n: int,
+    states: list[str] | None,
+    include_dma: bool = True,
+    daily_dma_refresh_days: int = 0,
+    snapshot_every_days: int = 1,
 ) -> list[dict]:
     """Soonest-show-first list of work units, regenerated from the TM silver table."""
 
@@ -100,20 +121,40 @@ def build_queue(
     selected = artist_df[artist_df["selected"]]
     soonest = dict(zip(selected["artist"], selected["soonest_date"].astype(str)))
     query_of = dict(zip(selected["artist"], selected["query"]))
+    today_ord = datetime.now(timezone.utc).date().toordinal()
 
     # Daily resolution is enough for demand modeling, so both backfill and daily
-    # collect: national daily series + the all-DMA geographic snapshot per artist.
+    # collect the national daily series per artist. The all-DMA geographic snapshot
+    # is a slow-moving distribution, so daily mode can thin it to a rotating
+    # 1-in-SNAPSHOT_EVERY_DAYS slice to free budget for per-DMA daily series.
     units: list[dict] = []
     for artist, sdate in soonest.items():
         query = query_of[artist]
         units.append({"kind": "national", "artist": artist, "query": query,
                       "geo_code": None, "sort": sdate})
-        units.append({"kind": "snapshot", "artist": artist, "query": query,
-                      "geo_code": None, "sort": sdate})
+        if mode == "backfill" or cycle_hit(artist, snapshot_every_days, today_ord):
+            units.append({"kind": "snapshot", "artist": artist, "query": query,
+                          "geo_code": None, "sort": sdate})
 
     if mode == "backfill" and include_dma:
         tgt = targets_df[targets_df["artist"].isin(soonest)]
         for t in tgt.itertuples():
+            units.append({"kind": "dma", "artist": t.artist, "query": t.query,
+                          "geo_code": t.geo_code, "sort": str(t.soonest_in_dma)})
+    elif mode == "daily" and daily_dma_refresh_days > 0:
+        # Tier-1 per-DMA daily series (feeds fact_trends_daily): every Bay Area
+        # pair + all metros of EDM artists, each pair re-pulled once per
+        # DAILY_DMA_REFRESH_DAYS. One iot call returns the full ~269-day daily
+        # window, so the rotation keeps every tier-1 series current at a fraction
+        # of the per-day cost (~1,165 pairs / 4 days ≈ 290 calls/day at July-2026
+        # roster size; see docs/collection_efficiency_review.md D3).
+        edm_artists = set(selected.loc[selected["top_genre"].isin(EDM_GENRES), "artist"])
+        tgt = targets_df[targets_df["artist"].isin(soonest)]
+        for t in tgt.itertuples():
+            if t.dma != SF_DMA and t.artist not in edm_artists:
+                continue
+            if not cycle_hit(f"{t.artist}|{t.dma}", daily_dma_refresh_days, today_ord):
+                continue
             units.append({"kind": "dma", "artist": t.artist, "query": t.query,
                           "geo_code": t.geo_code, "sort": str(t.soonest_in_dma)})
 
@@ -136,8 +177,14 @@ def main() -> int:
     # Backfill cheap-first: INCLUDE_DMA=false does national + DMA snapshot only;
     # true adds the deep per-DMA daily series (the expensive pass).
     include_dma = env("INCLUDE_DMA", "true").lower() in ("1", "true", "yes")
+    # Daily-mode tier-1 rotation (0 = off): re-pull each Bay-Area/EDM (artist, DMA)
+    # daily series once per this many days. SNAPSHOT_EVERY_DAYS thins the all-DMA
+    # snapshots to a rotating 1-in-N slice (1 = every day, backfill unaffected).
+    daily_dma_refresh_days = int(env("DAILY_DMA_REFRESH_DAYS", "0"))
+    snapshot_every_days = int(env("SNAPSHOT_EVERY_DAYS", "1"))
 
-    queue = build_queue(mode, top_n, states, include_dma)
+    queue = build_queue(mode, top_n, states, include_dma,
+                        daily_dma_refresh_days, snapshot_every_days)
     shard = queue[task_index::task_count]  # disjoint round-robin slice per task
 
     done, calls_today_start = landed_state(gcs_io.DEFAULT_RAW_BUCKET, lookback_days)
@@ -147,9 +194,11 @@ def main() -> int:
 
     logger.info(
         "mode=%s task=%d/%d queue=%d shard=%d done(lookback=%dd)=%d pending=%d "
-        "calls_today=%d budget=%d interval=%.0fs deadline=%.0fs",
+        "calls_today=%d budget=%d interval=%.0fs deadline=%.0fs "
+        "dma_refresh=%dd snapshot_every=%dd",
         mode, task_index, task_count, len(queue), len(shard), lookback_days, len(done),
         len(pending), calls_today_start, daily_budget, min_interval, run_deadline,
+        daily_dma_refresh_days, snapshot_every_days,
     )
 
     client = TrendsClient(min_interval=min_interval)
