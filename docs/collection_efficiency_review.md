@@ -15,6 +15,13 @@ external facts were web-verified 2026-07-04 (links inline).
    TM-host-fulfilled *primary* inventory only; TicketWeb/Universe/venue-system
    shows (i.e. most club EDM) never populate it; resale never appears. The
    Discovery Feed's own price fields are documented "no longer in use; always null".
+1b. **Live probes (2026-07-04, `eda/tm_price_probe.py`):** the single-event
+   detail endpoint returned `priceRanges` for **0 of 50** search-unpriced events
+   (5/5 priced controls did) — no hidden recovery path; the Commerce offers
+   endpoint answers **401** to a standard key (dead/gated); **0 of 52**
+   production date-slices approach the 1,000-event deep-paging cap (worst 591) —
+   the sweep is not losing events to truncation.
+
 2. **6 sweeps/day ≈ 5 wasted.** `tm_observations` is `(event_id, snapshot_date)`
    daily grain, so intra-day sweeps mostly MERGE into the same row (~3,900 of
    4,680 calls/day buy provenance only: `n_captures`, `price_disagreed`).
@@ -33,7 +40,13 @@ external facts were web-verified 2026-07-04 (links inline).
 
 ### Google Trends
 
-6. **The bottleneck was targeting, not throughput.** One interest-over-time call
+5b. **The daily job was deadline-capped, not throttle-capped.** Its 3300s
+   `RUN_DEADLINE_SECONDS` (under a 3600s Cloud Run timeout) allows ~165 calls at
+   the 20s pace — but the queue was 500 units and the budget 800. Bronze confirms:
+   28–145 landed files/day. The single biggest Trends fix is simply a longer run
+   window (6h timeout / 5h40m deadline), no extra IPs needed.
+
+6. **The remaining bottleneck was targeting, not throughput.** One interest-over-time call
    returns the full ~269-day daily series for an (artist, DMA) pair, so a pair
    needs one call every few days, not one per day. The tier-1 target — upcoming
    headliners in DMA 807 + EDM headliners nationwide — is **1,165 pairs / 982
@@ -67,10 +80,13 @@ external facts were web-verified 2026-07-04 (links inline).
     tags, ticket links (Eventbrite/Tixr/Dice/RA/TM), plus a
     [past-events CSV](https://19hz.info/pastEvents_BayArea.php). Covers club and
     warehouse shows TM never lists. Low ToS risk, one polite fetch/day. **Build.**
-12. **Dice.fm / Tixr event pages** embed schema.org JSON-LD `offers` (all-in
-    price, availability/sold-out). No public API. Poll JSON-LD daily for events
-    discovered via 19hz links → clean club-show price series. Moderate-low risk
-    (JSON-LD is machine-readable by design; tracked events only). **Build after 19hz.**
+12. **Ticket-page JSON-LD** (schema.org Event `offers`: price, currency,
+    availability/sold-out) — probed live 2026-07-04 against 19hz-discovered URLs:
+    **eventbrite.com works** (AggregateOffer low/high) and **shotgun.live works**
+    (per-tier Offers incl. SoldOut); **tixr.com and ra.co 403** plain HTTP
+    (bot walls); **dice.fm** 19hz links are partner redirects landing on the
+    homepage (resolvable later); posh.vip/instagram carry no JSON-LD. **Built**
+    (`nineteenhz_api/poll_ticket_pages.py`, allowlist eventbrite+shotgun).
 13. **SeatGeek Platform API** — only official free API with resale stats
     (`lowest/median/average_price`, listing counts) but registrations sit in an
     approval queue, often unanswered ([issue](https://github.com/seatgeek/api-support/issues/169)).
@@ -102,8 +118,8 @@ external facts were web-verified 2026-07-04 (links inline).
 |---|---|---|
 | D1 | Redeploy TM function; backfill `tm_observations` Jun 19→Jul 1 from bronze | deploy-gap incident (see REPO_STATE) |
 | D2 | Cut TM sweeps 6→2/day; keep single key; email TM for Inventory Status access + quota bump | 1, 2, 3, 5 |
-| D3 | Rebuild `gtrends-daily` around tier-1 priority pairs (~1,165, ~4-day rotation) on the existing single stream | 6 |
-| D4 | **No VM fleet** for Trends (was considered); revisit only with residential egress | 7 |
-| D5 | Smoke-test paid-API DMA support (SerpApi free tier) before any backfill spend; apply for official alpha | 9, 10 |
-| D6 | New sources: 19hz collector (prices+lineups) → Dice/Tixr JSON-LD poller; applications to SeatGeek/EDMTrain/JamBase; RA rejected | 11–17 |
-| D7 | Promote the 498 safe headliner recoveries into the dimension build | 18 |
+| D3 | Rebuild `gtrends-daily`: 6h run window (was 55min — the real cap, see 5b) + tier-1 priority pairs (~1,165, ~4-day rotation) + snapshot thinning, on the existing single stream | 5b, 6 |
+| D4 | **No VM fleet** for Trends (was considered); revisit only with residential egress. Per Tomas 2026-07-04: different GCP *regions* don't help either — datacenter ASN flagging is class-wide, not geographic | 7 |
+| D5 | **Paid APIs ruled out** (Tomas, 2026-07-04). SerpApi *free tier* DMA smoke test only if a free key appears; apply for the official alpha (free) | 9, 10 |
+| D6 | New sources: 19hz collector **(built — 507 events, 75.9% priced)** → ticket-page JSON-LD poller **(built — eventbrite+shotgun)**; EDMTrain dropped; SeatGeek application already filed by Tomas (no answer); JamBase optional (lineup/ID enrichment) if headliner gap persists; RA = permission email first (`docs/ra_access_request.md`), no unpermissioned GraphQL | 11–17 |
+| D7 | Promote the 498 safe headliner recoveries into the dimension build **(done — build_dimensions.py title-match recovery)** | 18 |

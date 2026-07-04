@@ -26,7 +26,7 @@ after the previous account closed (see incident log).
 
 | Component | What | Schedule (PT) | Deployed via |
 |---|---|---|---|
-| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | every 4h | `terraform/` (state local, on Niki's machine) or gcloud |
+| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | 06:00, 18:00 (cut from every-4h 2026-07-04 — daily-grain observations made 6×/day ~5× redundant) | `terraform/` (state local, on Niki's machine) or gcloud |
 | `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot units → bronze + silver | 09:00 | `terraform/gtrends/` (remote state, anyone can apply) |
 | `gtrends-backfill` (Cloud Run job) | deep per-DMA daily series, on demand | manual | `terraform/gtrends/` |
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 09:30 | `terraform/gtrends/` |
@@ -77,10 +77,24 @@ As of 2026-07-04 (mid-recovery):
 ## Active work / branch map
 
 - `main` — deployed state of record.
-- `tk/repo-state-docs` — this docs refresh + collection-efficiency record.
-- Recovery + collection redesign plan: see `collection_efficiency_review.md`
-  (phases: recovery → docs → TM quota reallocation → Trends priority pairs → 19hz/Dice sources).
+- `tk/repo-state-docs` — docs refresh + the 2026-07-04 collection redesign
+  (TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner recovery,
+  19hz collector + ticket-page JSON-LD poller, probes/EDA).
+- Recovery + collection redesign decisions: `collection_efficiency_review.md`.
 - Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
+
+### Pending deploys / user actions (2026-07-04)
+
+- [ ] **Redeploy `ticketmaster-daily-extract`** (observations fix; gcloud command
+  in the session notes / `cloud_functions/ticketmaster_daily/README.md`) — until
+  then `tm_observations` doesn't advance.
+- [ ] **`terraform -chdir=terraform/gtrends apply`** — activates the 6h daily
+  window + tier-1 rotation (image already rebuilt in Artifact Registry).
+- [ ] `tm_observations` bronze backfill Jun 19→Jul 1 (loader run in progress 07-04).
+- [ ] Send `docs/tm_access_request.md` (Inventory Status API + quota) and
+  `docs/ra_access_request.md` (RA academic permission).
+- [ ] Optional: official Trends API alpha application
+  (developers.google.com/search/apis/trends).
 
 ## Incident log
 
