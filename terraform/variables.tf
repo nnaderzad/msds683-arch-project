@@ -22,9 +22,9 @@ variable "ticketmaster_api_key" {
 }
 
 variable "ticketmaster_schedule" {
-  description = "Cron schedule for the Ticketmaster extract (interpreted in America/Los_Angeles). The MAX_CALLS_PER_RUN quota math assumes 6 runs/day — adding runs needs that budget rechecked."
+  description = "Cron schedule for the Ticketmaster extract (interpreted in America/Los_Angeles). tm_observations is daily-grain, so intra-day sweeps beyond the second only add capture provenance; 2 runs/day keeps union-presence robustness while freeing ~3.1k of the 5k daily call quota (docs/collection_efficiency_review.md, D2). Each run must still complete a full nationwide sweep within MAX_CALLS_PER_RUN."
   type        = string
-  default     = "0 */4 * * *" # every 4 hours (6 runs/day)
+  default     = "0 6,18 * * *" # twice daily (cut from every-4h on 2026-07-04; live scheduler updated via gcloud)
 }
 
 variable "gold_refresh_schedule" {
