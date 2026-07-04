@@ -15,6 +15,16 @@ external facts were web-verified 2026-07-04 (links inline).
    TM-host-fulfilled *primary* inventory only; TicketWeb/Universe/venue-system
    shows (i.e. most club EDM) never populate it; resale never appears. The
    Discovery Feed's own price fields are documented "no longer in use; always null".
+1a. **Bronze-corpus anatomy (2026-07-04, `eda/tm_bronze_price_eda.py`, 41,489
+   distinct events across 4 sampled sweep days):** 23.9% of raw events carry a
+   `priceRanges` array; **every one is `type: "standard"` (primary face value) —
+   resale ranges occur 0.0% of the time, zero occurrences in the corpus.** When
+   present, min/max are always filled (no partial ranges). Onsale timing:
+   pre-onsale events are *more* likely priced (43.3%) than post-onsale (23.7%) —
+   big tours load prices before onsale — so a "watch unpriced events around
+   onsale" heuristic adds nothing; unpriced events are already re-observed every
+   sweep at zero marginal cost. Attractions present on ~83–84% of raw events.
+
 1b. **Live probes (2026-07-04, `eda/tm_price_probe.py`):** the single-event
    detail endpoint returned `priceRanges` for **0 of 50** search-unpriced events
    (5/5 priced controls did) — no hidden recovery path; the Commerce offers

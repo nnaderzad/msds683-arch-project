@@ -1,0 +1,5 @@
+day,events,pct_with_price_ranges,pct_with_standard,pct_standard_min_filled,pct_with_resale,pct_with_attractions,pre_onsale_events,pct_priced_pre_onsale,pct_priced_post_onsale,files
+2026-06-12,35290,22.6,22.6,22.6,0.0,84.0,271,57.2,22.3,51
+2026-06-20,35022,22.6,22.6,22.6,0.0,84.0,371,39.4,22.4,51
+2026-06-27,35766,22.4,22.4,22.4,0.0,84.4,287,46.7,22.2,51
+2026-07-01,21411,20.9,20.9,20.9,0.0,84.7,186,32.8,20.8,31
