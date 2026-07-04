@@ -209,16 +209,36 @@ def pick_headliner_index(event_name: str | None, names: list[str]) -> int:
 
 
 def build_bridge_event_artist(tm_rows: list[dict]) -> list[dict]:
-    """event x attraction rows with is_headliner (name-match) + billing_order (position)."""
+    """event x attraction rows with is_headliner (name-match) + billing_order (position).
+
+    Safe title-match recovery (eda/diagnose_headliner_gap.py): an event with NO
+    attractions whose normalized title exactly equals an artist we already know
+    from attraction-bearing events gets that artist as headliner. Exact-equality
+    only — an unknown club night / tribute act never fabricates an artist.
+    """
     by_event: dict[str, dict] = {}
     for r in tm_rows:
         eid = r.get("event_id")
         if eid:
             by_event[eid] = r  # current-state: last wins
+
+    # Known-artist index for the recovery pass: normalized attraction name -> display.
+    known: dict[str, str] = {}
+    for r in by_event.values():
+        for name in _split(r.get("attraction_names")):
+            norm = normalize_name(name)
+            if norm:
+                known.setdefault(norm, name)
+
     out = []
     for eid, r in by_event.items():
         names = _split(r.get("attraction_names"))
         if not names:
+            title_norm = normalize_name(r.get("event_name"))
+            recovered = known.get(title_norm)
+            if recovered:
+                out.append({"event_id": eid, "artist_id": artist_id(recovered),
+                            "is_headliner": True, "billing_order": 1})
             continue
         head = pick_headliner_index(r.get("event_name"), names)
         seen: set[int] = set()
