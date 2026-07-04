@@ -5,6 +5,10 @@ combining ticket/event data, global artist popularity, and local per-metro searc
 interest. Thesis: a *locally* popular artist in a *small* venue tends to sell out
 and push resale prices up; a locally-unknown artist in a big room tends to soften.
 
+> **Current status, freshness, and incidents:** [`docs/REPO_STATE.md`](docs/REPO_STATE.md) ·
+> schema: [`docs/data-model.md`](docs/data-model.md) ·
+> pipeline walkthrough: [`docs/transformations_showcase.md`](docs/transformations_showcase.md)
+
 ## Data sources
 
 | Source | Signal | Status |
@@ -26,8 +30,12 @@ APIs ──► BRONZE (raw, GCS)                  ──► SILVER (BigQuery + p
 ```
 
 - **Bronze:** untouched API JSON, `dt=`-partitioned, via `common/gcs_io.py`.
-- **Silver:** typed, deduped per-source tables (e.g. `tm_events`).
-- **Gold:** the joined, model-ready features (in progress).
+- **Silver:** typed, deduped per-source tables (`tm_events`, honest
+  `tm_observations` price history, `fact_trends*`, `fact_youtube`, conformed dims).
+- **Gold:** dbt star `fact_event_demand` + precomputed `forecast_event_price`
+  (anchor+drift model in `model/`), refreshed daily by the `gold-refresh` job.
+- **Serving:** FastAPI + React dashboard in one Cloud Run service (`api/` + `web/`),
+  reading gold live.
 
 Compute is **Cloud Run** (functions + jobs) on **Cloud Scheduler**; infra is
 **Terraform** (the +20 bonus); secrets in **Secret Manager**; failures alert via
@@ -37,14 +45,20 @@ terraform validate).
 ## Repo layout
 
 ```
-├── common/gcs_io.py          # shared bronze-landing helper (all sources)
+├── common/                   # shared helpers: gcs_io.py (bronze landing), keys.py (surrogate ids)
 ├── ticketmaster_api/         # Ticketmaster POC
 ├── cloud_functions/
 │   └── ticketmaster_daily/   # deployed nationwide TM extractor (Cloud Run fn)
 ├── google_trends_api/        # Google Trends ingestion (roster, geo, jobs) — see its README
 ├── youtube_api/              # YouTube POC + collect_youtube.py (deployed collector)
+├── pipeline/                 # silver/gold Python builders + gold-refresh Cloud Run job
+├── dbt/                      # dbt transforms: fact_ticketmaster, gold star, data tests
+├── model/                    # anchor+drift price forecaster (features/train/predict)
+├── api/  +  web/             # FastAPI service + React dashboard (one Cloud Run service)
+├── eda/                      # committed, deterministic diagnostics (see eda/output/)
 ├── great_expectations/       # data-quality suites: bronze/silver/gold (GX) — see its README
-├── tests/                    # pytest
+├── tests/                    # pytest (offline; network/GCP faked)
+├── docs/                     # REPO_STATE, data-model, decision records
 ├── terraform/                # main root: buckets, BigQuery, TM pipeline, monitoring
 │   └── gtrends/              # isolated root (remote GCS state): Trends + YouTube jobs
 └── environment.yml           # conda env `music-demand`
