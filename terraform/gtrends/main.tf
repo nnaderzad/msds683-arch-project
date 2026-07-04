@@ -131,13 +131,15 @@ resource "google_cloud_run_v2_job" "gtrends_daily" {
   template {
     template {
       service_account = google_service_account.gtrends_ingest.email
-      # Single stream, soonest-show-first, best-effort: it lands what fits in
-      # RUN_DEADLINE_SECONDS (a small daily slice), exits 0, and resumes tomorrow.
-      # The deterministic guards (rate cap + global daily budget + deadline) keep it
-      # under the throttle, so the modest 3600s timeout is just a hard backstop —
-      # the run normally stops itself at the 3300s deadline well before SIGKILL.
+      # Single stream, soonest-show-first, best-effort: it lands what fits before
+      # RUN_DEADLINE_SECONDS or the shared daily budget trips, exits 0, resumes
+      # tomorrow. The old 3300s deadline capped runs at ~165 of the 800 budgeted
+      # calls/day (28-145 files/day observed) — the queue never finished. At 20s a
+      # ~665-unit daily queue (national + thinned snapshots + tier-1 DMA rotation)
+      # needs ~3.7h, so the deadline is now ~5h40m with a 6h SIGKILL backstop
+      # (docs/collection_efficiency_review.md, D3).
       max_retries = 2
-      timeout     = "3600s"
+      timeout     = "21600s"
 
       containers {
         image = local.gtrends_image
@@ -152,16 +154,27 @@ resource "google_cloud_run_v2_job" "gtrends_daily" {
           name  = "MAX_UNITS"
           value = tostring(var.gtrends_daily_max_units)
         }
-        # Stop starting units after ~55 min so the run exits 0 (not SIGKILL'd at 3600s),
-        # leaving headroom under the shared daily budget for an on-demand backfill.
+        # Stop starting units ~20 min under the 6h timeout so the run exits 0
+        # (not SIGKILL'd); the global DAILY_CALL_BUDGET still caps total API hits.
         env {
           name  = "RUN_DEADLINE_SECONDS"
-          value = "3300"
+          value = "20400"
         }
         # Daily wants a fresh same-day refresh, so no cross-day resume (today only).
         env {
           name  = "RESUME_LOOKBACK_DAYS"
           value = "0"
+        }
+        # Tier-1 (Bay Area DMA 807 + EDM artists) per-DMA daily series, each pair
+        # re-pulled once per N days — feeds fact_trends_daily continuously.
+        env {
+          name  = "DAILY_DMA_REFRESH_DAYS"
+          value = tostring(var.gtrends_daily_dma_refresh_days)
+        }
+        # All-DMA snapshots are slow-moving; rotate 1-in-N of the roster per day.
+        env {
+          name  = "SNAPSHOT_EVERY_DAYS"
+          value = tostring(var.gtrends_snapshot_every_days)
         }
         dynamic "env" {
           for_each = local.common_env
