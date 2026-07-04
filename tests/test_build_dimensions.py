@@ -128,6 +128,34 @@ def test_bridge_marks_one_headliner_per_event(seed_tm_events):
     assert turn["is_headliner"] is True and turn["billing_order"] == 1
 
 
+def test_bridge_safe_title_match_recovery():
+    """No-attraction events recover a headliner ONLY when the title IS a known artist."""
+    rows = [
+        {"event_id": "e1", "event_name": "Everclear with Friends",
+         "attraction_names": "Everclear|Friends", "attraction_ids": "a1|a2"},
+        # exact title match to a known artist -> recovered as headliner
+        {"event_id": "e2", "event_name": "EVERCLEAR", "attraction_names": ""},
+        # unknown club night -> never fabricated
+        {"event_id": "e3", "event_name": "Warehouse Sessions 004", "attraction_names": ""},
+        # partial/substring title -> NOT recovered (exact equality only)
+        {"event_id": "e4", "event_name": "Everclear Afterparty", "attraction_names": ""},
+    ]
+    bridge = d.build_bridge_event_artist(rows)
+    by_event = {}
+    for b in bridge:
+        by_event.setdefault(b["event_id"], []).append(b)
+
+    assert len(by_event["e2"]) == 1
+    rec = by_event["e2"][0]
+    assert rec["artist_id"] == keys.artist_id("Everclear")
+    assert rec["is_headliner"] is True and rec["billing_order"] == 1
+    assert "e3" not in by_event
+    assert "e4" not in by_event
+    # recovered artist already exists in dim_artist (FK invariant preserved)
+    artist_ids = {a["artist_id"] for a in d.build_dim_artist(rows, {}, {})}
+    assert rec["artist_id"] in artist_ids
+
+
 # ---------------------------------------------------------------------------
 # FK coverage across the dims (the integrity dim_* must satisfy for the gold join)
 # ---------------------------------------------------------------------------
