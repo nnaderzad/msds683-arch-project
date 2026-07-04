@@ -85,14 +85,16 @@ As of 2026-07-04 (mid-recovery):
 
 ### Pending deploys / user actions (2026-07-04)
 
-- [ ] **Redeploy `ticketmaster-daily-extract`** (observations fix; gcloud command
+- [x] **Redeploy `ticketmaster-daily-extract`** — DONE 2026-07-04 23:07 UTC via
+  `cloud_functions/ticketmaster_daily/deploy.sh` (observations fix; gcloud command
   in the session notes / `cloud_functions/ticketmaster_daily/README.md`) — until
   then `tm_observations` doesn't advance.
 - [ ] **`terraform -chdir=terraform/gtrends apply`** — activates the 6h daily
   window + tier-1 rotation (image already rebuilt in Artifact Registry).
 - [ ] `tm_observations` bronze backfill Jun 19→Jul 1 (loader run in progress 07-04).
-- [ ] Send `docs/tm_access_request.md` (Inventory Status API + quota) and
-  `docs/ra_access_request.md` (RA academic permission).
+- [ ] Send `docs/tm_access_request.md` (Inventory Status API + quota).
+- [x] RA permission — **GRANTED 2026-07-04**: one automated request/day;
+  collector `ra_api/collect_ra.py` (area 218) enforces the limit in code.
 - [ ] Optional: official Trends API alpha application
   (developers.google.com/search/apis/trends).
 
