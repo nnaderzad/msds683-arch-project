@@ -147,6 +147,9 @@ finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --d
   bronze nightly — 47 min and growing vs the 3600s task timeout).
 - `tk/dims-merge-alerting` — PR #56: accumulate fact-referenced dims (MERGE, no
   delete) + project-wide alert on failed Cloud Run job executions.
+- `tk/fix-continuous-bool-test` — PR #57 (**urgent**): `quote: false` on the
+  `price_is_filled` accepted_values test — invalid `BOOL IN {STRING}` SQL
+  aborts every gold run regardless of warn severity.
 - Recovery + collection redesign decisions: `collection_efficiency_review.md`.
 - Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
 
@@ -169,6 +172,9 @@ New:
 
 After the open PRs merge (each deploy needs a go-ahead):
 
+- [ ] **PR #57 (urgent, before the 16:30 PT run): bool accepted_values hotfix**
+  — without it every nightly still aborts at dbt_build (Database Error beats
+  warn severity). Bundle its image rebuild with the one below.
 - [ ] PR #54: rebuild the shared ingestion image
   (`gcloud builds submit --config google_trends_api/cloudbuild.yaml .`) +
   `terraform -chdir=terraform/gtrends apply` (2 jobs, 2 schedulers, 1 SA) +
@@ -195,10 +201,10 @@ Carried over / done from 2026-07-04:
 
 ## Incident log
 
-- **2026-07-05 → ongoing: gold-refresh aborts at dbt relationship tests;
+- **2026-07-05 → 07-08: gold-refresh aborts at dbt tests;
   `forecast_event_price` stale since 06-30.** Every scheduled run since 07-05
-  fails `relationships(fact_event_demand.artist_id → dim_artist)` and
-  `(venue_id → dim_venue)` (24 orphan rows) and exits before `forecast_export`
+  failed `relationships(fact_event_demand.artist_id → dim_artist)` and
+  `(venue_id → dim_venue)` (24 orphan rows) and exited before `forecast_export`
   — fact tables still advance (dbt materializes before testing), so freshness
   checks alone missed it. Root cause: `fact_event_demand` is incremental
   (point-in-time history) while dims are `WRITE_TRUNCATE` rebuilds from
@@ -206,11 +212,20 @@ Carried over / done from 2026-07-04:
   rows reference dim members that vanish from the rebuild (e.g.
   `rZ7HnEZ1AfZbrf` moved venues; its June rows orphaned). The `event_id`
   relationship already had `severity: warn` for exactly this drift; artist/venue
-  didn't. Fix: same severity treatment (branch `tk/dims-accumulate`) + backlog:
-  make fact-referenced dims accumulate (MERGE, never delete) so drift stops
-  growing. Lesson: **freshness ≠ health — check execution status, not just
-  `MAX(snapshot_date)`** (the monitoring email fires on function ERRORs, not on
-  failed job executions — alert-policy gap to close).
+  didn't. **Fix #1 (PR #53, deployed 07-08 as image `git-82cafa2`):** same
+  severity treatment — verification run confirmed both tests now WARN (44/48
+  orphans, drift keeps growing until PR #56's accumulating dims land). **The
+  same verification run then exposed fix #2 (PR #57):** the
+  `accepted_values` test on `fact_event_demand_continuous.price_is_filled`
+  renders as `BOOL IN ('True','False')` under the rebuilt image's dbt version →
+  BigQuery Database Error → build aborts *regardless of the test's warn
+  severity*; `quote: false` fixes it (verified live, 6/6 tests pass). Also
+  timed on that run: `trends_silver` re-downloads the whole growing ibr bronze
+  (47 min vs the job's 3600s timeout) — windowed in PR #55. Structural
+  follow-ups shipped in PR #56: accumulating dims + a project-wide alert on
+  failed job executions. Lesson: **freshness ≠ health — check execution
+  status, not just `MAX(snapshot_date)`** (the old email alert fires only on
+  the two gtrends jobs' ERROR logs).
 - **2026-07-01 → 07-04: billing outage.** `BillingAcctForEdu_MSDS691` closed →
   `billingEnabled: false` → all schedulers/jobs halted after 2026-06-30 runs.
   Fixed 07-04 by linking the MSDS692 account. Losses: Trends DMA snapshots +
