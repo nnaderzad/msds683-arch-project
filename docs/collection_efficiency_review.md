@@ -117,6 +117,17 @@ external facts were web-verified 2026-07-04 (links inline).
 
 ### Cross-cutting
 
+17b. **Collection times were ad hoc and misaligned** (TM 06:00/18:00, Trends
+    09:00, gold 09:00, YouTube 09:30 — all PT): gold-refresh started the moment
+    Trends started, so gold always served *yesterday's* demand signals, and the
+    18:00 PT TM sweep landed in the *next* UTC day (`snapshot_date` is UTC), so
+    the evening capture joined a different day's Trends/YouTube rows. Physical
+    constraints that shape the fix: PT 01:00–15:59 maps into one UTC day
+    year-round (15:00 PT = latest same-UTC-day slot); the Trends crawl is
+    single-stream ~3–4 h (worst 5h40m) and its content doesn't depend on fetch
+    hour (daily series, current partial day unstable — freshest reliable point
+    is always yesterday); YouTube takes ~30 min.
+
 18. **Headliner gap caps everything downstream**: only 42.9% of priced events
     resolve a headliner (missing `attraction_names` at source). 498 safe
     title-match recoveries identified (`eda/diagnose_headliner_gap.py`); 19hz +
@@ -133,3 +144,4 @@ external facts were web-verified 2026-07-04 (links inline).
 | D5 | **Paid APIs ruled out** (Tomas, 2026-07-04). SerpApi *free tier* DMA smoke test only if a free key appears; apply for the official alpha (free) | 9, 10 |
 | D6 | New sources: 19hz collector **(built — 507 events, 75.9% priced)** → ticket-page JSON-LD poller **(built — eventbrite+shotgun)**; EDMTrain dropped; SeatGeek application already filed by Tomas (no answer); JamBase optional (lineup/ID enrichment) if headliner gap persists; RA = permission email first (`docs/ra_access_request.md`), no unpermissioned GraphQL | 11–17 |
 | D7 | Promote the 498 safe headliner recoveries into the dimension build **(done — build_dimensions.py title-match recovery)** | 18 |
+| D8 | **PT-anchored daily cadence, serve-by 19:00 PT** (2026-07-08): PT = project reference tz (labels everywhere); TM 05:00+15:00, Trends 11:00, YouTube 15:00, gold-refresh 16:30 — every capture in ONE UTC day so `snapshot_date` joins stay same-cycle; gold gains a `fact_trends_daily` incremental load (was frozen — only ever loaded manually); TM completeness gate = stderr summary → ERROR log → existing email alert (already shipped + tested). Full "SF-day" partition migration, DAYS_AHEAD 365, and a Bay-Area-only ~18:00 PT mini-sweep deferred to backlog (team-plan.md). Details: REPO_STATE "Clock & cadence" | 17b, 2 |

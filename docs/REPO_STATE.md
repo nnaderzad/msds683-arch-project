@@ -6,7 +6,8 @@
 > delete what you can't verify. Refresh the "Last verified" stamps when you
 > re-check a section.
 
-**Last full review:** 2026-07-04 (billing-outage recovery + collection-efficiency review)
+**Last full review:** 2026-07-08 (collection cadence D8; recovery from the 07-01
+billing outage verified complete)
 
 ## What this is
 
@@ -26,15 +27,46 @@ after the previous account closed (see incident log).
 
 | Component | What | Schedule (PT) | Deployed via |
 |---|---|---|---|
-| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | 06:00, 18:00 (cut from every-4h 2026-07-04 — daily-grain observations made 6×/day ~5× redundant) | `terraform/` (state local, on Niki's machine) or gcloud |
-| `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot units → bronze + silver | 09:00 | `terraform/gtrends/` (remote state, anyone can apply) |
+| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | live: 06:00, 18:00 → **05:00, 15:00 after the D8 deploy** (see checklist) | `terraform/` (state local, on Niki's machine) or `cloud_functions/ticketmaster_daily/deploy.sh` |
+| `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot + tier-1 per-DMA daily units → bronze + silver | live: 09:00 → **11:00 after D8** | `terraform/gtrends/` (remote state, anyone can apply) |
 | `gtrends-backfill` (Cloud Run job) | deep per-DMA daily series, on demand | manual | `terraform/gtrends/` |
-| `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 09:30 | `terraform/gtrends/` |
-| `gold-refresh` (Cloud Run job) | silver loaders → dbt build → forecast → GX gate | 09:00 | `terraform/` |
+| `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | live: 09:30 → **15:00 after D8** | `terraform/gtrends/` |
+| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily` since D8) → dbt build → forecast → GX gate | live: 09:00 → **16:30 after D8** | `terraform/` |
 | `event-demand-api` (Cloud Run service) | FastAPI + React demo (same origin), reads gold live | always on (min-instances 1) | gcloud only (not yet in terraform) |
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
+
+## Clock & cadence (D8, 2026-07)
+
+**PT (America/Los_Angeles) is the project's reference timezone.** Every
+human-facing time in docs, dashboards, and scheduler configs carries an explicit
+tz label; all Cloud Scheduler crons are defined in `America/Los_Angeles`.
+Storage partitions (`dt=`) and `snapshot_date` remain **UTC days** — the full
+"SF-day" migration is heavy and deferred (backlog, team-plan.md). Instead, the
+cadence keeps every capture inside **one UTC day**: PT 01:00–15:59 maps into the
+same UTC day year-round, so 15:00 PT is the latest safe collection slot. That is
+what makes gold's `snapshot_date` joins apples-to-apples — all sources' rows for
+a given key come from the same collection cycle.
+
+Target daily cycle (serve-by 19:00 PT — users decide where to go out ~7 PM):
+
+| PT time | Job | Why here |
+|---|---|---|
+| 05:00 | TM sweep #1 | insurance + overnight announcements |
+| 11:00 | gtrends-daily | single-stream ~3–4 h crawl (worst 5h40m ends 16:40); fetch hour doesn't change Trends content — the freshest reliable point is always yesterday's |
+| 15:00 | TM sweep #2 | load-bearing capture; latest one-UTC-day slot |
+| 15:00 | youtube-daily | ~30 min; freshest same-day stats |
+| 16:30 | gold-refresh | builds from SAME-DAY TM + YouTube + latest Trends; live ~17:15 PT |
+
+Known edge: a worst-case Trends run (deadline 5h40m) ends 16:40 PT, so that
+day's gold reads a partially-loaded Trends day — acceptable; loaders read
+whatever bronze has landed and the next refresh completes it.
+
+**TM sweep completeness gate:** the function writes its run summary to stderr
+(→ ERROR severity → the Cloud Monitoring email alert) whenever any state failed,
+any state was skipped on call budget, or a silver/observations merge failed;
+gold still builds. Covered by `tests/test_ticketmaster_daily.py`.
 
 ## Data freshness
 
@@ -50,15 +82,19 @@ UNION ALL SELECT "fact_event_demand", CAST(MAX(snapshot_date) AS STRING) FROM `d
 ORDER BY src'
 ```
 
-As of 2026-07-04 (mid-recovery):
+As of 2026-07-08 (recovery complete):
 
 | Table | Latest snapshot | Note |
 |---|---|---|
-| `tm_observations` | 2026-06-18 | deploy-gap freeze; backfill Jun 19→Jul 1 in progress; CF redeploy pending |
-| `fact_trends` | 2026-06-29 | resumes with `gtrends-daily` |
-| `fact_trends_daily` | 2026-06-15 | only fed by backfill-mode runs (daily-mode dma units planned) |
-| `fact_youtube` | 2026-06-30 | resumes with `youtube-daily` |
-| `fact_event_demand` | 2026-06-30 | gold; refreshes after silver recovers |
+| `tm_observations` | 2026-07-08 | CF redeployed 07-04; backfill Jun 19→Jul 1 merged (462,125 rows). The 18:00 PT sweep lands in the NEXT UTC day — fixed by the D8 cadence (15:00 PT) |
+| `fact_trends` | 2026-07-06 | daily; Trends' freshest reliable day is always yesterday |
+| `fact_trends_daily` | 2026-07-07 | unfrozen 07-08 (manual load); auto-refreshes once the D8 gold-refresh image deploys |
+| `fact_youtube` | 2026-07-07 | daily |
+| `fact_event_demand` | 2026-07-07 | gold; daily |
+
+Post-fix verification (2026-07-05..07): `gtrends-daily` now lands 392–460
+calls/day (was 28–156 pre-6h-window) with 67–74 tier-1 per-DMA units/day,
+finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --days 5`).
 
 ## Known bottlenecks (measured)
 
@@ -76,23 +112,33 @@ As of 2026-07-04 (mid-recovery):
 
 ## Active work / branch map
 
-- `main` — deployed state of record.
-- `tk/repo-state-docs` — docs refresh + the 2026-07-04 collection redesign
-  (TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner recovery,
-  19hz collector + ticket-page JSON-LD poller, probes/EDA).
+- `main` — deployed state of record (2026-07-04 collection redesign merged:
+  PRs #44–#50 — TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner
+  recovery, 19hz collector + ticket-page JSON-LD poller, RA collector, deploy script).
+- `tk/collection-cadence` — D8 cadence (this section's schedule change +
+  `fact_trends_daily` in gold-refresh).
 - Recovery + collection redesign decisions: `collection_efficiency_review.md`.
 - Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
 
-### Pending deploys / user actions (2026-07-04)
+### Pending deploys / user actions (2026-07-08)
 
-- [ ] **Redeploy `ticketmaster-daily-extract`** (observations fix; gcloud command
-  in the session notes / `cloud_functions/ticketmaster_daily/README.md`) — until
-  then `tm_observations` doesn't advance.
-- [ ] **`terraform -chdir=terraform/gtrends apply`** — activates the 6h daily
-  window + tier-1 rotation (image already rebuilt in Artifact Registry).
-- [ ] `tm_observations` bronze backfill Jun 19→Jul 1 (loader run in progress 07-04).
-- [ ] Send `docs/tm_access_request.md` (Inventory Status API + quota) and
-  `docs/ra_access_request.md` (RA academic permission).
+D8 cadence rollout (after the `tk/collection-cadence` PR merges):
+
+- [ ] `gcloud scheduler jobs update http ticketmaster-daily-extract --location=us-west1 --schedule="0 5,15 * * *"` (main-root tf state is on Niki's machine, so gcloud like the 2×/day cut)
+- [ ] `gcloud scheduler jobs update http gold-refresh-daily --location=us-west1 --schedule="30 16 * * *"`
+- [ ] **Rebuild + redeploy the `gold-refresh` job image** (picks up the
+  `trends_series_silver` step; `pipeline/gold_refresh.cloudbuild.yaml`). Until
+  then `fact_trends_daily` only advances on manual loader runs.
+- [ ] `terraform -chdir=terraform/gtrends apply` (gtrends 11:00 PT, youtube 15:00 PT)
+
+Carried over / done from 2026-07-04:
+
+- [x] Redeploy `ticketmaster-daily-extract` (done 07-04 23:07 UTC; observations flowing)
+- [x] `terraform -chdir=terraform/gtrends apply` — 6h window + rotation (done 07-04; verified at full capacity 07-05..07)
+- [x] `tm_observations` bronze backfill Jun 19→Jul 1 (462,125 rows merged 07-04)
+- [x] `docs/ra_access_request.md` — **granted** (written OK 2026-07-04, strictly 1 automated request/day; enforced in `ra_api/collect_ra.py`)
+- [x] `docs/tm_access_request.md` sent (2026-07-07) — no response yet
+- [ ] Wire `ra_api/` + `nineteenhz_api/` collectors into scheduled daily runs + silver joins
 - [ ] Optional: official Trends API alpha application
   (developers.google.com/search/apis/trends).
 
