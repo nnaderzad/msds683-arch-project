@@ -19,6 +19,9 @@ forecaster + public demo dashboard. Deep dives:
 - Schema (silver constellation + gold star): [`data-model.md`](data-model.md)
 - Stage-by-stage pipeline walkthrough: [`transformations_showcase.md`](transformations_showcase.md)
 - Collection-efficiency decision record (2026-07): [`collection_efficiency_review.md`](collection_efficiency_review.md)
+- Data review (raw samples, event trace, coverage, 19hz/RA findings):
+  [`../eda/data_review_2026-07.md`](../eda/data_review_2026-07.md)
+  (regenerate the numbers with `python eda/data_review.py`)
 
 ## Live system (GCP project `data-architecture-498123`, us-west1)
 
@@ -36,6 +39,15 @@ after the previous account closed (see incident log).
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
+
+**New bronze sources (first landings 2026-07-08, not yet scheduled or consumed
+by silver):** `nineteenhz/` (Bay Area listing HTML — 456 events, 74.6% priced),
+`ra/` (GraphQL JSON, area 218 — 100 events/day at the agreed 1 request/day,
+incl. per-event `attending`), `ticketpages/` (JSON-LD offers from
+eventbrite/shotgun — availability incl. SoldOut). Run manually via
+`nineteenhz_api/collect_19hz.py`, `ra_api/collect_ra.py`,
+`nineteenhz_api/poll_ticket_pages.py` (each with `--land-raw`). First-pull
+findings + next steps: `eda/data_review_2026-07.md`.
 
 ## Clock & cadence (D8, 2026-07)
 
