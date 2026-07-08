@@ -3,9 +3,10 @@
 Refreshes the **whole analytical state in one execution** so the three source
 signals + gold + forecast never drift apart:
 
-    A1  trends_to_silver.py      -> fact_trends      (silver)
-    A2  youtube_to_silver.py     -> fact_youtube     (silver)
-    A3  build_dimensions.py      -> dim_*/bridge     (silver)
+    A1  trends_to_silver.py         -> fact_trends        (silver)
+    A1b trends_series_to_silver.py  -> fact_trends_daily  (silver, recent captures)
+    A2  youtube_to_silver.py        -> fact_youtube       (silver)
+    A3  build_dimensions.py         -> dim_*/bridge       (silver)
     A4  dbt build                -> fact_ticketmaster (silver) + fact_event_demand (gold)
     D2  export_predictions_table -> forecast_event_price (gold)
     C   GX forecast sanity gate  -> validate the fresh forecast (fail the run on violation)
@@ -35,6 +36,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +47,12 @@ DEFAULT_DATASET = "event_demand_analytics"
 DEFAULT_LOCATION = "us-west1"
 
 FORECAST_TABLE = "forecast_event_price"
+
+# fact_trends_daily incremental window: each iot capture carries the full ~269-day
+# series, and the tier-1 rotation re-pulls every pair within ~4 days, so a 14-day
+# capture window (>3 full cycles) refreshes every actively-collected series without
+# re-reading the whole bronze prefix each run.
+TRENDS_SERIES_LOOKBACK_DAYS = 14
 
 
 @dataclass(frozen=True)
@@ -59,9 +67,14 @@ class Step:
 
 
 def build_steps(
-    project: str, dataset: str, location: str = DEFAULT_LOCATION, *, dry_run: bool = False
+    project: str,
+    dataset: str,
+    location: str = DEFAULT_LOCATION,
+    *,
+    dry_run: bool = False,
+    today: date | None = None,
 ) -> list[Step]:
-    """The ordered refresh plan. Pure — no I/O — so it is unit-testable offline."""
+    """The ordered refresh plan. Pure given `today` — unit-testable offline."""
     py = sys.executable
     bq_flags = ["--project", project, "--dataset", dataset]
     run_flags = ["--dry-run"] if dry_run else []
@@ -76,8 +89,21 @@ def build_steps(
     dbt_verb = "compile" if dry_run else "build"
     dbt_argv = ["dbt", dbt_verb, "--profiles-dir", ".", "--project-dir", "."]
 
+    series_start = (today or date.today()) - timedelta(days=TRENDS_SERIES_LOOKBACK_DAYS)
+
     steps = [
         Step("trends_silver", [py, "pipeline/silver/trends_to_silver.py", *bq_flags, *run_flags]),
+        Step(
+            "trends_series_silver",
+            [
+                py,
+                "pipeline/silver/trends_series_to_silver.py",
+                *bq_flags,
+                "--start-date",
+                series_start.isoformat(),
+                *run_flags,
+            ],
+        ),
         Step("youtube_silver", [py, "pipeline/silver/youtube_to_silver.py", *bq_flags, *run_flags]),
         Step("dimensions", [py, "pipeline/silver/build_dimensions.py", *bq_flags, *run_flags]),
         Step("dbt_build", dbt_argv, cwd=DBT_DIR, env=dbt_env),
