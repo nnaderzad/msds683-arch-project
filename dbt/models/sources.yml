@@ -40,6 +40,21 @@ sources:
           and kept fresh by the daily cloud function. **No forward-fill.** Replaces the
           forward-filled `ticketmaster_raw.tm_snapshots_ext` parquet as the price-fact source.
       - name: fact_trends
+      - name: fact_trends_daily
+        description: >
+          Daily-granularity Google Trends interest per (artist, dma, snapshot_date) from
+          the iot daily-series pulls — the dense trajectory table (built by
+          `pipeline/silver/trends_series_to_silver.py`, refreshed in-job with a 14-day
+          capture window). Additive to `fact_trends` (ibr snapshots): daily is deep on
+          the tier-1 pair rotation, ibr is broad across DMAs. Gold prefers daily and
+          falls back to ibr. Values arrive up to ~4 days late for a given date as the
+          rotation cycles — hence gold's trailing reprocess window.
+        columns:
+          - name: trends_snapshot_id
+            description: "Hash of (trends, artist_id, dma_code, snapshot_date) — MERGE key; guarantees the (artist, dma, date) grain gold joins on."
+            tests:
+              - unique
+              - not_null
       - name: fact_youtube
       - name: dim_event
       - name: dim_venue

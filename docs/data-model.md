@@ -218,8 +218,12 @@ erDiagram
 | Fact | Grain | Source |
 |---|---|---|
 | `fact_ticketmaster` | one **event × snapshot_date** | Ticketmaster |
-| `fact_trends` | one **artist × dma × snapshot_date** | Google Trends |
+| `fact_trends` | one **artist × dma × snapshot_date** | Google Trends (ibr snapshots — broad DMA coverage) |
+| `fact_trends_daily` | one **artist × dma × snapshot_date** | Google Trends (iot daily series — dense trajectory for tier-1 pairs; same columns as `fact_trends`) |
 | `fact_youtube` | one **artist × snapshot_date** | YouTube |
+| `fact_nineteenhz` | one **listed event × snapshot_date** | 19hz.info (prices, genres, lineups; joins on venue+date) |
+| `fact_ra` | one **RA event × snapshot_date** | Resident Advisor (`attending` re-observed daily = buzz series) |
+| `fact_ticketpages` | one **offer × page × snapshot_date** | ticket-page JSON-LD (`availability` = sell-out signal) |
 
 > ⚠️ **`fact_trends.interest` is per-pull normalized (0–100).** Each value is scaled
 > within its own `(artist, geo, timeframe)` series. It is comparable **across time for
@@ -269,7 +273,7 @@ erDiagram
         float price_max
         string price_currency
         string status_code
-        int local_interest "from fact_trends (artist+dma+date); NULL if not yet collected"
+        int local_interest "COALESCE(fact_trends_daily, fact_trends) on artist+dma+date; NULL if not yet collected"
         int yt_subscribers "from fact_youtube (artist+date)"
         int yt_views "from fact_youtube (artist+date)"
     }

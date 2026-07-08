@@ -34,17 +34,21 @@ after the previous account closed (see incident log).
 | `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot + tier-1 per-DMA daily units → bronze + silver | 11:00 (D8) | `terraform/gtrends/` (remote state, anyone can apply) |
 | `gtrends-backfill` (Cloud Run job) | deep per-DMA daily series, on demand | manual | `terraform/gtrends/` |
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
-| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily`, image `git-77d8e50`) → dbt build → forecast → GX gate | 16:30 (D8) — **currently failing, see incident log** | `terraform/` |
+| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily`, image `git-82cafa2`) → dbt build → forecast → GX gate | 16:30 (D8) — 07-05..08 failures fixed, see incident log | `terraform/` |
+| `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 (PR #54 — **pending merge + deploy**) | `terraform/gtrends/scene.tf` |
 | `event-demand-api` (Cloud Run service) | FastAPI + React demo (same origin), reads gold live | scale-to-zero (min-instances 0 since 2026-07-08 — cost cut ~$53/mo → ~$0; first hit after idle pays a few s cold start) | gcloud only (not yet in terraform) |
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
 
-**New bronze sources (first landings 2026-07-08, not yet scheduled or consumed
-by silver):** `nineteenhz/` (Bay Area listing HTML — 456 events, 74.6% priced),
-`ra/` (GraphQL JSON, area 218 — 100 events/day at the agreed 1 request/day,
-incl. per-event `attending`), `ticketpages/` (JSON-LD offers from
-eventbrite/shotgun — availability incl. SoldOut). Run manually via
+**Scene sources (first bronze landings 2026-07-08):** `nineteenhz/` (Bay Area
+listing HTML — 456 events, 74.6% priced), `ra/` (GraphQL JSON, area 218 — 100
+events/day at the agreed 1 request/day, incl. per-event `attending`),
+`ticketpages/` (JSON-LD offers from eventbrite/shotgun — availability incl.
+SoldOut). Daily scheduling: PR #54 (jobs above). Silver: `fact_nineteenhz` /
+`fact_ra` / `fact_ticketpages` created + loaded 2026-07-08 via
+`pipeline/silver/scene_to_silver.py`; nightly refresh via the gold-refresh
+`scene_silver` step lands with PR #55. Manual runs:
 `nineteenhz_api/collect_19hz.py`, `ra_api/collect_ra.py`,
 `nineteenhz_api/poll_ticket_pages.py` (each with `--land-raw`). First-pull
 findings + next steps: `eda/data_review_2026-07.md`.
@@ -103,6 +107,7 @@ As of 2026-07-08 (recovery complete):
 | `fact_trends_daily` | 2026-07-07 | unfrozen 07-08 (manual load); D8 image (`git-77d8e50`) now refreshes it every gold run |
 | `fact_youtube` | 2026-07-07 | daily |
 | `fact_event_demand` | 2026-07-07 | gold; daily |
+| `fact_nineteenhz` / `fact_ra` / `fact_ticketpages` | 2026-07-08 | scene silver, first load 07-08; nightly refresh lands with PR #55 |
 
 Post-fix verification (2026-07-05..07): `gtrends-daily` now lands 392–460
 calls/day (was 28–156 pre-6h-window) with 67–74 tier-1 per-DMA units/day,
@@ -128,10 +133,23 @@ finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --d
   PRs #44–#50 — TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner
   recovery, 19hz collector + ticket-page JSON-LD poller, RA collector, deploy script).
 - `tk/collection-cadence` — D8 cadence — **merged (PR #51), deployed 2026-07-08**.
-- `tk/data-review` — July data review (PR #52): raw samples, field inventories,
-  price distributions, event trace, 19hz/RA first pulls + overlap, plots.
-- `tk/dims-accumulate` — gold-refresh unblock (relationship-test severity; see
-  incident log).
+- `tk/data-review` — July data review — **merged (PR #52)**: raw samples, field
+  inventories, price distributions, event trace, 19hz/RA first pulls + overlap.
+- `tk/dims-accumulate` — gold-refresh unblock (relationship-test severity) —
+  **merged (PR #53), deployed 2026-07-08 (image `git-82cafa2`)**.
+- `tk/gold-trends-daily` — gold rewire: `local_interest` from
+  `fact_trends_daily` (ibr fallback) + 14-day incremental reprocess window;
+  **after merge+deploy run a one-time `dbt build --full-refresh -s fact_event_demand`**
+  to backfill history (the trailing window only reaches 14 days back).
+- `tk/scene-schedule` — PR #54: 19hz+RA daily Cloud Run jobs + schedulers.
+- `tk/scene-silver` — PR #55: scene silver loader + gold-refresh `scene_silver`
+  step + `trends_silver` 14-day window (the step was re-downloading ALL ibr
+  bronze nightly — 47 min and growing vs the 3600s task timeout).
+- `tk/dims-merge-alerting` — PR #56: accumulate fact-referenced dims (MERGE, no
+  delete) + project-wide alert on failed Cloud Run job executions.
+- `tk/fix-continuous-bool-test` — PR #57 (**urgent**): `quote: false` on the
+  `price_is_filled` accepted_values test — invalid `BOOL IN {STRING}` SQL
+  aborts every gold run regardless of warn severity.
 - Recovery + collection redesign decisions: `collection_efficiency_review.md`.
 - Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
 
@@ -147,11 +165,27 @@ D8 cadence rollout — **all four deployed 2026-07-08**:
 
 New:
 
-- [ ] **Fix + redeploy gold-refresh for the dbt relationship-test failures**
-  (see incident log — every scheduled run since 07-05 aborts before
-  `forecast_export`; `forecast_event_price` is stale at 06-30). Fix branch:
-  `tk/dims-accumulate`; needs image rebuild + job update after merge.
+- [x] **Fix + redeploy gold-refresh for the dbt relationship-test failures**
+  (PR #53 merged; image `git-82cafa2` built + job updated 2026-07-08 —
+  verification execution result in the incident log).
 - [x] Demo service `event-demand-api` → min-instances 0 (2026-07-08, cost cut)
+
+After the open PRs merge (each deploy needs a go-ahead):
+
+- [ ] **PR #57 (urgent, before the 16:30 PT run): bool accepted_values hotfix**
+  — without it every nightly still aborts at dbt_build (Database Error beats
+  warn severity). Bundle its image rebuild with the one below.
+- [ ] PR #54: rebuild the shared ingestion image
+  (`gcloud builds submit --config google_trends_api/cloudbuild.yaml .`) +
+  `terraform -chdir=terraform/gtrends apply` (2 jobs, 2 schedulers, 1 SA) +
+  smoke-execute `nineteenhz-daily` (the RA job's guard no-ops if the day's
+  request already landed — correct).
+- [ ] PR #55 + #56 + gold rewire: ONE gold-refresh image rebuild + job update
+  covers all three; then a one-time
+  `dbt build --full-refresh -s fact_event_demand fact_event_demand_continuous`
+  to backfill `local_interest` history.
+- [ ] PR #56: `terraform -chdir=terraform/gtrends apply` (+1 alert policy —
+  can share the apply with #54).
 
 Carried over / done from 2026-07-04:
 
@@ -167,10 +201,10 @@ Carried over / done from 2026-07-04:
 
 ## Incident log
 
-- **2026-07-05 → ongoing: gold-refresh aborts at dbt relationship tests;
+- **2026-07-05 → 07-08: gold-refresh aborts at dbt tests;
   `forecast_event_price` stale since 06-30.** Every scheduled run since 07-05
-  fails `relationships(fact_event_demand.artist_id → dim_artist)` and
-  `(venue_id → dim_venue)` (24 orphan rows) and exits before `forecast_export`
+  failed `relationships(fact_event_demand.artist_id → dim_artist)` and
+  `(venue_id → dim_venue)` (24 orphan rows) and exited before `forecast_export`
   — fact tables still advance (dbt materializes before testing), so freshness
   checks alone missed it. Root cause: `fact_event_demand` is incremental
   (point-in-time history) while dims are `WRITE_TRUNCATE` rebuilds from
@@ -178,11 +212,20 @@ Carried over / done from 2026-07-04:
   rows reference dim members that vanish from the rebuild (e.g.
   `rZ7HnEZ1AfZbrf` moved venues; its June rows orphaned). The `event_id`
   relationship already had `severity: warn` for exactly this drift; artist/venue
-  didn't. Fix: same severity treatment (branch `tk/dims-accumulate`) + backlog:
-  make fact-referenced dims accumulate (MERGE, never delete) so drift stops
-  growing. Lesson: **freshness ≠ health — check execution status, not just
-  `MAX(snapshot_date)`** (the monitoring email fires on function ERRORs, not on
-  failed job executions — alert-policy gap to close).
+  didn't. **Fix #1 (PR #53, deployed 07-08 as image `git-82cafa2`):** same
+  severity treatment — verification run confirmed both tests now WARN (44/48
+  orphans, drift keeps growing until PR #56's accumulating dims land). **The
+  same verification run then exposed fix #2 (PR #57):** the
+  `accepted_values` test on `fact_event_demand_continuous.price_is_filled`
+  renders as `BOOL IN ('True','False')` under the rebuilt image's dbt version →
+  BigQuery Database Error → build aborts *regardless of the test's warn
+  severity*; `quote: false` fixes it (verified live, 6/6 tests pass). Also
+  timed on that run: `trends_silver` re-downloads the whole growing ibr bronze
+  (47 min vs the job's 3600s timeout) — windowed in PR #55. Structural
+  follow-ups shipped in PR #56: accumulating dims + a project-wide alert on
+  failed job executions. Lesson: **freshness ≠ health — check execution
+  status, not just `MAX(snapshot_date)`** (the old email alert fires only on
+  the two gtrends jobs' ERROR logs).
 - **2026-07-01 → 07-04: billing outage.** `BillingAcctForEdu_MSDS691` closed →
   `billingEnabled: false` → all schedulers/jobs halted after 2026-06-30 runs.
   Fixed 07-04 by linking the MSDS692 account. Losses: Trends DMA snapshots +
