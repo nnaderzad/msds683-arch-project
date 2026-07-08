@@ -28,18 +28,31 @@ models:
         tests:
           - not_null
       - name: artist_id
-        description: "Headliner (via bridge_event_artist.is_headliner); NULL if the event has no attraction."
+        description: >
+          Headliner (via bridge_event_artist.is_headliner); NULL if the event has no
+          attraction. Warn, not error: the fact is incremental (point-in-time
+          history) while dims rebuild from CURRENT tm_events, so an event whose
+          headliner changes leaves old snapshot rows referencing a dropped dim
+          member — same expected drift as event_id above (incident 2026-07-05:
+          this at ERROR blocked every gold refresh and froze the forecast).
         tests:
           - relationships:
               arguments:
                 to: source('silver', 'dim_artist')
                 field: artist_id
+              config:
+                severity: warn
       - name: venue_id
+        description: >
+          FK -> dim_venue. Warn, not error: same historical-drift rationale as
+          artist_id (events change venues; old snapshot rows keep the old venue_id).
         tests:
           - relationships:
               arguments:
                 to: source('silver', 'dim_venue')
                 field: venue_id
+              config:
+                severity: warn
       - name: dma_code
         tests:
           - relationships:
