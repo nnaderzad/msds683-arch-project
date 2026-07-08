@@ -32,6 +32,7 @@ def test_full_plan_is_in_dependency_order():
         "trends_silver",
         "trends_series_silver",
         "youtube_silver",
+        "scene_silver",
         "dimensions",
         "dbt_build",
         "forecast_export",
@@ -53,12 +54,26 @@ def test_trends_series_step_loads_a_recent_capture_window():
     assert argv[argv.index("--start-date") + 1] == "2026-07-06"
 
 
+def test_scene_step_loads_a_recent_capture_window():
+    from datetime import date
+
+    steps = {
+        s.name: s
+        for s in gold_refresh.build_steps("proj", "ds", today=date(2026, 7, 20))
+    }
+    argv = steps["scene_silver"].argv
+    assert argv[1].endswith("scene_to_silver.py")
+    # Scene captures are self-contained daily files; 7 days covers missed runs.
+    assert argv[argv.index("--start-date") + 1] == "2026-07-13"
+
+
 def test_silver_and_forecast_steps_carry_project_dataset():
     steps = {s.name: s for s in gold_refresh.build_steps("proj", "ds")}
     for name in (
         "trends_silver",
         "trends_series_silver",
         "youtube_silver",
+        "scene_silver",
         "dimensions",
         "forecast_export",
     ):

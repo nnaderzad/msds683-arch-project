@@ -54,6 +54,11 @@ FORECAST_TABLE = "forecast_event_price"
 # re-reading the whole bronze prefix each run.
 TRENDS_SERIES_LOOKBACK_DAYS = 14
 
+# Scene sources (19hz / RA / ticketpages) land once per day and each capture is
+# self-contained, so the loader only needs a short re-read window (idempotent
+# MERGE makes overlap harmless; the margin covers a missed run or two).
+SCENE_LOOKBACK_DAYS = 7
+
 
 @dataclass(frozen=True)
 class Step:
@@ -90,6 +95,7 @@ def build_steps(
     dbt_argv = ["dbt", dbt_verb, "--profiles-dir", ".", "--project-dir", "."]
 
     series_start = (today or date.today()) - timedelta(days=TRENDS_SERIES_LOOKBACK_DAYS)
+    scene_start = (today or date.today()) - timedelta(days=SCENE_LOOKBACK_DAYS)
 
     steps = [
         Step("trends_silver", [py, "pipeline/silver/trends_to_silver.py", *bq_flags, *run_flags]),
@@ -105,6 +111,17 @@ def build_steps(
             ],
         ),
         Step("youtube_silver", [py, "pipeline/silver/youtube_to_silver.py", *bq_flags, *run_flags]),
+        Step(
+            "scene_silver",
+            [
+                py,
+                "pipeline/silver/scene_to_silver.py",
+                *bq_flags,
+                "--start-date",
+                scene_start.isoformat(),
+                *run_flags,
+            ],
+        ),
         Step("dimensions", [py, "pipeline/silver/build_dimensions.py", *bq_flags, *run_flags]),
         Step("dbt_build", dbt_argv, cwd=DBT_DIR, env=dbt_env),
         Step(
