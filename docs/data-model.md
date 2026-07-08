@@ -221,6 +221,9 @@ erDiagram
 | `fact_trends` | one **artist × dma × snapshot_date** | Google Trends (ibr snapshots — broad DMA coverage) |
 | `fact_trends_daily` | one **artist × dma × snapshot_date** | Google Trends (iot daily series — dense trajectory for tier-1 pairs; same columns as `fact_trends`) |
 | `fact_youtube` | one **artist × snapshot_date** | YouTube |
+| `fact_nineteenhz` | one **listed event × snapshot_date** | 19hz.info (prices, genres, lineups; joins on venue+date) |
+| `fact_ra` | one **RA event × snapshot_date** | Resident Advisor (`attending` re-observed daily = buzz series) |
+| `fact_ticketpages` | one **offer × page × snapshot_date** | ticket-page JSON-LD (`availability` = sell-out signal) |
 
 > ⚠️ **`fact_trends.interest` is per-pull normalized (0–100).** Each value is scaled
 > within its own `(artist, geo, timeframe)` series. It is comparable **across time for
