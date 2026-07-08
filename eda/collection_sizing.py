@@ -46,23 +46,28 @@ def _print_rows(title: str, rows: list[dict[str, str]]) -> None:
         print("  " + "  ".join(str(r[c]).ljust(widths[c]) for c in cols))
 
 
-def freshness(project: str, dataset: str) -> None:
+def freshness_rows(project: str, dataset: str) -> list[dict[str, str]]:
     sql = "\nUNION ALL ".join(
         f"SELECT '{t}' AS src, CAST(MAX(snapshot_date) AS STRING) AS latest, "
         f"COUNT(*) AS n FROM {fq(project, dataset, t)}"
         for t in FACT_TABLES
     ) + "\nORDER BY src"
-    _print_rows("data freshness (MAX snapshot_date per fact table)", bq_rows(sql, project))
+    return bq_rows(sql, project)
 
 
-def pricing(project: str, dataset: str) -> None:
+def freshness(project: str, dataset: str) -> None:
+    _print_rows("data freshness (MAX snapshot_date per fact table)",
+                freshness_rows(project, dataset))
+
+
+def pricing_rows(project: str, dataset: str) -> dict[str, list[dict[str, str]]]:
     obs = fq(project, dataset, "tm_observations")
-    _print_rows("TM pricing coverage (observations)", bq_rows(
+    coverage = bq_rows(
         f"SELECT COUNT(DISTINCT event_id) AS events, COUNT(*) AS obs, "
         f"ROUND(COUNTIF(price_min IS NOT NULL)/COUNT(*)*100, 1) AS pct_obs_priced, "
         f"COUNT(DISTINCT IF(price_min IS NOT NULL, event_id, NULL)) AS events_priced "
-        f"FROM {obs}", project))
-    _print_rows("priced-from-first-observation split (re-poll value test)", bq_rows(
+        f"FROM {obs}", project)
+    day1_split = bq_rows(
         f"""
         WITH per_event AS (
           SELECT event_id, MIN(snapshot_date) AS first_seen,
@@ -73,10 +78,17 @@ def pricing(project: str, dataset: str) -> None:
                COUNTIF(first_priced IS NOT NULL) AS ever_priced,
                COUNTIF(first_priced = first_seen) AS priced_from_day1,
                COUNTIF(first_priced > first_seen) AS gained_price_later
-        FROM per_event""", project))
+        FROM per_event""", project)
+    return {"coverage": coverage, "day1_split": day1_split}
 
 
-def pairs(project: str, dataset: str) -> None:
+def pricing(project: str, dataset: str) -> None:
+    rows = pricing_rows(project, dataset)
+    _print_rows("TM pricing coverage (observations)", rows["coverage"])
+    _print_rows("priced-from-first-observation split (re-poll value test)", rows["day1_split"])
+
+
+def pairs_rows(project: str, dataset: str) -> list[dict[str, str]]:
     e, v, b = (fq(project, dataset, t) for t in ("dim_event", "dim_venue", "bridge_event_artist"))
     edm = EDM_GENRE_SQL.format(col="e.primary_genre")
     base = (
@@ -97,7 +109,12 @@ def pairs(project: str, dataset: str) -> None:
         f"{base}{cond}"
         for name, cond in segs.items()
     ) + "\nORDER BY seg"
-    _print_rows("upcoming headliner×DMA pairs (Trends targeting tiers)", bq_rows(sql, project))
+    return bq_rows(sql, project)
+
+
+def pairs(project: str, dataset: str) -> None:
+    _print_rows("upcoming headliner×DMA pairs (Trends targeting tiers)",
+                pairs_rows(project, dataset))
 
 
 def states(project: str, dataset: str) -> None:

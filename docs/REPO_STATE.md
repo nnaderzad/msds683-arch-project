@@ -19,6 +19,9 @@ forecaster + public demo dashboard. Deep dives:
 - Schema (silver constellation + gold star): [`data-model.md`](data-model.md)
 - Stage-by-stage pipeline walkthrough: [`transformations_showcase.md`](transformations_showcase.md)
 - Collection-efficiency decision record (2026-07): [`collection_efficiency_review.md`](collection_efficiency_review.md)
+- Data review (raw samples, event trace, coverage, 19hz/RA findings):
+  [`../eda/data_review_2026-07.md`](../eda/data_review_2026-07.md)
+  (regenerate the numbers with `python eda/data_review.py`)
 
 ## Live system (GCP project `data-architecture-498123`, us-west1)
 
@@ -27,15 +30,24 @@ after the previous account closed (see incident log).
 
 | Component | What | Schedule (PT) | Deployed via |
 |---|---|---|---|
-| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | live: 06:00, 18:00 → **05:00, 15:00 after the D8 deploy** (see checklist) | `terraform/` (state local, on Niki's machine) or `cloud_functions/ticketmaster_daily/deploy.sh` |
-| `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot + tier-1 per-DMA daily units → bronze + silver | live: 09:00 → **11:00 after D8** | `terraform/gtrends/` (remote state, anyone can apply) |
+| `ticketmaster-daily-extract` (Cloud Function gen2) | nationwide Discovery sweep → bronze + `tm_events` + `tm_observations` | 05:00, 15:00 (D8, live since 2026-07-08) | `terraform/` (state local, on Niki's machine) or `cloud_functions/ticketmaster_daily/deploy.sh` |
+| `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot + tier-1 per-DMA daily units → bronze + silver | 11:00 (D8) | `terraform/gtrends/` (remote state, anyone can apply) |
 | `gtrends-backfill` (Cloud Run job) | deep per-DMA daily series, on demand | manual | `terraform/gtrends/` |
-| `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | live: 09:30 → **15:00 after D8** | `terraform/gtrends/` |
-| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily` since D8) → dbt build → forecast → GX gate | live: 09:00 → **16:30 after D8** | `terraform/` |
-| `event-demand-api` (Cloud Run service) | FastAPI + React demo (same origin), reads gold live | always on (min-instances 1) | gcloud only (not yet in terraform) |
+| `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
+| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily`, image `git-77d8e50`) → dbt build → forecast → GX gate | 16:30 (D8) — **currently failing, see incident log** | `terraform/` |
+| `event-demand-api` (Cloud Run service) | FastAPI + React demo (same origin), reads gold live | scale-to-zero (min-instances 0 since 2026-07-08 — cost cut ~$53/mo → ~$0; first hit after idle pays a few s cold start) | gcloud only (not yet in terraform) |
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
+
+**New bronze sources (first landings 2026-07-08, not yet scheduled or consumed
+by silver):** `nineteenhz/` (Bay Area listing HTML — 456 events, 74.6% priced),
+`ra/` (GraphQL JSON, area 218 — 100 events/day at the agreed 1 request/day,
+incl. per-event `attending`), `ticketpages/` (JSON-LD offers from
+eventbrite/shotgun — availability incl. SoldOut). Run manually via
+`nineteenhz_api/collect_19hz.py`, `ra_api/collect_ra.py`,
+`nineteenhz_api/poll_ticket_pages.py` (each with `--land-raw`). First-pull
+findings + next steps: `eda/data_review_2026-07.md`.
 
 ## Clock & cadence (D8, 2026-07)
 
@@ -88,7 +100,7 @@ As of 2026-07-08 (recovery complete):
 |---|---|---|
 | `tm_observations` | 2026-07-08 | CF redeployed 07-04; backfill Jun 19→Jul 1 merged (462,125 rows). The 18:00 PT sweep lands in the NEXT UTC day — fixed by the D8 cadence (15:00 PT) |
 | `fact_trends` | 2026-07-06 | daily; Trends' freshest reliable day is always yesterday |
-| `fact_trends_daily` | 2026-07-07 | unfrozen 07-08 (manual load); auto-refreshes once the D8 gold-refresh image deploys |
+| `fact_trends_daily` | 2026-07-07 | unfrozen 07-08 (manual load); D8 image (`git-77d8e50`) now refreshes it every gold run |
 | `fact_youtube` | 2026-07-07 | daily |
 | `fact_event_demand` | 2026-07-07 | gold; daily |
 
@@ -115,21 +127,31 @@ finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --d
 - `main` — deployed state of record (2026-07-04 collection redesign merged:
   PRs #44–#50 — TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner
   recovery, 19hz collector + ticket-page JSON-LD poller, RA collector, deploy script).
-- `tk/collection-cadence` — D8 cadence (this section's schedule change +
-  `fact_trends_daily` in gold-refresh).
+- `tk/collection-cadence` — D8 cadence — **merged (PR #51), deployed 2026-07-08**.
+- `tk/data-review` — July data review (PR #52): raw samples, field inventories,
+  price distributions, event trace, 19hz/RA first pulls + overlap, plots.
+- `tk/dims-accumulate` — gold-refresh unblock (relationship-test severity; see
+  incident log).
 - Recovery + collection redesign decisions: `collection_efficiency_review.md`.
 - Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
 
 ### Pending deploys / user actions (2026-07-08)
 
-D8 cadence rollout (after the `tk/collection-cadence` PR merges):
+D8 cadence rollout — **all four deployed 2026-07-08**:
 
-- [ ] `gcloud scheduler jobs update http ticketmaster-daily-extract --location=us-west1 --schedule="0 5,15 * * *"` (main-root tf state is on Niki's machine, so gcloud like the 2×/day cut)
-- [ ] `gcloud scheduler jobs update http gold-refresh-daily --location=us-west1 --schedule="30 16 * * *"`
-- [ ] **Rebuild + redeploy the `gold-refresh` job image** (picks up the
-  `trends_series_silver` step; `pipeline/gold_refresh.cloudbuild.yaml`). Until
-  then `fact_trends_daily` only advances on manual loader runs.
-- [ ] `terraform -chdir=terraform/gtrends apply` (gtrends 11:00 PT, youtube 15:00 PT)
+- [x] TM scheduler → `0 5,15 * * *` PT (gcloud, verified)
+- [x] gold-refresh scheduler → `30 16 * * *` PT (gcloud, verified)
+- [x] gold-refresh image rebuilt (`:git-77d8e50`) + job updated — the
+  `trends_series_silver` step confirmed in the execution log
+- [x] `terraform -chdir=terraform/gtrends apply` (gtrends 11:00 PT, youtube 15:00 PT)
+
+New:
+
+- [ ] **Fix + redeploy gold-refresh for the dbt relationship-test failures**
+  (see incident log — every scheduled run since 07-05 aborts before
+  `forecast_export`; `forecast_event_price` is stale at 06-30). Fix branch:
+  `tk/dims-accumulate`; needs image rebuild + job update after merge.
+- [x] Demo service `event-demand-api` → min-instances 0 (2026-07-08, cost cut)
 
 Carried over / done from 2026-07-04:
 
@@ -145,6 +167,22 @@ Carried over / done from 2026-07-04:
 
 ## Incident log
 
+- **2026-07-05 → ongoing: gold-refresh aborts at dbt relationship tests;
+  `forecast_event_price` stale since 06-30.** Every scheduled run since 07-05
+  fails `relationships(fact_event_demand.artist_id → dim_artist)` and
+  `(venue_id → dim_venue)` (24 orphan rows) and exits before `forecast_export`
+  — fact tables still advance (dbt materializes before testing), so freshness
+  checks alone missed it. Root cause: `fact_event_demand` is incremental
+  (point-in-time history) while dims are `WRITE_TRUNCATE` rebuilds from
+  *current* `tm_events` — when an event changes venue/headliner, its old fact
+  rows reference dim members that vanish from the rebuild (e.g.
+  `rZ7HnEZ1AfZbrf` moved venues; its June rows orphaned). The `event_id`
+  relationship already had `severity: warn` for exactly this drift; artist/venue
+  didn't. Fix: same severity treatment (branch `tk/dims-accumulate`) + backlog:
+  make fact-referenced dims accumulate (MERGE, never delete) so drift stops
+  growing. Lesson: **freshness ≠ health — check execution status, not just
+  `MAX(snapshot_date)`** (the monitoring email fires on function ERRORs, not on
+  failed job executions — alert-policy gap to close).
 - **2026-07-01 → 07-04: billing outage.** `BillingAcctForEdu_MSDS691` closed →
   `billingEnabled: false` → all schedulers/jobs halted after 2026-06-30 runs.
   Fixed 07-04 by linking the MSDS692 account. Losses: Trends DMA snapshots +
