@@ -67,6 +67,21 @@ def test_scene_step_loads_a_recent_capture_window():
     assert argv[argv.index("--start-date") + 1] == "2026-07-13"
 
 
+def test_trends_snapshot_step_loads_a_recent_capture_window():
+    from datetime import date
+
+    steps = {
+        s.name: s
+        for s in gold_refresh.build_steps("proj", "ds", today=date(2026, 7, 20))
+    }
+    argv = steps["trends_silver"].argv
+    assert argv[1].endswith("trends_to_silver.py")
+    # ibr snapshots are self-contained per day; the unwindowed step re-downloaded
+    # the whole growing bronze prefix every night (47 min on 2026-07-08, vs the
+    # job's 3600s task timeout).
+    assert argv[argv.index("--start-date") + 1] == "2026-07-06"
+
+
 def test_silver_and_forecast_steps_carry_project_dataset():
     steps = {s.name: s for s in gold_refresh.build_steps("proj", "ds")}
     for name in (
