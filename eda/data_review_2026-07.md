@@ -106,6 +106,24 @@ From [`output/data_review.md`](output/data_review.md) § "Silver/gold coverage":
   including the gold-rewire above. 19hz/RA lineups (below) are the way out for
   Bay Area club shows.
 
+## 3b. Price distributions & trends
+
+New in the generated report (§ "Price distributions & trends", plus
+`output/plots/review_price_distributions.png`): list-price quartiles by
+geography (US median **$28**, California $29, Bay Area $30 — distributions are
+near-identical; Bay Area is not priced at a premium in TM's inventory), by
+genre (Jazz is the outlier at **$36** median; Dance/Electronic is the
+*cheapest* major genre at $25 median / $15 p25 — club economics), and by show
+month (a mild gradient: July shows list at $25 median vs $31 for October —
+partly real seasonality, partly selection: far-out inventory skews to bigger
+tours). **Time depth is our honest limitation**: the archive starts
+2026-06-08, so "have tickets gotten pricier since COVID?" is unanswerable from
+our own data — what we can show is the per-day observed median over our
+window (flat at ~$25, consistent with the 96%-of-shows-never-move finding).
+Each collection day extends this archive.
+
+![Price distributions](output/plots/review_price_distributions.png)
+
 ## 4. What 19hz and RA add (first real pulls, 2026-07-08)
 
 Landed today: 19hz **456 events**, RA **100 events** (area 218, one page),
@@ -165,7 +183,10 @@ venue + date, shared window 07-08 → 07-24):
    history lost.
 4. **Ticket-page poller cadence** — daily after the 19hz pull, allowlist
    unchanged (eventbrite, shotgun), so availability transitions build up.
-5. **Then** revisit the headliner-gap join and the genre dimension once a week
+5. **Artist external-links enrichment** — the Spotify/MusicBrainz finding has
+   its own opportunity assessment + implementation handoff:
+   [`../docs/artist_links_enrichment.md`](../docs/artist_links_enrichment.md).
+6. **Then** revisit the headliner-gap join and the genre dimension once a week
    of 19hz/RA history exists to test match rates against.
 
 *Caveat on the overlap numbers: venue matching is exact-after-normalization;
