@@ -133,7 +133,8 @@ D8 cadence rollout (after the `tk/collection-cadence` PR merges):
 
 Carried over / done from 2026-07-04:
 
-- [x] Redeploy `ticketmaster-daily-extract` (done 07-04 23:07 UTC; observations flowing)
+- [x] Redeploy `ticketmaster-daily-extract` (done 07-04 23:07 UTC via
+  `cloud_functions/ticketmaster_daily/deploy.sh`; observations flowing)
 - [x] `terraform -chdir=terraform/gtrends apply` — 6h window + rotation (done 07-04; verified at full capacity 07-05..07)
 - [x] `tm_observations` bronze backfill Jun 19→Jul 1 (462,125 rows merged 07-04)
 - [x] `docs/ra_access_request.md` — **granted** (written OK 2026-07-04, strictly 1 automated request/day; enforced in `ra_api/collect_ra.py`)

@@ -6,7 +6,10 @@ without a yes (docs/collection_efficiency_review.md, finding 16). Contact:
 RA has no public API program — use the general contact form (ra.co/contact)
 and/or press@ra.co, mentioning the SF office.
 
-**Status: DRAFT — not yet sent** (owner: Tomas)
+**Status: GRANTED (2026-07-04)** — Tomas emailed; RA approved **a single
+automated request per day**. That limit is enforced in code by
+`ra_api/collect_ra.py` (bronze-partition guard); never raise the frequency
+without asking RA again.
 
 ---
 
