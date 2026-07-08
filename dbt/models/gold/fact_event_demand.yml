@@ -60,6 +60,12 @@ models:
                 to: source('silver', 'dim_geo')
                 field: dma_code
       - name: local_interest
-        description: "fact_trends.interest (0-100, per-pull) for headliner+dma+date; NULL if uncollected."
+        description: >
+          Google Trends interest (0-100, per-pull scale) for headliner+dma+date;
+          NULL if uncollected. Sourced COALESCE(fact_trends_daily.interest,
+          fact_trends.interest) — daily iot series preferred (dense trajectory for
+          tier-1 pairs), ibr snapshot fallback (broad DMA coverage). Late-arriving
+          daily values (up to ~4 days, rotation cycle) land via the model's 14-day
+          trailing reprocess window.
       - name: yt_subscribers
       - name: yt_views
