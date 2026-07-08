@@ -12,9 +12,17 @@ reference crosswalks:
   dim_event   <- one row per tm_events event
   bridge_event_artist <- event x attraction, headliner by name-match (else first)
 
-Dimensions are **current-state** (SCD deferred), so each table is a full-refresh
-(``WRITE_TRUNCATE``) — idempotent and re-runnable. Keys reuse ``common/keys.py`` so the
-surrogates match the facts (A1/A2) without a build-order dependency.
+Dimension attributes are **current-state** (SCD deferred), but the three tables the
+incremental gold fact references (``dim_event`` / ``dim_artist`` / ``dim_venue``)
+**accumulate**: MERGE-upsert on the PK, never delete. A member that drops out of
+current ``tm_events`` (event changed venue/headliner, event pruned) keeps its row, so
+historical fact rows keep resolving — the drift that a full-refresh created orphaned
+24 fact rows and blocked every gold run 2026-07-05..08 (see the incident log in
+docs/REPO_STATE.md). The purely re-derivable tables (``dim_geo`` / ``dim_date`` /
+``bridge_event_artist``) stay ``WRITE_TRUNCATE`` full refreshes — the bridge must
+reflect the *current* lineup only, or an event whose headliner changed would carry two.
+Keys reuse ``common/keys.py`` so the surrogates match the facts (A1/A2) without a
+build-order dependency. Everything stays idempotent and re-runnable.
 
 The builder functions are **pure** (all data injected) and unit-test offline on the seed
 ``tm_events`` fixture; BigQuery / GCS / the holidays library live only in the I/O layer.
@@ -346,6 +354,12 @@ def date_span(tm_rows: list[dict]) -> tuple[date, date]:
     return start, max(end, CALENDAR_FLOOR)
 
 
+# Tables the incremental gold fact references by PK — these accumulate (MERGE
+# upsert, no delete) so departed members keep resolving for historical fact rows.
+ACCUMULATE_KEYS = {"dim_venue": "venue_id", "dim_artist": "artist_id",
+                   "dim_event": "event_id"}
+
+
 def replace_table(rows: list[dict], table: str, project: str, dataset: str) -> int:
     """CREATE-OR-REPLACE load one dimension table (full refresh); return row count."""
     from google.cloud import bigquery
@@ -357,6 +371,41 @@ def replace_table(rows: list[dict], table: str, project: str, dataset: str) -> i
     client.load_table_from_json(
         rows, f"{project}.{dataset}.{table}", job_config=job_config).result()
     return len(rows)
+
+
+def merge_table(rows: list[dict], table: str, key: str,
+                project: str, dataset: str) -> int:
+    """Accumulating upsert: current members update in place, departed members stay.
+
+    Staging WRITE_TRUNCATE + one atomic MERGE on the PK (idempotent, like the fact
+    loaders). Deliberately no WHEN NOT MATCHED BY SOURCE — never deletes."""
+    from google.cloud import bigquery
+
+    fq = f"{project}.{dataset}.{table}"
+    staging = f"{fq}_staging"
+    client = bigquery.Client(project=project)
+    schema = [bigquery.SchemaField(name, _LEGACY_TYPES.get(t, t))
+              for name, t in SCHEMAS[table]]
+
+    cols_ddl = ",\n  ".join(f"{name} {t}" for name, t in SCHEMAS[table])
+    client.query(f"CREATE TABLE IF NOT EXISTS `{fq}` (\n  {cols_ddl}\n)").result()
+
+    job_config = bigquery.LoadJobConfig(schema=schema, write_disposition="WRITE_TRUNCATE")
+    client.load_table_from_json(rows, staging, job_config=job_config).result()
+
+    cols = [name for name, _ in SCHEMAS[table]]
+    update_cols = [c for c in cols if c != key]
+    merge_sql = (
+        f"MERGE `{fq}` T\nUSING `{staging}` S\n"
+        f"ON T.{key} = S.{key}\n"
+        f"WHEN MATCHED THEN UPDATE SET\n  "
+        + ",\n  ".join(f"T.{c} = S.{c}" for c in update_cols)
+        + f"\nWHEN NOT MATCHED THEN INSERT ({', '.join(cols)})\n"
+        f"VALUES ({', '.join(f'S.{c}' for c in cols)})"
+    )
+    job = client.query(merge_sql)
+    job.result()
+    return int(job.num_dml_affected_rows or 0)
 
 
 # ---------------------------------------------------------------------------
@@ -406,8 +455,14 @@ def main() -> int:
         return 0
 
     for table, rows in tables.items():
-        n = replace_table(rows, table, args.project, args.dataset)
-        print(f"[build_dimensions] replaced {args.project}.{args.dataset}.{table} ({n} rows)")
+        if table in ACCUMULATE_KEYS:
+            n = merge_table(rows, table, ACCUMULATE_KEYS[table],
+                            args.project, args.dataset)
+            print(f"[build_dimensions] merged {args.project}.{args.dataset}.{table} "
+                  f"({n} rows upserted, accumulating)")
+        else:
+            n = replace_table(rows, table, args.project, args.dataset)
+            print(f"[build_dimensions] replaced {args.project}.{args.dataset}.{table} ({n} rows)")
     return 0
 
 
