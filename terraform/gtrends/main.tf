@@ -265,3 +265,50 @@ resource "google_monitoring_alert_policy" "gtrends_job_failures" {
     auto_close = "86400s"
   }
 }
+
+# Failed EXECUTIONS of ANY Cloud Run job in the project (gold-refresh, gtrends,
+# youtube, 19hz, RA, future ones). Metric-based, so it also catches failures that
+# never log an ERROR line (timeout, OOM, image pull). Closes the incident-log gap
+# from 2026-07-05..08: gold-refresh failed nightly at a dbt test, fact tables kept
+# advancing, and the log-based policy above (scoped to the gtrends job names)
+# never fired — the forecast sat stale for 3 days before a human noticed.
+# "Freshness != health — alert on execution status."
+resource "google_monitoring_alert_policy" "job_execution_failures" {
+  display_name = "Cloud Run job execution failed (any job)"
+  combiner     = "OR"
+
+  notification_channels = [google_monitoring_notification_channel.gtrends_email.id]
+
+  conditions {
+    display_name = "completed_execution_count{result=failed} > 0"
+
+    condition_threshold {
+      filter = <<-EOT
+        resource.type = "cloud_run_job"
+        AND metric.type = "run.googleapis.com/job/completed_execution_count"
+        AND metric.labels.result = "failed"
+      EOT
+
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_SUM"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.labels.job_name"]
+      }
+
+      trigger {
+        count = 1
+      }
+    }
+  }
+
+  # No notification_rate_limit here: the Monitoring API only allows it on
+  # log-based conditions; metric policies notify once per incident anyway.
+  alert_strategy {
+    auto_close = "86400s"
+  }
+}
