@@ -118,3 +118,16 @@ def test_md_table_renders_github_markdown():
 def test_pct_handles_zero_denominator():
     assert data_review.pct(1, 4) == "25.0%"
     assert data_review.pct(0, 0) == "—"
+
+
+# --- price_stats ------------------------------------------------------------------
+
+def test_price_stats_quartiles():
+    stats = data_review.price_stats([float(x) for x in range(1, 101)])
+    assert stats["n"] == "100"
+    assert stats["median"] == "$51"
+    assert stats["p90"] == "$91"
+
+
+def test_price_stats_empty():
+    assert data_review.price_stats([])["median"] == "—"

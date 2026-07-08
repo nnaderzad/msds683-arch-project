@@ -1,6 +1,6 @@
 # Data review — bronze → gold, all sources
 
-Generated 2026-07-08T08:30:20+00:00 by `eda/data_review.py` (project `data-architecture-498123`, dataset `event_demand_analytics`). Re-run the same command to refresh; narrative companion: `eda/data_review_2026-07.md`.
+Generated 2026-07-08T09:06:57+00:00 by `eda/data_review.py` (project `data-architecture-498123`, dataset `event_demand_analytics`). Re-run the same command to refresh; narrative companion: `eda/data_review_2026-07.md`.
 
 ## Bronze inventory (`gs://<project>-raw/<source>/dt=<UTC-day>/`)
 
@@ -1134,6 +1134,48 @@ Priced-from-first-observation split (why re-polling unpriced events is pointless
 ![TM pricing coverage by day](plots/review_tm_pricing_by_day.png)
 
 ![Demo event: trends signal + observed vs forecast price](plots/review_trace_demo_event.png)
+
+## Price distributions & trends (list price = current `tm_events.price_min`)
+
+### By geography (nested scopes)
+
+| scope | n | p25 | median | p75 | p90 |
+|---|---|---|---|---|---|
+| US (all upcoming priced) | 6849 | $21 | $28 | $36 | $46 |
+| California | 1218 | $19 | $29 | $38 | $52 |
+| Bay Area (DMA 807) | 199 | $26 | $30 | $34 | $46 |
+
+### By genre (top 10 by upcoming priced events, US-wide)
+
+| genre | n | p25 | median | p75 | p90 |
+|---|---|---|---|---|---|
+| Rock | 1434 | $21 | $27 | $34 | $44 |
+| Jazz | 970 | $35 | $36 | $46 | $55 |
+| Alternative | 909 | $19 | $26 | $33 | $42 |
+| Other | 542 | $18 | $25 | $32 | $43 |
+| Country | 465 | $21 | $26 | $32 | $42 |
+| Pop | 335 | $22 | $30 | $36 | $46 |
+| Fairs & Festivals | 295 | $24 | $27 | $32 | $34 |
+| Dance/Electronic | 288 | $15 | $25 | $31 | $40 |
+| Metal | 268 | $21 | $27 | $35 | $44 |
+| Hip-Hop/Rap | 239 | $20 | $29 | $37 | $53 |
+
+### By show month (are later shows listed higher?)
+
+| show_month | n | p25 | median | p75 | p90 |
+|---|---|---|---|---|---|
+| 2026-07 | 1972 | $18 | $25 | $34 | $45 |
+| 2026-08 | 1771 | $20 | $26 | $35 | $46 |
+| 2026-09 | 1282 | $24 | $30 | $38 | $52 |
+| 2026-10 | 1088 | $26 | $31 | $40 | $51 |
+| 2026-11 | 551 | $25 | $30 | $40 | $52 |
+| 2026-12 | 182 | $19 | $25 | $36 | $50 |
+| 2027-01 | 3 | $23 | $23 | $44 | $44 |
+
+**Time-depth caveat:** our price archive starts **2026-06-08** (first TM sweep), so multi-year questions — e.g. "have tickets gotten more expensive since COVID?" — are unanswerable from our own data; the honest view we DO have is the per-day median over our observation window (plot below), which also shows how little listed prices move day-to-day (96% of shows are flat — see `eda/output/price_movement.md`). The archive answers the long-trend question a little better every day it accumulates.
+
+
+![Price distributions by geography, genre, show month, and observed day](plots/review_price_distributions.png)
 
 ## Bay Area cross-source overlap (19hz vs RA vs Ticketmaster)
 

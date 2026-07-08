@@ -203,6 +203,19 @@ def pct(part: int, whole: int) -> str:
     return f"{part / whole * 100:.1f}%" if whole else "—"
 
 
+def price_stats(values: list[float]) -> dict[str, str]:
+    """n / quartiles / p90 summary of a price list (pure; deterministic sort)."""
+    if not values:
+        return {"n": "0", "p25": "—", "median": "—", "p75": "—", "p90": "—"}
+    v = sorted(values)
+
+    def q(p: float) -> str:
+        return f"${v[min(len(v) - 1, int(p * len(v)))]:.0f}"
+
+    return {"n": str(len(v)), "p25": q(0.25), "median": q(0.50),
+            "p75": q(0.75), "p90": q(0.90)}
+
+
 # ---------------------------------------------------------------------------
 # Bronze inventory + raw samples (GCS)
 # ---------------------------------------------------------------------------
@@ -550,10 +563,78 @@ def overlap_section(data: dict) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Price distributions & trends (upcoming priced TM events + our observation window)
+# ---------------------------------------------------------------------------
+
+def price_data(project: str, dataset: str) -> dict:
+    """One pass over upcoming priced TM events (+ the tm_observations daily medians).
+
+    Per-event list price = current tm_events.price_min. Geography scopes nest:
+    US ⊃ CA ⊃ Bay Area (DMA 807, via the conformed dims).
+    """
+    events = bq_rows(
+        f"SELECT t.price_min, t.venue_state_code AS state, t.genre, "
+        f"FORMAT_DATE('%Y-%m', t.local_date) AS show_month, v.dma_code "
+        f"FROM {fq(project, dataset, 'tm_events')} t "
+        f"LEFT JOIN {fq(project, dataset, 'dim_event')} e ON e.event_id = t.event_id "
+        f"LEFT JOIN {fq(project, dataset, 'dim_venue')} v ON v.venue_id = e.venue_id "
+        f"WHERE t.local_date >= CURRENT_DATE() AND t.price_min IS NOT NULL "
+        f"AND t.price_min > 0", project)
+    daily = bq_rows(
+        f"SELECT CAST(snapshot_date AS STRING) AS d, "
+        f"APPROX_QUANTILES(price_min, 100)[OFFSET(50)] AS median_price, "
+        f"COUNT(*) AS n FROM {fq(project, dataset, 'tm_observations')} "
+        f"WHERE price_min IS NOT NULL GROUP BY 1 ORDER BY 1", project)
+    return {"events": events, "daily": daily}
+
+
+def price_section(pdata: dict) -> list[str]:
+    events = pdata["events"]
+    price = lambda r: float(r["price_min"])  # noqa: E731
+    scopes = {
+        "US (all upcoming priced)": events,
+        "California": [r for r in events if r["state"] == "CA"],
+        f"Bay Area (DMA {BAY_AREA_DMA})": [r for r in events
+                                           if r["dma_code"] == BAY_AREA_DMA],
+    }
+    lines = ["## Price distributions & trends (list price = current `tm_events.price_min`)",
+             ""]
+    lines += ["### By geography (nested scopes)", ""]
+    lines += md_table([{"scope": name, **price_stats([price(r) for r in rows])}
+                       for name, rows in scopes.items()])
+
+    by_genre: dict[str, list[float]] = {}
+    for r in events:
+        if r["genre"]:
+            by_genre.setdefault(r["genre"], []).append(price(r))
+    top = sorted(by_genre.items(), key=lambda kv: -len(kv[1]))[:10]
+    lines += ["", "### By genre (top 10 by upcoming priced events, US-wide)", ""]
+    lines += md_table([{"genre": g, **price_stats(v)} for g, v in top])
+
+    by_month: dict[str, list[float]] = {}
+    for r in events:
+        by_month.setdefault(r["show_month"], []).append(price(r))
+    lines += ["", "### By show month (are later shows listed higher?)", ""]
+    lines += md_table([{"show_month": m, **price_stats(v)}
+                       for m, v in sorted(by_month.items())])
+
+    lines += ["", "**Time-depth caveat:** our price archive starts **2026-06-08** "
+              "(first TM sweep), so multi-year questions — e.g. \"have tickets "
+              "gotten more expensive since COVID?\" — are unanswerable from our "
+              "own data; the honest view we DO have is the per-day median over "
+              "our observation window (plot below), which also shows how little "
+              "listed prices move day-to-day (96% of shows are flat — see "
+              "`eda/output/price_movement.md`). The archive answers the "
+              "long-trend question a little better every day it accumulates.", ""]
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # --plots: deterministic PNGs (matplotlib is a local-only dep; CI never imports it)
 # ---------------------------------------------------------------------------
 
-def render_plots(project: str, dataset: str, inventory: dict, odata: dict) -> dict[str, str]:
+def render_plots(project: str, dataset: str, inventory: dict, odata: dict,
+                 pdata: dict) -> dict[str, str]:
     """Write review_*.png into eda/output/plots/; return {plot_key: relative_path}."""
     import matplotlib
     matplotlib.use("Agg")
@@ -667,6 +748,56 @@ def render_plots(project: str, dataset: str, inventory: dict, odata: dict) -> di
     ax.set_ylabel("attending")
     save(fig, "review_ra_attending.png", "attending")
 
+    # 6. Price distributions & trends (2x2)
+    ev = pdata["events"]
+    price = lambda r: float(r["price_min"])  # noqa: E731
+    fig, axes = plt.subplots(2, 2, figsize=(11, 7))
+    ax1, ax2, ax3, ax4 = axes.flat
+    scopes = [("US", ev, "#4c78a8"),
+              ("California", [r for r in ev if r["state"] == "CA"], "#e8a838"),
+              (f"Bay Area (DMA {BAY_AREA_DMA})",
+               [r for r in ev if r["dma_code"] == BAY_AREA_DMA], "#d62728")]
+    for name, rows, color in scopes:
+        vals = [price(r) for r in rows if price(r) <= 300]
+        ax1.hist(vals, bins=40, density=True, histtype="step", lw=1.6,
+                 color=color, label=f"{name} (n={len(rows)})")
+    ax1.set_title("list price_min by geography (≤$300, density)")
+    ax1.set_xlabel("$")
+    ax1.legend(fontsize=8)
+
+    by_genre: dict[str, list[float]] = {}
+    for r in ev:
+        if r["genre"]:
+            by_genre.setdefault(r["genre"], []).append(price(r))
+    top8 = sorted(by_genre.items(), key=lambda kv: -len(kv[1]))[:8]
+    ax2.boxplot([[v for v in vals if v <= 500] for _, vals in top8],
+                tick_labels=[g[:12] for g, _ in top8], showfliers=False)
+    ax2.set_title("list price_min by genre (top 8, ≤$500, no outliers)")
+    ax2.set_ylabel("$")
+    ax2.tick_params(axis="x", rotation=45, labelsize=7)
+
+    by_month: dict[str, list[float]] = {}
+    for r in ev:
+        by_month.setdefault(r["show_month"], []).append(price(r))
+    months = sorted(by_month)
+    med = [sorted(by_month[m])[len(by_month[m]) // 2] for m in months]
+    ax3.bar(months, med, color="#9ecae9")
+    for i, m in enumerate(months):
+        ax3.text(i, med[i], f"n={len(by_month[m])}", ha="center", va="bottom",
+                 fontsize=6, rotation=45)
+    ax3.set_title("median list price by SHOW month (upcoming events)")
+    ax3.set_ylabel("$")
+    ax3.tick_params(axis="x", rotation=45, labelsize=7)
+
+    daily = pdata["daily"]
+    ax4.plot([r["d"][5:] for r in daily],
+             [float(r["median_price"]) for r in daily], marker="o", ms=3,
+             color="#4c78a8")
+    ax4.set_title("median OBSERVED price per day (archive starts 2026-06-08)")
+    ax4.set_ylabel("$")
+    ax4.tick_params(axis="x", rotation=60, labelsize=6)
+    save(fig, "review_price_distributions.png", "prices")
+
     return written
 
 
@@ -766,7 +897,8 @@ def build_report(project: str, dataset: str, skip_bronze: bool, plots: bool) -> 
              f"to refresh; narrative companion: `eda/data_review_2026-07.md`.", ""]
     inventory = list_bronze(project) if not skip_bronze else {}
     odata = overlap_data(project, dataset)
-    imgs = render_plots(project, dataset, inventory, odata) if plots else {}
+    pdata = price_data(project, dataset)
+    imgs = render_plots(project, dataset, inventory, odata, pdata) if plots else {}
 
     def img(key: str, alt: str) -> list[str]:
         return [f"![{alt}]({imgs[key]})", ""] if key in imgs else []
@@ -779,6 +911,8 @@ def build_report(project: str, dataset: str, skip_bronze: bool, plots: bool) -> 
     lines += coverage_section(project, dataset) + [""]
     lines += img("tm_pricing", "TM pricing coverage by day")
     lines += img("trace", "Demo event: trends signal + observed vs forecast price")
+    lines += price_section(pdata) + [""]
+    lines += img("prices", "Price distributions by geography, genre, show month, and observed day")
     lines += overlap_section(odata) + [""]
     lines += img("overlap", "Bay Area events per source and overlap")
     lines += img("attending", "RA attending per event")
