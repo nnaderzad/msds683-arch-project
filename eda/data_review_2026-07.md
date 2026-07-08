@@ -7,7 +7,7 @@ July fixes, and what the two brand-new sources (19hz, Resident Advisor) add.
 All numbers come from two generated companions — refresh them any time:
 
 ```bash
-python eda/data_review.py                          # -> eda/output/data_review.md
+python eda/data_review.py --plots                  # -> eda/output/data_review.md + plots/review_*.png
 python eda/data_review.py --trace rZ7HnEZ1Af00jd   # -> eda/output/trace_rZ7HnEZ1Af00jd.md
 ```
 
@@ -33,6 +33,23 @@ samples"; the shapes and gotchas in one screen:
 | `nineteenhz` *(new)* | the untouched Bay Area listing **HTML** page | a curated club/warehouse calendar TM barely sees: price column, full b2b lineups, genre tags, ticket links across 8+ ticketing platforms |
 | `ra` *(new)* | one GraphQL JSON response (100 events) | **`attending`** per event — a live social demand counter; strictly **one request/day** (written agreement 2026-07-04), so one 100-event page ≈ 2.5 weeks of Bay Area coverage per day |
 | `ticketpages` *(new)* | schema.org JSON-LD scraped from allowlisted ticket pages (eventbrite, shotgun) | per-tier offers **with availability** (`InStock` / `SoldOut`) — the only place we see sell-out state |
+
+**The complete raw field surface of every API** — every field path each source
+actually returns, with observed JSON types and fill % measured across real
+captures — is in [`output/data_review.md`](output/data_review.md)
+§ **"Field inventory"** (e.g. Ticketmaster: 5,062 events → ~200 distinct paths;
+notable find: attractions carry `externalLinks.spotify/musicbrainz/instagram`
+URLs on ~55–60% of events — free artist-enrichment keys we don't use yet).
+
+The report also embeds five review plots
+([`output/plots/`](output/plots/), regenerate with `--plots`):
+
+![Bay Area events per source and overlap](output/plots/review_bay_area_sources.png)
+
+![Demo event: trends signal + observed vs forecast price](output/plots/review_trace_demo_event.png)
+
+Plus: Trends calls/day vs the 800 budget, TM %-priced per observation day, and
+the RA `attending` distribution.
 
 ## 2. One event, bronze → forecast
 

@@ -9,13 +9,20 @@ identical report (only the provenance timestamp differs). No LLM at runtime.
 
 Sections:
   bronze    per-source partition inventory + raw-format samples (reads GCS)
+  fields    EXHAUSTIVE per-API field inventory: every raw field path the source
+            actually returns, with observed JSON types + fill %, measured from
+            real captures (not from API docs)
   coverage  silver/gold freshness, TM pricing, Trends targeting (reads BigQuery,
             reusing the query logic in eda/collection_sizing.py)
   overlap   Bay Area cross-source match: 19hz / RA / TM on (venue, date), pricing
             fill per source, unique fields (reads the committed CSVs + BigQuery)
 
+--plots additionally renders PNGs into eda/output/plots/review_*.png and embeds
+them in the report (matplotlib is a local-only dep, see eda/requirements.txt;
+the unit tests skip it via importorskip so CI stays lean).
+
 Run (repo root, music-demand env, ADC authed):
-    python eda/data_review.py                  # full report
+    python eda/data_review.py --plots          # full report + PNGs
     python eda/data_review.py --skip-bronze    # offline-ish: skip the GCS sections
     python eda/data_review.py --trace rZ7HnEZ1Af00jd   # one event, bronze -> forecast
 """
@@ -43,6 +50,8 @@ RA_CSV = EDA_DIR / "output" / "ra_events.csv"
 TICKETPAGE_CSV = EDA_DIR / "output" / "ticketpage_offers.csv"
 
 BAY_AREA_DMA = "807"
+DEMO_EVENT_ID = "rZ7HnEZ1Af00jd"  # Everclear @ The Independent — the traced hero show
+PLOTS_DIR = EDA_DIR / "output" / "plots"
 
 # Bronze sources and, for google_trends, the filename families (one file = one call).
 SOURCES = ["ticketmaster", "google_trends", "youtube", "nineteenhz", "ra", "ticketpages"]
@@ -82,6 +91,42 @@ def truncate(obj, max_list: int = 3, max_str: int = 160, max_depth: int = 8,
     if isinstance(obj, str) and len(obj) > max_str:
         return obj[:max_str] + "…"
     return obj
+
+
+def _walk_paths(obj, prefix: str, seen: set[str], types: dict[str, set]) -> None:
+    """Collect every field path present in one record (dotted keys, [] for lists)."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            _walk_paths(v, f"{prefix}.{k}" if prefix else k, seen, types)
+    elif isinstance(obj, list):
+        for v in obj:
+            _walk_paths(v, f"{prefix}[]", seen, types)
+    else:
+        tname = {bool: "bool", int: "int", float: "float", str: "str",
+                 type(None): "null"}.get(type(obj), type(obj).__name__)
+        seen.add(prefix)
+        types.setdefault(prefix, set()).add(tname)
+
+
+def field_inventory(records: list) -> list[dict[str, str]]:
+    """Exhaustive field-path inventory across raw records (pure).
+
+    One row per distinct leaf path (``priceRanges[].min``), with the observed
+    JSON types and fill = % of records where the path occurs at least once.
+    Measured from real captures, so it's what the API *actually* returns —
+    including fields its docs undersell (or that are always null in practice).
+    """
+    per_path: Counter = Counter()
+    types: dict[str, set] = {}
+    for rec in records:
+        seen: set[str] = set()
+        _walk_paths(rec, "", seen, types)
+        per_path.update(seen)
+    n = len(records) or 1
+    return [{"field": path,
+             "types": ",".join(sorted(types[path])),
+             "fill": f"{per_path[path] / n * 100:.0f}%"}
+            for path in sorted(per_path)]
 
 
 def drop_keys(obj, names: frozenset[str]):
@@ -280,6 +325,91 @@ def samples_section(project: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Exhaustive per-API field inventory (what each API actually returns)
+# ---------------------------------------------------------------------------
+
+def _normalize_trends_records(payload: dict) -> dict:
+    """Rename the artist-keyed value column ('Zedd': 55 -> '<query>': 55) so one
+    field inventory covers every artist's file with the same paths."""
+    q = payload.get("query")
+    out = dict(payload)
+    out["records"] = [
+        {("<query>" if k == q else k): v for k, v in rec.items()}
+        for rec in payload.get("records", [])
+    ]
+    return out
+
+
+def fields_section(project: str) -> list[str]:
+    """One exhaustive field table per API, measured from the newest real captures."""
+    from google.cloud import storage
+
+    client = storage.Client(project=project)
+    bucket = f"{project}-raw"
+    lines = ["## Field inventory — every raw field each API returns", "",
+             "Measured from real captures (`fill` = % of sampled records where the "
+             "path occurs; `[]` = list element). This is the observed contract, "
+             "not the documented one.", ""]
+
+    def emit(title: str, records: list, note: str = "") -> None:
+        nonlocal lines
+        lines += [f"### {title}", ""]
+        if note:
+            lines += [note, ""]
+        lines += md_table(field_inventory(records)) + [""]
+
+    tm = _newest_blob(client, bucket, "ticketmaster/", contains="_CA_")
+    if tm:
+        events = json.loads(tm.download_as_text())
+        emit(f"Ticketmaster Discovery `events.json` — {len(events)} events (newest CA capture)",
+             events,
+             "We keep ~30 of these paths (see `flatten_event` in the TM cloud function); "
+             "the rest land untouched in bronze for replay.")
+
+    for label, marker in TRENDS_FAMILIES:
+        blob = _newest_blob(client, bucket, "google_trends/", contains=marker)
+        if blob:
+            payload = _normalize_trends_records(json.loads(blob.download_as_text()))
+            emit(f"Google Trends — {label} (1 payload, {len(payload.get('records', []))} records)",
+                 [payload],
+                 "`records[].<query>` is the artist-keyed 0–100 value column "
+                 "(named after the search term; normalized here for the inventory).")
+
+    yt = _newest_blob(client, bucket, "youtube/")
+    if yt:
+        payload = json.loads(yt.download_as_text())
+        emit(f"YouTube Data API rollup — {len(payload.get('records', []))} artist records",
+             payload.get("records", []))
+
+    hz_rows = read_csv(NINETEENHZ_CSV) if NINETEENHZ_CSV.exists() else []
+    if hz_rows:
+        emit(f"19hz.info — parsed listing columns ({len(hz_rows)} events)",
+             [{k: (v or None) for k, v in r.items()} for r in hz_rows],
+             "Raw bronze is the untouched HTML page; these are the columns "
+             "`collect_19hz.py` parses out of it (fill = non-empty).")
+
+    ra = _newest_blob(client, bucket, "ra/", suffix=".json")
+    if ra:
+        payload = json.loads(ra.download_as_text())
+        ra_events = (payload.get("response", {}).get("data", {})
+                     .get("eventListings", {}).get("data", []))
+        emit(f"Resident Advisor GraphQL `eventListings` — {len(ra_events)} listings",
+             ra_events,
+             "Fields are what our GraphQL query requests (see `LISTINGS_QUERY` in "
+             "`ra_api/collect_ra.py`) — RA's schema has more, but each field must "
+             "be asked for explicitly.")
+
+    tp = _newest_blob(client, bucket, "ticketpages/", suffix=".json")
+    if tp:
+        payload = json.loads(tp.download_as_text())
+        emit(f"Ticket-page JSON-LD — {len(payload) if isinstance(payload, list) else 1} page payloads",
+             payload if isinstance(payload, list) else [payload],
+             "schema.org Event/offers as embedded by eventbrite + shotgun.")
+
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # Coverage (BigQuery, reusing collection_sizing)
 # ---------------------------------------------------------------------------
 
@@ -324,7 +454,9 @@ def tm_bay_area_rows(project: str, dataset: str) -> list[dict[str, str]]:
         f"GROUP BY 1, 2", project)
 
 
-def overlap_section(project: str, dataset: str) -> list[str]:
+def overlap_data(project: str, dataset: str) -> dict:
+    """Load all four sources and compute the (venue, date) overlap — shared by
+    the markdown section and the --plots renderer."""
     hz_rows = read_csv(NINETEENHZ_CSV)
     ra_rows = read_csv(RA_CSV)
     tp_rows = read_csv(TICKETPAGE_CSV)
@@ -339,6 +471,14 @@ def overlap_section(project: str, dataset: str) -> list[str]:
               for ks in (hz_keys, ra_keys, tm_keys)]
     window = shared_window(*ranges)
     counts = overlap_sets(hz_keys, ra_keys, tm_keys, window)
+    return {"hz_rows": hz_rows, "ra_rows": ra_rows, "tp_rows": tp_rows,
+            "tm_rows": tm_rows, "window": window, "counts": counts}
+
+
+def overlap_section(data: dict) -> list[str]:
+    hz_rows, ra_rows = data["hz_rows"], data["ra_rows"]
+    tp_rows, tm_rows = data["tp_rows"], data["tm_rows"]
+    window, counts = data["window"], data["counts"]
 
     lines = ["## Bay Area cross-source overlap (19hz vs RA vs Ticketmaster)", "",
              f"Match key: (normalized venue name, event date). Shared date window: "
@@ -407,6 +547,127 @@ def overlap_section(project: str, dataset: str) -> list[str]:
         {"attending": a, "title": t, "date": d} for a, t, d in attending[:5]
     ])
     return lines
+
+
+# ---------------------------------------------------------------------------
+# --plots: deterministic PNGs (matplotlib is a local-only dep; CI never imports it)
+# ---------------------------------------------------------------------------
+
+def render_plots(project: str, dataset: str, inventory: dict, odata: dict) -> dict[str, str]:
+    """Write review_*.png into eda/output/plots/; return {plot_key: relative_path}."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    written: dict[str, str] = {}
+
+    def save(fig, name: str, key: str) -> None:
+        fig.tight_layout()
+        fig.savefig(PLOTS_DIR / name, dpi=110)
+        plt.close(fig)
+        written[key] = f"plots/{name}"
+
+    # 1. Google Trends calls/day (collection throughput; the 6h-window fix is visible)
+    gt = inventory.get("google_trends", [])[-24:]
+    if gt:
+        fig, ax = plt.subplots(figsize=(8, 3))
+        ax.bar([d[5:] for d, _, _ in gt], [n for _, n, _ in gt], color="#4c78a8")
+        ax.axhline(800, color="#d62728", ls="--", lw=1, label="800/day budget")
+        ax.set_title("Google Trends calls per UTC day (1 bronze file = 1 call)")
+        ax.set_ylabel("calls")
+        ax.tick_params(axis="x", rotation=60, labelsize=7)
+        ax.legend(loc="upper left", fontsize=8)
+        save(fig, "review_trends_calls.png", "trends_calls")
+
+    # 2. TM pricing coverage by observation day
+    rows = bq_rows(
+        f"SELECT CAST(snapshot_date AS STRING) AS d, COUNT(*) AS n, "
+        f"ROUND(COUNTIF(price_min IS NOT NULL)/COUNT(*)*100, 1) AS pct "
+        f"FROM {fq(project, dataset, 'tm_observations')} GROUP BY 1 ORDER BY 1", project)
+    if rows:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 4.5), sharex=True)
+        days = [r["d"][5:] for r in rows]
+        ax1.plot(days, [float(r["pct"]) for r in rows], marker="o", ms=3, color="#4c78a8")
+        ax1.set_ylabel("% obs priced")
+        ax1.set_title("tm_observations: events observed & % priced, per UTC day")
+        ax2.bar(days, [int(r["n"]) for r in rows], color="#9ecae9")
+        ax2.set_ylabel("events observed")
+        ax2.tick_params(axis="x", rotation=60, labelsize=7)
+        save(fig, "review_tm_pricing_by_day.png", "tm_pricing")
+
+    # 3. The traced demo event: Trends daily interest + observed price vs forecast
+    art = bq_rows(
+        f"SELECT b.artist_id FROM {fq(project, dataset, 'bridge_event_artist')} b "
+        f"WHERE b.event_id = '{DEMO_EVENT_ID}' AND b.is_headliner", project)
+    if art:
+        aid = art[0]["artist_id"]
+        trend = bq_rows(
+            f"SELECT CAST(snapshot_date AS STRING) AS d, interest "
+            f"FROM {fq(project, dataset, 'fact_trends_daily')} "
+            f"WHERE artist_id = {aid} AND dma_code = '{BAY_AREA_DMA}' "
+            f"AND NOT is_partial ORDER BY snapshot_date", project)
+        obs = bq_rows(
+            f"SELECT days_to_show, price_min "
+            f"FROM {fq(project, dataset, 'fact_event_demand')} "
+            f"WHERE event_id = '{DEMO_EVENT_ID}' AND price_min IS NOT NULL "
+            f"ORDER BY days_to_show", project)
+        fc = bq_rows(
+            f"SELECT days_to_show, predicted_price "
+            f"FROM {fq(project, dataset, 'forecast_event_price')} "
+            f"WHERE event_id = '{DEMO_EVENT_ID}' ORDER BY days_to_show", project)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.2))
+        ax1.plot([r["d"] for r in trend], [int(r["interest"]) for r in trend],
+                 lw=0.9, color="#4c78a8")
+        ax1.set_title(f"fact_trends_daily — headliner in DMA {BAY_AREA_DMA}")
+        ax1.set_ylabel("interest (0–100, per-pull scale)")
+        step = max(1, len(trend) // 6)
+        ax1.set_xticks(range(0, len(trend), step))
+        ax1.set_xticklabels([trend[i]["d"] for i in range(0, len(trend), step)],
+                            rotation=45, fontsize=7)
+        ax2.plot([int(r["days_to_show"]) for r in fc],
+                 [float(r["predicted_price"]) for r in fc],
+                 color="#d62728", label="forecast curve")
+        ax2.scatter([int(r["days_to_show"]) for r in obs],
+                    [float(r["price_min"]) for r in obs],
+                    s=10, color="#4c78a8", label="observed price_min")
+        ax2.invert_xaxis()  # read left->right as approaching the show
+        ax2.set_xlabel("days to show")
+        ax2.set_ylabel("price ($)")
+        ax2.set_title("observed vs forecast — demo event")
+        ax2.legend(fontsize=8)
+        save(fig, "review_trace_demo_event.png", "trace")
+
+    # 4. Bay Area overlap + 5. what the new sources measure
+    c = odata["counts"]
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(11, 3))
+    bars = [("19hz", c["19hz_in_window"]), ("TM", c["tm_in_window"]),
+            ("RA", c["ra_in_window"]), ("union", c["union"])]
+    ax1.bar([b[0] for b in bars], [b[1] for b in bars],
+            color=["#4c78a8", "#d62728", "#e8a838", "#54a24b"])
+    ax1.set_title(f"events per source\n({odata['window'][0]} → {odata['window'][1]})")
+    only = [("only\n19hz", c["only_19hz"]), ("only\nTM", c["only_tm"]),
+            ("only\nRA", c["only_ra"]), ("19hz\n∩TM", c["hz_and_tm"]),
+            ("19hz\n∩RA", c["hz_and_ra"]), ("all 3", c["all_three"])]
+    ax2.bar([o[0] for o in only], [o[1] for o in only], color="#9ecae9")
+    ax2.set_title("overlap on (venue, date)")
+    ax2.tick_params(axis="x", labelsize=7)
+    prices = [float(r["price_min"]) for r in odata["hz_rows"]
+              if r["price_min"] and float(r["price_min"]) <= 200]
+    ax3.hist(prices, bins=20, color="#54a24b")
+    ax3.set_title("19hz price_min distribution (≤$200)")
+    ax3.set_xlabel("$")
+    save(fig, "review_bay_area_sources.png", "overlap")
+
+    att = sorted(int(r["attending"] or 0) for r in odata["ra_rows"])
+    fig, ax = plt.subplots(figsize=(6, 3))
+    ax.bar(range(len(att)), att, color="#e8a838", width=1.0)
+    ax.set_title("RA `attending` per event (sorted) — the social demand signal")
+    ax.set_xlabel(f"{len(att)} events, one page, area 218")
+    ax.set_ylabel("attending")
+    save(fig, "review_ra_attending.png", "attending")
+
+    return written
 
 
 # ---------------------------------------------------------------------------
@@ -498,17 +759,29 @@ def trace_event(project: str, dataset: str, event_id: str) -> list[str]:
 # Driver
 # ---------------------------------------------------------------------------
 
-def build_report(project: str, dataset: str, skip_bronze: bool) -> str:
+def build_report(project: str, dataset: str, skip_bronze: bool, plots: bool) -> str:
     lines = ["# Data review — bronze → gold, all sources", "",
              f"Generated {utc_now_iso()} by `eda/data_review.py` "
              f"(project `{project}`, dataset `{dataset}`). Re-run the same command "
              f"to refresh; narrative companion: `eda/data_review_2026-07.md`.", ""]
+    inventory = list_bronze(project) if not skip_bronze else {}
+    odata = overlap_data(project, dataset)
+    imgs = render_plots(project, dataset, inventory, odata) if plots else {}
+
+    def img(key: str, alt: str) -> list[str]:
+        return [f"![{alt}]({imgs[key]})", ""] if key in imgs else []
+
     if not skip_bronze:
-        inventory = list_bronze(project)
         lines += inventory_section(inventory) + [""]
+        lines += img("trends_calls", "Google Trends calls per day")
         lines += samples_section(project) + [""]
+        lines += fields_section(project) + [""]
     lines += coverage_section(project, dataset) + [""]
-    lines += overlap_section(project, dataset) + [""]
+    lines += img("tm_pricing", "TM pricing coverage by day")
+    lines += img("trace", "Demo event: trends signal + observed vs forecast price")
+    lines += overlap_section(odata) + [""]
+    lines += img("overlap", "Bay Area events per source and overlap")
+    lines += img("attending", "RA attending per event")
     return "\n".join(lines)
 
 
@@ -521,6 +794,8 @@ def main() -> int:
                         help="skip the GCS inventory/samples sections (BQ + CSVs only)")
     parser.add_argument("--trace", metavar="EVENT_ID", default=None,
                         help="instead of the report, trace one event bronze -> forecast")
+    parser.add_argument("--plots", action="store_true",
+                        help="also render eda/output/plots/review_*.png and embed them")
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
@@ -528,7 +803,7 @@ def main() -> int:
         report = "\n".join(trace_event(args.project, args.dataset, args.trace))
         out = Path(args.output or EDA_DIR / "output" / f"trace_{args.trace}.md")
     else:
-        report = build_report(args.project, args.dataset, args.skip_bronze)
+        report = build_report(args.project, args.dataset, args.skip_bronze, args.plots)
         out = Path(args.output or OUTPUT_MD)
     out.write_text(report, encoding="utf-8")
     print(f"[data_review] wrote {len(report.splitlines())} lines -> {out}")

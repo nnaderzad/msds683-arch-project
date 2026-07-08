@@ -1,6 +1,6 @@
 # Data review — bronze → gold, all sources
 
-Generated 2026-07-08T08:08:00+00:00 by `eda/data_review.py` (project `data-architecture-498123`, dataset `event_demand_analytics`). Re-run the same command to refresh; narrative companion: `eda/data_review_2026-07.md`.
+Generated 2026-07-08T08:30:20+00:00 by `eda/data_review.py` (project `data-architecture-498123`, dataset `event_demand_analytics`). Re-run the same command to refresh; narrative companion: `eda/data_review_2026-07.md`.
 
 ## Bronze inventory (`gs://<project>-raw/<source>/dt=<UTC-day>/`)
 
@@ -25,6 +25,8 @@ ledger as `google_trends_api/check_call_rate.py`). Last 7 partitions:
 | 2026-07-05 | 460 |
 | 2026-07-06 | 434 |
 | 2026-07-07 | 392 |
+
+![Google Trends calls per day](plots/review_trends_calls.png)
 
 ## Raw-format samples (newest capture per source family)
 
@@ -657,6 +659,438 @@ Parsed row (committed `eda/output/nineteenhz_events.csv`):
 ```
 
 
+## Field inventory — every raw field each API returns
+
+Measured from real captures (`fill` = % of sampled records where the path occurs; `[]` = list element). This is the observed contract, not the documented one.
+
+### Ticketmaster Discovery `events.json` — 5062 events (newest CA capture)
+
+We keep ~30 of these paths (see `flatten_event` in the TM cloud function); the rest land untouched in bronze for replay.
+
+| field | types | fill |
+|---|---|---|
+| _embedded.attractions[]._links.self.href | str | 86% |
+| _embedded.attractions[].aliases[] | str | 5% |
+| _embedded.attractions[].classifications[].family | bool | 86% |
+| _embedded.attractions[].classifications[].genre.id | str | 86% |
+| _embedded.attractions[].classifications[].genre.name | str | 86% |
+| _embedded.attractions[].classifications[].primary | bool | 86% |
+| _embedded.attractions[].classifications[].segment.id | str | 86% |
+| _embedded.attractions[].classifications[].segment.name | str | 86% |
+| _embedded.attractions[].classifications[].subGenre.id | str | 86% |
+| _embedded.attractions[].classifications[].subGenre.name | str | 86% |
+| _embedded.attractions[].classifications[].subType.id | str | 84% |
+| _embedded.attractions[].classifications[].subType.name | str | 84% |
+| _embedded.attractions[].classifications[].type.id | str | 84% |
+| _embedded.attractions[].classifications[].type.name | str | 84% |
+| _embedded.attractions[].draftStatus | str | 12% |
+| _embedded.attractions[].externalLinks.bandcamp[].url | str | 1% |
+| _embedded.attractions[].externalLinks.facebook[].url | str | 56% |
+| _embedded.attractions[].externalLinks.homepage[].url | str | 55% |
+| _embedded.attractions[].externalLinks.instagram[].url | str | 61% |
+| _embedded.attractions[].externalLinks.itunes[].url | str | 51% |
+| _embedded.attractions[].externalLinks.lastfm[].url | str | 22% |
+| _embedded.attractions[].externalLinks.musicbrainz[].id | str | 59% |
+| _embedded.attractions[].externalLinks.musicbrainz[].url | str | 59% |
+| _embedded.attractions[].externalLinks.soundcloud[].url | str | 1% |
+| _embedded.attractions[].externalLinks.spotify[].url | str | 58% |
+| _embedded.attractions[].externalLinks.tiktok[].url | str | 4% |
+| _embedded.attractions[].externalLinks.twitter[].url | str | 52% |
+| _embedded.attractions[].externalLinks.vevo[].url | str | 0% |
+| _embedded.attractions[].externalLinks.wiki[].url | str | 33% |
+| _embedded.attractions[].externalLinks.youtube[].url | str | 53% |
+| _embedded.attractions[].id | str | 86% |
+| _embedded.attractions[].images[].attribution | str | 1% |
+| _embedded.attractions[].images[].fallback | bool | 86% |
+| _embedded.attractions[].images[].height | int | 86% |
+| _embedded.attractions[].images[].ratio | str | 86% |
+| _embedded.attractions[].images[].url | str | 86% |
+| _embedded.attractions[].images[].width | int | 86% |
+| _embedded.attractions[].locale | str | 86% |
+| _embedded.attractions[].name | str | 86% |
+| _embedded.attractions[].test | bool | 86% |
+| _embedded.attractions[].type | str | 86% |
+| _embedded.attractions[].upcomingEvents._filtered | int | 86% |
+| _embedded.attractions[].upcomingEvents._total | int | 86% |
+| _embedded.attractions[].upcomingEvents.crowder | int | 2% |
+| _embedded.attractions[].upcomingEvents.mfx-ae | int | 0% |
+| _embedded.attractions[].upcomingEvents.mfx-at | int | 1% |
+| _embedded.attractions[].upcomingEvents.mfx-be | int | 4% |
+| _embedded.attractions[].upcomingEvents.mfx-ch | int | 3% |
+| _embedded.attractions[].upcomingEvents.mfx-cz | int | 3% |
+| _embedded.attractions[].upcomingEvents.mfx-de | int | 7% |
+| _embedded.attractions[].upcomingEvents.mfx-dk | int | 4% |
+| _embedded.attractions[].upcomingEvents.mfx-es | int | 3% |
+| _embedded.attractions[].upcomingEvents.mfx-fi | int | 2% |
+| _embedded.attractions[].upcomingEvents.mfx-it | int | 2% |
+| _embedded.attractions[].upcomingEvents.mfx-nl | int | 11% |
+| _embedded.attractions[].upcomingEvents.mfx-no | int | 5% |
+| _embedded.attractions[].upcomingEvents.mfx-pl | int | 4% |
+| _embedded.attractions[].upcomingEvents.mfx-se | int | 3% |
+| _embedded.attractions[].upcomingEvents.mfx-za | int | 0% |
+| _embedded.attractions[].upcomingEvents.moshtix | int | 3% |
+| _embedded.attractions[].upcomingEvents.mticket | int | 3% |
+| _embedded.attractions[].upcomingEvents.sportxtr | int | 0% |
+| _embedded.attractions[].upcomingEvents.ticketmaster | int | 78% |
+| _embedded.attractions[].upcomingEvents.ticketnet | int | 0% |
+| _embedded.attractions[].upcomingEvents.ticketweb | int | 38% |
+| _embedded.attractions[].upcomingEvents.tixcraft-ph | int | 0% |
+| _embedded.attractions[].upcomingEvents.tixcraft-sg | int | 0% |
+| _embedded.attractions[].upcomingEvents.tmc | int | 0% |
+| _embedded.attractions[].upcomingEvents.tmr | int | 60% |
+| _embedded.attractions[].upcomingEvents.trium | int | 11% |
+| _embedded.attractions[].upcomingEvents.universe | int | 11% |
+| _embedded.attractions[].upcomingEvents.veeps | int | 0% |
+| _embedded.attractions[].upcomingEvents.wts-tr | int | 1% |
+| _embedded.attractions[].url | str | 84% |
+| _embedded.venues[]._links.self.href | str | 100% |
+| _embedded.venues[].accessibleSeatingDetail | str | 31% |
+| _embedded.venues[].ada.adaCustomCopy | str | 7% |
+| _embedded.venues[].ada.adaHours | str | 6% |
+| _embedded.venues[].ada.adaPhones | str | 7% |
+| _embedded.venues[].address.line1 | str | 100% |
+| _embedded.venues[].address.line2 | str | 4% |
+| _embedded.venues[].aliases[] | str | 4% |
+| _embedded.venues[].boxOfficeInfo.acceptedPaymentDetail | str | 33% |
+| _embedded.venues[].boxOfficeInfo.openHoursDetail | str | 32% |
+| _embedded.venues[].boxOfficeInfo.phoneNumberDetail | str | 23% |
+| _embedded.venues[].boxOfficeInfo.willCallDetail | str | 26% |
+| _embedded.venues[].city.name | str | 100% |
+| _embedded.venues[].country.countryCode | str | 100% |
+| _embedded.venues[].country.name | str | 100% |
+| _embedded.venues[].dmas[].id | int | 71% |
+| _embedded.venues[].externalLinks.appDeepLink[].url | str | 0% |
+| _embedded.venues[].generalInfo.childRule | str | 32% |
+| _embedded.venues[].generalInfo.generalRule | str | 36% |
+| _embedded.venues[].id | str | 100% |
+| _embedded.venues[].images[].fallback | bool | 43% |
+| _embedded.venues[].images[].height | int | 43% |
+| _embedded.venues[].images[].ratio | str | 43% |
+| _embedded.venues[].images[].url | str | 43% |
+| _embedded.venues[].images[].width | int | 43% |
+| _embedded.venues[].locale | str | 100% |
+| _embedded.venues[].location.latitude | str | 100% |
+| _embedded.venues[].location.longitude | str | 100% |
+| _embedded.venues[].markets[].id | str | 52% |
+| _embedded.venues[].markets[].name | str | 52% |
+| _embedded.venues[].name | str | 100% |
+| _embedded.venues[].parkingDetail | str | 33% |
+| _embedded.venues[].postalCode | str | 100% |
+| _embedded.venues[].social.twitter.handle | str | 12% |
+| _embedded.venues[].state.name | str | 100% |
+| _embedded.venues[].state.stateCode | str | 100% |
+| _embedded.venues[].test | bool | 100% |
+| _embedded.venues[].timezone | str | 100% |
+| _embedded.venues[].type | str | 100% |
+| _embedded.venues[].upcomingEvents._filtered | int | 100% |
+| _embedded.venues[].upcomingEvents._total | int | 100% |
+| _embedded.venues[].upcomingEvents.archtics | int | 0% |
+| _embedded.venues[].upcomingEvents.moshtix | int | 0% |
+| _embedded.venues[].upcomingEvents.ticketmaster | int | 59% |
+| _embedded.venues[].upcomingEvents.ticketweb | int | 31% |
+| _embedded.venues[].upcomingEvents.tmr | int | 25% |
+| _embedded.venues[].upcomingEvents.universe | int | 1% |
+| _embedded.venues[].upcomingEvents.veeps | int | 0% |
+| _embedded.venues[].url | str | 81% |
+| _links.attractions[].href | str | 86% |
+| _links.self.href | str | 100% |
+| _links.venues[].href | str | 100% |
+| accessibility.info | str | 5% |
+| accessibility.ticketLimit | int | 35% |
+| accessibility.url | str | 1% |
+| accessibility.urlText | str | 1% |
+| ageRestrictions.ageRuleDescription | str | 3% |
+| ageRestrictions.legalAgeEnforced | bool | 51% |
+| classifications[].family | bool | 100% |
+| classifications[].genre.id | str | 100% |
+| classifications[].genre.name | str | 100% |
+| classifications[].primary | bool | 99% |
+| classifications[].segment.id | str | 100% |
+| classifications[].segment.name | str | 100% |
+| classifications[].subGenre.id | str | 95% |
+| classifications[].subGenre.name | str | 95% |
+| classifications[].subType.id | str | 80% |
+| classifications[].subType.name | str | 80% |
+| classifications[].type.id | str | 80% |
+| classifications[].type.name | str | 80% |
+| dates.access.endApproximate | bool | 29% |
+| dates.access.endDateTime | str | 3% |
+| dates.access.startApproximate | bool | 29% |
+| dates.access.startDateTime | str | 29% |
+| dates.end.approximate | bool | 29% |
+| dates.end.dateTime | str | 3% |
+| dates.end.localDate | str | 3% |
+| dates.end.localTime | str | 3% |
+| dates.end.noSpecificTime | bool | 29% |
+| dates.initialStartDate.dateTime | str | 1% |
+| dates.initialStartDate.localDate | str | 1% |
+| dates.initialStartDate.localTime | str | 1% |
+| dates.spanMultipleDays | bool | 100% |
+| dates.start.dateTBA | bool | 100% |
+| dates.start.dateTBD | bool | 100% |
+| dates.start.dateTime | str | 99% |
+| dates.start.localDate | str | 100% |
+| dates.start.localTime | str | 99% |
+| dates.start.noSpecificTime | bool | 100% |
+| dates.start.timeTBA | bool | 100% |
+| dates.status.code | str | 100% |
+| dates.timezone | str | 81% |
+| description | str | 1% |
+| doorsTimes.dateTime | str | 11% |
+| doorsTimes.localDate | str | 11% |
+| doorsTimes.localTime | str | 11% |
+| id | str | 100% |
+| images[].attribution | str | 1% |
+| images[].fallback | bool | 100% |
+| images[].height | int | 100% |
+| images[].ratio | str | 100% |
+| images[].url | str | 100% |
+| images[].width | int | 100% |
+| info | str | 58% |
+| linkMoreInfo.descriptions.en-au | str | 14% |
+| linkMoreInfo.descriptions.en-ca | str | 14% |
+| linkMoreInfo.descriptions.en-mx | str | 14% |
+| linkMoreInfo.descriptions.en-nz | str | 14% |
+| linkMoreInfo.descriptions.en-us | str | 14% |
+| linkMoreInfo.descriptions.es-br | str | 14% |
+| linkMoreInfo.descriptions.es-mx | str | 14% |
+| linkMoreInfo.descriptions.es-us | str | 14% |
+| linkMoreInfo.descriptions.fr-ca | str | 14% |
+| linkMoreInfo.descriptions.pt-br | str | 14% |
+| linkMoreInfo.url | str | 14% |
+| locale | str | 100% |
+| name | str | 100% |
+| nameOrigin | str | 100% |
+| outlets[].type | str | 19% |
+| outlets[].url | str | 19% |
+| pleaseNote | str | 58% |
+| priceRanges[].currency | str | 28% |
+| priceRanges[].max | float | 28% |
+| priceRanges[].min | float | 28% |
+| priceRanges[].type | str | 28% |
+| products[].classifications[].family | bool | 31% |
+| products[].classifications[].genre.id | str | 31% |
+| products[].classifications[].genre.name | str | 31% |
+| products[].classifications[].primary | bool | 31% |
+| products[].classifications[].segment.id | str | 31% |
+| products[].classifications[].segment.name | str | 31% |
+| products[].classifications[].subGenre.id | str | 31% |
+| products[].classifications[].subGenre.name | str | 31% |
+| products[].classifications[].subType.id | str | 31% |
+| products[].classifications[].subType.name | str | 31% |
+| products[].classifications[].type.id | str | 31% |
+| products[].classifications[].type.name | str | 31% |
+| products[].id | str | 31% |
+| products[].name | str | 31% |
+| products[].type | str | 31% |
+| products[].url | str | 31% |
+| promoter.description | str | 52% |
+| promoter.id | str | 52% |
+| promoter.name | str | 52% |
+| promoters[].description | str | 52% |
+| promoters[].id | str | 52% |
+| promoters[].name | str | 52% |
+| sales.presales[].description | str | 23% |
+| sales.presales[].endDateTime | str | 40% |
+| sales.presales[].linkDescription | str | 19% |
+| sales.presales[].name | str | 40% |
+| sales.presales[].shortDescription | str | 30% |
+| sales.presales[].startDateTime | str | 40% |
+| sales.presales[].url | str | 19% |
+| sales.public.endDateTime | str | 100% |
+| sales.public.startDateTime | str | 100% |
+| sales.public.startTBA | bool | 100% |
+| sales.public.startTBD | bool | 100% |
+| seatmap.staticUrl | str | 61% |
+| test | bool | 100% |
+| ticketLimit.info | str | 41% |
+| ticketTextLines.en-us.line1 | str | 36% |
+| ticketTextLines.en-us.line2 | str | 36% |
+| ticketTextLines.en-us.line3 | str | 36% |
+| ticketTextLines.en-us.line4 | str | 36% |
+| ticketTextLines.en-us.line5 | str | 36% |
+| ticketTextLines.en-us.line6 | str | 36% |
+| ticketing.allInclusivePricing.enabled | bool | 71% |
+| ticketing.safeTix.enabled | bool | 51% |
+| type | str | 100% |
+| upsellLandingPageUrl | str | 2% |
+| url | str | 100% |
+
+### Google Trends — iot national (daily series, geo=US) (1 payload, 270 records)
+
+`records[].<query>` is the artist-keyed 0–100 value column (named after the search term; normalized here for the inventory).
+
+| field | types | fill |
+|---|---|---|
+| artist | str | 100% |
+| endpoint | str | 100% |
+| extract_ts_utc | str | 100% |
+| geo | str | 100% |
+| geo_code | str | 100% |
+| granularity | str | 100% |
+| n_records | int | 100% |
+| query | str | 100% |
+| records[].<query> | int | 100% |
+| records[].date | str | 100% |
+| records[].isPartial | bool | 100% |
+| resolution | str | 100% |
+| source | str | 100% |
+| timeframe | str | 100% |
+
+### Google Trends — iot per-DMA (daily series, geo=US-XX-DMA) (1 payload, 270 records)
+
+`records[].<query>` is the artist-keyed 0–100 value column (named after the search term; normalized here for the inventory).
+
+| field | types | fill |
+|---|---|---|
+| artist | str | 100% |
+| endpoint | str | 100% |
+| extract_ts_utc | str | 100% |
+| geo | str | 100% |
+| geo_code | str | 100% |
+| granularity | str | 100% |
+| n_records | int | 100% |
+| query | str | 100% |
+| records[].<query> | int | 100% |
+| records[].date | str | 100% |
+| records[].isPartial | bool | 100% |
+| resolution | str | 100% |
+| source | str | 100% |
+| timeframe | str | 100% |
+
+### Google Trends — ibr DMA snapshot (cross-DMA cross-section) (1 payload, 210 records)
+
+`records[].<query>` is the artist-keyed 0–100 value column (named after the search term; normalized here for the inventory).
+
+| field | types | fill |
+|---|---|---|
+| artist | str | 100% |
+| endpoint | str | 100% |
+| extract_ts_utc | str | 100% |
+| geo | str | 100% |
+| geo_code | null | 100% |
+| granularity | str | 100% |
+| n_records | int | 100% |
+| query | str | 100% |
+| records[].<query> | int | 100% |
+| records[].geoCode | str | 100% |
+| records[].geoName | str | 100% |
+| resolution | str | 100% |
+| source | str | 100% |
+| timeframe | str | 100% |
+
+### YouTube Data API rollup — 398 artist records
+
+| field | types | fill |
+|---|---|---|
+| official_channel_id | str | 100% |
+| official_channel_title | str | 100% |
+| official_subscribers | int | 100% |
+| official_total_views | int | 100% |
+| official_video_count | int | 100% |
+| query | str | 100% |
+| topic_channel_id | str | 100% |
+| topic_channel_title | str | 100% |
+| topic_total_views | int | 100% |
+| topic_video_count | int | 100% |
+
+### 19hz.info — parsed listing columns (456 events)
+
+Raw bronze is the untouched HTML page; these are the columns `collect_19hz.py` parses out of it (fill = non-empty).
+
+| field | types | fill |
+|---|---|---|
+| age_restriction | null,str | 100% |
+| artists | str | 100% |
+| city | str | 100% |
+| datetime_text | str | 100% |
+| event_date | str | 100% |
+| extract_ts_utc | str | 100% |
+| genres | str | 100% |
+| is_free | str | 100% |
+| n_artists | str | 100% |
+| organizers | null,str | 100% |
+| price_max | null,str | 100% |
+| price_min | null,str | 100% |
+| price_open_ended | str | 100% |
+| price_text | null,str | 100% |
+| ticket_domain | str | 100% |
+| ticket_url | str | 100% |
+| title | str | 100% |
+| venue | str | 100% |
+
+### Resident Advisor GraphQL `eventListings` — 100 listings
+
+Fields are what our GraphQL query requests (see `LISTINGS_QUERY` in `ra_api/collect_ra.py`) — RA's schema has more, but each field must be asked for explicitly.
+
+| field | types | fill |
+|---|---|---|
+| event.artists[].id | str | 73% |
+| event.artists[].name | str | 73% |
+| event.attending | int | 100% |
+| event.contentUrl | str | 100% |
+| event.cost | str | 100% |
+| event.date | str | 100% |
+| event.endTime | str | 100% |
+| event.genres[].name | str | 87% |
+| event.id | str | 100% |
+| event.isTicketed | bool | 100% |
+| event.startTime | str | 100% |
+| event.title | str | 100% |
+| event.venue.id | str | 100% |
+| event.venue.name | str | 100% |
+
+### Ticket-page JSON-LD — 34 page payloads
+
+schema.org Event/offers as embedded by eventbrite + shotgun.
+
+| field | types | fill |
+|---|---|---|
+| event_ld[].@context | str | 100% |
+| event_ld[].@type | str | 100% |
+| event_ld[].description | str | 100% |
+| event_ld[].doorTime | str | 15% |
+| event_ld[].endDate | str | 74% |
+| event_ld[].eventAttendanceMode | str | 100% |
+| event_ld[].eventStatus | str | 100% |
+| event_ld[].image | str | 100% |
+| event_ld[].inLanguage | str | 85% |
+| event_ld[].location.@type | str | 100% |
+| event_ld[].location.address.@type | str | 100% |
+| event_ld[].location.address.addressCountry | str | 100% |
+| event_ld[].location.address.addressLocality | str | 100% |
+| event_ld[].location.address.addressRegion | str | 85% |
+| event_ld[].location.address.postalCode | str | 15% |
+| event_ld[].location.address.streetAddress | str | 100% |
+| event_ld[].location.geo.@type | str | 15% |
+| event_ld[].location.geo.latitude | float | 15% |
+| event_ld[].location.geo.longitude | float | 15% |
+| event_ld[].location.name | str | 100% |
+| event_ld[].name | str | 100% |
+| event_ld[].offers[].@type | str | 100% |
+| event_ld[].offers[].availability | str | 100% |
+| event_ld[].offers[].availabilityEnds | str | 79% |
+| event_ld[].offers[].availabilityStarts | str | 68% |
+| event_ld[].offers[].highPrice | str | 85% |
+| event_ld[].offers[].lowPrice | str | 85% |
+| event_ld[].offers[].name | str | 15% |
+| event_ld[].offers[].price | float,int | 15% |
+| event_ld[].offers[].priceCurrency | str | 100% |
+| event_ld[].offers[].url | str | 100% |
+| event_ld[].offers[].validFrom | str | 82% |
+| event_ld[].organizer.@type | str | 100% |
+| event_ld[].organizer.description | str | 21% |
+| event_ld[].organizer.name | str | 100% |
+| event_ld[].organizer.url | str | 100% |
+| event_ld[].performer[].@type | str | 71% |
+| event_ld[].performer[].name | str | 71% |
+| event_ld[].performer[].url | str | 59% |
+| event_ld[].startDate | str | 100% |
+| event_ld[].url | str | 100% |
+| extract_ts_utc | str | 100% |
+| ticket_url | str | 100% |
+
+
 ## Silver/gold coverage
 
 ### Freshness (`MAX(snapshot_date)` per fact table)
@@ -696,6 +1130,10 @@ Priced-from-first-observation split (why re-polling unpriced events is pointless
 | all upcoming | 23099 | 5585 | 30328 |
 | next 90 days | 15775 | 4724 | 20415 |
 | tier-1 (Bay 807 OR EDM) | 1197 | 1001 | 1420 |
+
+![TM pricing coverage by day](plots/review_tm_pricing_by_day.png)
+
+![Demo event: trends signal + observed vs forecast price](plots/review_trace_demo_event.png)
 
 ## Bay Area cross-source overlap (19hz vs RA vs Ticketmaster)
 
@@ -747,3 +1185,7 @@ Top-5 RA events by `attending` (the demand-signal preview):
 | 113 | Stephan Bodzin | 2026-07-17 |
 | 96 | Louie Vega presented By Public Works & 15Utah | 2026-07-10 |
 | 82 | Club Moniker: K Wata (live) + zi! | 2026-07-17 |
+
+![Bay Area events per source and overlap](plots/review_bay_area_sources.png)
+
+![RA attending per event](plots/review_ra_attending.png)

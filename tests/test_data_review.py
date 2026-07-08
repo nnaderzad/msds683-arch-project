@@ -37,6 +37,28 @@ def test_truncate_is_pure():
     assert obj["records"] == [1, 2, 3, 4, 5]  # input not mutated
 
 
+# --- field_inventory ------------------------------------------------------------
+
+def test_field_inventory_lists_every_path_with_types_and_fill():
+    records = [
+        {"id": "a", "priceRanges": [{"min": 10.0, "max": 20.0}], "name": "x"},
+        {"id": "b", "name": "y"},
+        {"id": "c", "name": None, "priceRanges": [{"min": 5.0}]},
+    ]
+    rows = {r["field"]: r for r in data_review.field_inventory(records)}
+    assert rows["id"]["fill"] == "100%" and rows["id"]["types"] == "str"
+    assert rows["priceRanges[].min"]["fill"] == "67%"
+    assert rows["priceRanges[].max"]["fill"] == "33%"
+    assert rows["name"]["types"] == "null,str"  # mixed types both recorded
+    assert "priceRanges" not in rows  # only leaf paths; [] marks the list hop
+
+
+def test_field_inventory_is_pure_and_handles_empty():
+    assert data_review.field_inventory([]) == []
+    recs = [{"a": 1}]
+    assert data_review.field_inventory(recs) == data_review.field_inventory(recs)
+
+
 # --- norm_venue ---------------------------------------------------------------
 
 def test_norm_venue_matches_across_source_spellings():
