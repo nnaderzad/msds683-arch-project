@@ -17,6 +17,7 @@ Sections:
 Run (repo root, music-demand env, ADC authed):
     python eda/data_review.py                  # full report
     python eda/data_review.py --skip-bronze    # offline-ish: skip the GCS sections
+    python eda/data_review.py --trace rZ7HnEZ1Af00jd   # one event, bronze -> forecast
 """
 
 from __future__ import annotations
@@ -409,6 +410,91 @@ def overlap_section(project: str, dataset: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# --trace: one event, bronze -> silver -> gold -> forecast (real values)
+# ---------------------------------------------------------------------------
+
+def trace_event(project: str, dataset: str, event_id: str) -> list[str]:
+    """Follow one Ticketmaster event through every layer, with actual rows.
+
+    The narrative companion embeds one of these traces; re-run to refresh it.
+    Full per-stage SQL lives in docs/transformations_showcase.md — this shows
+    the *data*, not the code.
+    """
+    t = lambda name: fq(project, dataset, name)  # noqa: E731
+    lines = [f"# Event trace — `{event_id}` (bronze → forecast)", "",
+             f"Generated {utc_now_iso()} by `eda/data_review.py --trace {event_id}`.", ""]
+
+    lines += ["## 0. Raw (bronze) — the event as Ticketmaster sends it", ""]
+    from google.cloud import storage
+    client = storage.Client(project=project)
+    bucket = f"{project}-raw"
+    blob = _newest_blob(client, bucket, "ticketmaster/", contains="_CA_")
+    raw = next((e for e in json.loads(blob.download_as_text())
+                if e.get("id") == event_id), None) if blob else None
+    if raw:
+        lines += [f"`gs://{bucket}/{blob.name}` (`images`/`_links` omitted)", "",
+                  "```json",
+                  json.dumps(truncate(drop_keys(raw, frozenset({"images", "_links"})),
+                                      max_list=2, max_str=120, max_depth=5),
+                             indent=2, ensure_ascii=False),
+                  "```", ""]
+    else:
+        lines += ["*(event not present in the newest CA capture — raw sample skipped)*", ""]
+
+    lines += ["## 1. Silver `tm_events` — current-state row (MERGE upsert)", ""]
+    lines += md_table(bq_rows(
+        f"SELECT event_id, event_name, local_date, status_code, price_min, price_max, "
+        f"venue_name, attraction_names, genre, CAST(first_seen_ts_utc AS STRING) first_seen "
+        f"FROM {t('tm_events')} WHERE event_id = '{event_id}'", project))
+
+    lines += ["", "## 2. Silver `tm_observations` — honest per-day history (no forward-fill)", ""]
+    obs = bq_rows(
+        f"SELECT CAST(snapshot_date AS STRING) snapshot_date, price_min, price_max, "
+        f"status_code, n_captures, price_disagreed "
+        f"FROM {t('tm_observations')} WHERE event_id = '{event_id}' "
+        f"ORDER BY snapshot_date", project)
+    lines += md_table(obs[:3] + ([{"snapshot_date": f"… {len(obs) - 6} more days …"}]
+                                 if len(obs) > 6 else []) + obs[-3:])
+
+    lines += ["", "## 3. Headliner resolution (`bridge_event_artist` → `dim_artist`)", ""]
+    art = bq_rows(
+        f"SELECT b.artist_id, a.artist_name, b.is_headliner "
+        f"FROM {t('bridge_event_artist')} b JOIN {t('dim_artist')} a USING (artist_id) "
+        f"WHERE b.event_id = '{event_id}' ORDER BY b.is_headliner DESC", project)
+    lines += md_table(art)
+    headliner = next((r["artist_id"] for r in art if r["is_headliner"]
+                      in ("true", "True", "1")), None)
+
+    if headliner:
+        lines += ["", "## 4. Demand signals for the headliner (Bay Area DMA 807)", "",
+                  f"`fact_trends_daily` (artist_id={headliner}, last 5 days):", ""]
+        lines += md_table(bq_rows(
+            f"SELECT CAST(snapshot_date AS STRING) snapshot_date, interest, is_partial "
+            f"FROM {t('fact_trends_daily')} WHERE artist_id = {headliner} "
+            f"AND dma_code = '{BAY_AREA_DMA}' ORDER BY snapshot_date DESC LIMIT 5", project))
+        lines += ["", "`fact_youtube` (last 3 snapshots):", ""]
+        lines += md_table(bq_rows(
+            f"SELECT CAST(snapshot_date AS STRING) snapshot_date, official_subscribers, "
+            f"official_total_views FROM {t('fact_youtube')} WHERE artist_id = {headliner} "
+            f"ORDER BY snapshot_date DESC LIMIT 3", project))
+
+    lines += ["", "## 5. Gold `fact_event_demand` — one row per (event, snapshot day)", ""]
+    lines += md_table(bq_rows(
+        f"SELECT CAST(snapshot_date AS STRING) snapshot_date, days_to_show, price_min, "
+        f"price_max, local_interest, yt_subscribers "
+        f"FROM {t('fact_event_demand')} WHERE event_id = '{event_id}' "
+        f"ORDER BY snapshot_date DESC LIMIT 5", project))
+
+    lines += ["", "## 6. Gold `forecast_event_price` — precomputed anchor+drift curve", ""]
+    lines += md_table(bq_rows(
+        f"SELECT days_to_show, predicted_price "
+        f"FROM {t('forecast_event_price')} WHERE event_id = '{event_id}' "
+        f"AND MOD(days_to_show, 30) = 0 ORDER BY days_to_show", project))
+    lines += ["", "Full transformation SQL per stage: `docs/transformations_showcase.md`.", ""]
+    return lines
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -433,12 +519,19 @@ def main() -> int:
     parser.add_argument("--dataset", default=DEFAULT_DATASET)
     parser.add_argument("--skip-bronze", action="store_true",
                         help="skip the GCS inventory/samples sections (BQ + CSVs only)")
-    parser.add_argument("--output", default=str(OUTPUT_MD))
+    parser.add_argument("--trace", metavar="EVENT_ID", default=None,
+                        help="instead of the report, trace one event bronze -> forecast")
+    parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
-    report = build_report(args.project, args.dataset, args.skip_bronze)
-    Path(args.output).write_text(report, encoding="utf-8")
-    print(f"[data_review] wrote {len(report.splitlines())} lines -> {args.output}")
+    if args.trace:
+        report = "\n".join(trace_event(args.project, args.dataset, args.trace))
+        out = Path(args.output or EDA_DIR / "output" / f"trace_{args.trace}.md")
+    else:
+        report = build_report(args.project, args.dataset, args.skip_bronze)
+        out = Path(args.output or OUTPUT_MD)
+    out.write_text(report, encoding="utf-8")
+    print(f"[data_review] wrote {len(report.splitlines())} lines -> {out}")
     return 0
 
 
