@@ -80,6 +80,18 @@ variable "youtube_schedule" {
   default     = "0 15 * * *" # 15:00 PT daily (D8, 2026-07-07)
 }
 
+variable "nineteenhz_schedule" {
+  description = "Cron for the daily 19hz listing pull + ticket-page poll (America/Los_Angeles). 08:00 PT: listings are edited by promoters overnight/morning, the polite poller (~10 min) finishes hours before the 16:30 PT gold-refresh, and 08:00 PT (15:00/16:00 UTC) keeps the bronze dt= partition in the same UTC day."
+  type        = string
+  default     = "0 8 * * *" # 08:00 PT daily
+}
+
+variable "ra_schedule" {
+  description = "Cron for the single daily Resident Advisor listings request (America/Los_Angeles). RA agreement 2026-07-04: strictly ONE automated request per day (also enforced in-code by collect_ra.py's bronze-partition guard) — change the time freely, never the frequency. 08:15 PT: same reasoning as 19hz, offset so the two scene pulls don't start together."
+  type        = string
+  default     = "15 8 * * *" # 08:15 PT daily
+}
+
 variable "youtube_top_n" {
   description = "How many top-ranked Ticketmaster touring artists to feed the YouTube collector (unioned with the watchlist)."
   type        = number
