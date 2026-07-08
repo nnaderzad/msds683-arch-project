@@ -13,10 +13,17 @@ lineups also feed the headliner-gap repair.
 
 ## Run
 
+Scheduled: the `nineteenhz-daily` Cloud Run job (08:00 PT,
+`terraform/gtrends/scene.tf`) runs `job.py`, which chains this collector and
+`poll_ticket_pages.py`, both with `--land-raw`.
+
+Manually:
+
 ```bash
 python nineteenhz_api/collect_19hz.py --dry-run                      # fetch + richness summary
 python nineteenhz_api/collect_19hz.py --output data/nineteenhz/events.csv
 python nineteenhz_api/collect_19hz.py --output ... --land-raw        # + untouched HTML to bronze
+python nineteenhz_api/job.py --csv /tmp/nineteenhz_events.csv        # what the scheduled job runs
 ```
 
 Standard library only (`--land-raw` needs `google-cloud-storage`, like the other
@@ -48,4 +55,5 @@ runs become price-history snapshots: `event_date`, `datetime_text`, `title`,
   `https://19hz.info/pastEvents_BayArea.php`) for history.
 - Dice/Tixr JSON-LD poller seeded from this collector's `ticket_url`s for
   per-event daily price/sold-out series (decision D6, step 2).
-- Cloud Run job + terraform once the POC has proven a few days of daily runs.
+- Silver tables parsed from the accumulated bronze (events + ticket-page offers)
+  joined to `dim_venue` on (venue, date).

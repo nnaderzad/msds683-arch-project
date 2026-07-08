@@ -20,6 +20,12 @@ source has), `isTicketed`, and RA-ticket `cost` text.
 
 ## Run
 
+Scheduled: the `ra-daily` Cloud Run job (08:15 PT, `terraform/gtrends/scene.tf`)
+makes THE one daily request. Don't also run it manually on the same day — the
+in-code guard will (correctly) refuse.
+
+Manually:
+
 ```bash
 python ra_api/collect_ra.py --output data/ra/events.csv --land-raw   # THE daily pull
 python ra_api/collect_ra.py --lookup-area "san jose"                 # setup-only mode
@@ -41,5 +47,5 @@ headliner repair. `attending` re-polled daily becomes a time-series per event.
 - If 100 events/request proves too small for the 60-day window (totalResults
   reported in the run summary), shrink `--days` — do NOT add pagination
   requests.
-- Cloud Run job + terraform after a few clean manual runs (same POC→deploy
-  path as the other sources); schedule must stay 1×/day.
+- Silver table parsed from the accumulated bronze (`attending` per event per
+  day is the buzz time-series), joined via (venue, date).
