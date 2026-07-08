@@ -275,6 +275,22 @@ priced events.
        `eda/diagnose_price_gaps.py --table tm_observations` for the before/after evidence. Do the
        cutover **after** coordinating with the UI owners (it changes shared gold/forecast rows).
 
+- [ ] **COLLECT-2 · Collection-cadence follow-ons (backlog)**  ·  Owner: `TK`  ·  deferred by choice
+   - Context: D8 (docs/collection_efficiency_review.md) set the PT-anchored daily cadence
+     (TM 05:00+15:00, Trends 11:00, YouTube 15:00, gold 16:30 — all PT) with every capture
+     inside one UTC day. Three deliberate deferrals:
+   - **(a) Full "SF-day" migration** — repoint bronze `dt=`, `snapshot_date`, the Trends
+     call-budget ledger, and dbt onto America/Los_Angeles days instead of UTC days. Heavy,
+     touches every layer + historical partitions; the D8 scheduling already achieves the
+     same semantics (one PT-day cycle = one UTC-day key), so this only pays off if we ever
+     need post-16:00-PT captures to surface same-day.
+   - **(b) DAYS_AHEAD 180 → 365** — wider TM net for far-announced tours. Quota math done:
+     ~3,100 calls/day, fits the 5k/day budget at 2 sweeps. Deferred by choice (little
+     demand-signal value in >6-month-out shows for now).
+   - **(c) Bay-Area-only ~18:00 PT mini-sweep** — fresher evening prices for the demo's
+     home market. Blocked on (a) (or special-casing): an 18:00 PT capture lands in the
+     NEXT UTC-day partition, so it can't surface same-evening under the current keys.
+
 ### Phase 0 — Foundations  *(all ready now, no prereqs)*
 
 - [x] **T0 · Test harness & seed fixtures**  ·  Owner: `TK`  ·  ✅ PR #12

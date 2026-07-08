@@ -30,6 +30,7 @@ def test_full_plan_is_in_dependency_order():
     steps = gold_refresh.build_steps("proj", "ds")
     assert _names(steps) == [
         "trends_silver",
+        "trends_series_silver",
         "youtube_silver",
         "dimensions",
         "dbt_build",
@@ -38,9 +39,29 @@ def test_full_plan_is_in_dependency_order():
     ]
 
 
+def test_trends_series_step_loads_a_recent_capture_window():
+    from datetime import date
+
+    steps = {
+        s.name: s
+        for s in gold_refresh.build_steps("proj", "ds", today=date(2026, 7, 20))
+    }
+    argv = steps["trends_series_silver"].argv
+    assert argv[1].endswith("trends_series_to_silver.py")
+    # 14-day lookback keeps the daily refresh incremental (>3 tier-1 rotation
+    # cycles, so every actively-collected series is covered).
+    assert argv[argv.index("--start-date") + 1] == "2026-07-06"
+
+
 def test_silver_and_forecast_steps_carry_project_dataset():
     steps = {s.name: s for s in gold_refresh.build_steps("proj", "ds")}
-    for name in ("trends_silver", "youtube_silver", "dimensions", "forecast_export"):
+    for name in (
+        "trends_silver",
+        "trends_series_silver",
+        "youtube_silver",
+        "dimensions",
+        "forecast_export",
+    ):
         argv = steps[name].argv
         assert argv[1].endswith(".py")
         assert "--project" in argv and argv[argv.index("--project") + 1] == "proj"
@@ -100,4 +121,4 @@ def test_failfast_aborts_on_first_failure(monkeypatch):
     rc = gold_refresh.run(project="p", dataset="d")
     assert rc == 1
     # Stopped at the failing step — nothing after it ran.
-    assert seen == ["trends_silver", "youtube_silver"]
+    assert seen == ["trends_silver", "trends_series_silver", "youtube_silver"]
