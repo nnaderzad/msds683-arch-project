@@ -15,9 +15,9 @@ variable "alert_email" {
 }
 
 variable "gtrends_schedule" {
-  description = "Cron for the daily Google Trends refresh (America/Los_Angeles)."
+  description = "Cron for the daily Google Trends refresh (America/Los_Angeles). 11:00 PT: latest start whose worst-case run (RUN_DEADLINE_SECONDS = 5h40m single-stream crawl) still finishes before the 16:30 PT gold-refresh; typical runs (~3-4h) finish ~14:45 PT. Trends content is unaffected by fetch hour (daily series; current partial day is unstable), so later fetching buys nothing (docs/collection_efficiency_review.md, D8)."
   type        = string
-  default     = "0 9 * * *" # 9am PT daily
+  default     = "0 11 * * *" # 11:00 PT daily (D8, 2026-07-07)
 }
 
 variable "gtrends_top_n" {
@@ -75,9 +75,9 @@ variable "gtrends_image_tag" {
 }
 
 variable "youtube_schedule" {
-  description = "Cron for the daily YouTube snapshot (America/Los_Angeles)."
+  description = "Cron for the daily YouTube snapshot (America/Los_Angeles). 15:00 PT: as late as possible (freshest same-day channel stats) while still landing in the same UTC day (PT 01:00-15:59 -> one UTC day) and finishing (~30 min) well before the 16:30 PT gold-refresh (docs/collection_efficiency_review.md, D8)."
   type        = string
-  default     = "30 9 * * *" # 30 min after the Trends job, to stagger load
+  default     = "0 15 * * *" # 15:00 PT daily (D8, 2026-07-07)
 }
 
 variable "youtube_top_n" {
