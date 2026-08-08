@@ -174,3 +174,24 @@ def test_foreign_key_coverage(seed_tm_events):
     assert {v["dma_code"] for v in venues} <= geo_codes
     assert {e["venue_id"] for e in events} <= venue_ids
     assert {b["artist_id"] for b in bridge} <= artist_ids
+
+
+# ---------------------------------------------------------------------------
+# Accumulating vs full-refresh routing (incident 2026-07-05: truncate-rebuilt
+# dims orphaned incremental gold fact rows)
+# ---------------------------------------------------------------------------
+
+def test_fact_referenced_dims_accumulate_and_derivable_tables_do_not():
+    # Exactly the tables the incremental gold fact references by PK accumulate.
+    assert d.ACCUMULATE_KEYS == {
+        "dim_venue": "venue_id",
+        "dim_artist": "artist_id",
+        "dim_event": "event_id",
+    }
+    # Each accumulate key is that table's leading (PK) column in the schema.
+    for table, key in d.ACCUMULATE_KEYS.items():
+        assert d.SCHEMAS[table][0][0] == key
+    # The re-derivable tables stay full-refresh (bridge must reflect the
+    # CURRENT lineup only — accumulating it could keep two headliners).
+    for table in ("dim_geo", "dim_date", "bridge_event_artist"):
+        assert table not in d.ACCUMULATE_KEYS
