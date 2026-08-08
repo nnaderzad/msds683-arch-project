@@ -9,7 +9,8 @@ forward** into every later day -- manufacturing a daily series the sweep never o
 without forward-fill).
 
 Here we go back to **bronze**: the raw per-state JSON the sweep actually returned. The
-scheduler runs every 4 hours -> **up to 6 captures per (event, day)**; each capture is one
+scheduler ran up to 6x/day pre-D8 (2x/day since 2026-07-08) -> **multiple captures per
+(event, day)** are still possible; each capture is one
 stamped file. Bronze stays 100% raw; this loader is the only place that **aggregates** the
 day's captures into ONE honest row per (event, snapshot_date). A row exists **only for days
 the event was actually observed**; price is **as observed** (NULL if observed without a
