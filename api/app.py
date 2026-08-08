@@ -7,11 +7,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from api.gold import get_repository
+from api.text2sql import get_service, rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,28 @@ def get_show(event_id: str) -> dict[str, Any]:
         return show
 
     raise HTTPException(status_code=404, detail=f"Show not found: {event_id}")
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=500)
+
+
+@app.post("/ask")
+def ask(req: AskRequest, request: Request) -> dict[str, Any]:
+    """Text-to-SQL agent: natural-language question -> guardrailed SQL -> answer.
+
+    Always returns HTTP 200 with a ``status`` discriminator
+    (ok | refused | blocked | rate_limited | error) so the demo UI renders
+    blocked/refused attempts as first-class outcomes, never a raw 500.
+    """
+    forwarded = request.headers.get("x-forwarded-for", "")
+    client_key = forwarded.split(",")[0].strip() or (
+        request.client.host if request.client else "unknown"
+    )
+    limited = rate_limiter.check(client_key)
+    if limited is not None:
+        return {"status": "rate_limited", "question": req.question, "answer": limited}
+    return get_service().ask(req.question)
 
 
 # Serve the built web dashboard from the same origin, when present (the Docker image copies
