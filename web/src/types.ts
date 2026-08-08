@@ -34,3 +34,25 @@ export type ShowDetail = ShowSummary & {
   history: HistoryPoint[];
   forecast: ForecastPoint[];
 };
+
+export type GuardrailVerdict = {
+  name: string;
+  passed: boolean;
+  detail: string;
+};
+
+export type AskStatus = "ok" | "refused" | "blocked" | "rate_limited" | "error";
+
+export type AskResponse = {
+  status: AskStatus;
+  question: string;
+  sql?: string | null;
+  rows?: Record<string, unknown>[];
+  row_count?: number;
+  truncated?: boolean;
+  answer?: string | null;
+  guardrails?: GuardrailVerdict[];
+  bytes_processed?: number | null;
+  model?: string;
+  latency_ms?: number;
+};
