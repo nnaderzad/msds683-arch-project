@@ -144,6 +144,18 @@ def resale_multiplier(ratio: float, rng: np.random.Generator) -> float:
     return round(base * noise, 2)
 
 
+def resale_multiplier_at(
+    final_multiplier: float, days_to_show: int, horizon_days: int
+) -> float:
+    """Resale multiplier trajectory: starts at face when onsale opens, converges
+    to the final multiplier as the show approaches (superlinear near the date —
+    that's when both scalping premiums and fire sales happen)."""
+    if horizon_days <= 0:
+        return final_multiplier
+    progress = 1.0 - min(max(days_to_show, 0), horizon_days) / horizon_days
+    return round(1.0 + (final_multiplier - 1.0) * progress**1.5, 3)
+
+
 def festival_day_face_price(headliner_solo_prices: list[float]) -> float:
     """Festival day-ticket face value anchored to the day's headliner lineup.
 
