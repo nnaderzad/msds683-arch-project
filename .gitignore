@@ -59,4 +59,9 @@ notes.md
 # Internal working drafts — personal notes/messages, never push to teammates
 docs/team_messages.md
 docs/PROJECT_STRATEGY.md
+docs/collection_cadence_plan.md
+docs/handoff-jun-14.md
 *.private.md
+
+# Instructor materials — course docs, keep out of the public repo
+notes/
