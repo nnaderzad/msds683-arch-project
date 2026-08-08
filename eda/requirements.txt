@@ -4,3 +4,4 @@
 # BigQuery/GCS access is via the `bq` and `gsutil` CLIs (Google Cloud SDK) with ADC
 # (`gcloud auth application-default login`) — not pip-installable here.
 matplotlib>=3.8
+pyyaml>=6
