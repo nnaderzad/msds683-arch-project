@@ -73,7 +73,16 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
     }
 )
 
+# Synthetic sandbox mode: the agent may query ONLY the clearly-labeled synth
+# tables in `event_demand_synth` (sellout/resale infill — data no real source
+# provides). Kept disjoint from the honest allow-list so a synth answer can
+# never silently mix with observed data.
+ALLOWED_TABLES_SYNTH: frozenset[str] = frozenset(
+    {"synth_event_demand", "synth_resale_series"}
+)
+
 SCHEMA_CONTEXT_PATH = Path(__file__).parent / "schema_context.md"
+SCHEMA_CONTEXT_SYNTH_PATH = Path(__file__).parent / "schema_context_synth.md"
 
 SQL_ROW_LIMIT = 200          # LIMIT injected/clamped into every query
 MAX_RESPONSE_ROWS = 50       # rows returned to the client
@@ -349,11 +358,21 @@ class RateLimiter:
 
 
 class Text2SqlService:
-    def __init__(self, llm: LlmClient, runner: QueryRunner, schema_context: str, model: str = ""):
+    def __init__(
+        self,
+        llm: LlmClient,
+        runner: QueryRunner,
+        schema_context: str,
+        model: str = "",
+        allowed_tables: frozenset[str] = ALLOWED_TABLES,
+        dataset_label: str = "real",
+    ):
         self.llm = llm
         self.runner = runner
         self.schema_context = schema_context
         self.model = model
+        self.allowed_tables = allowed_tables
+        self.dataset_label = dataset_label
 
     def _respond(self, status: str, question: str, started: float, **extra: Any) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -367,6 +386,8 @@ class Text2SqlService:
             "guardrails": [],
             "bytes_processed": None,
             "model": self.model,
+            "dataset": self.dataset_label,
+            "synthetic": self.dataset_label == "synth",
             "latency_ms": int((time.monotonic() - started) * 1000),
         }
         payload.update(extra)
@@ -384,7 +405,7 @@ class Text2SqlService:
         if sql is None:
             return self._respond("error", question, started, answer=error)
 
-        verdicts = validate_sql(sql)
+        verdicts = validate_sql(sql, self.allowed_tables)
         if not all(v.passed for v in verdicts):
             return self._respond(
                 "blocked",
@@ -472,7 +493,7 @@ class Text2SqlService:
                 if repaired is None:
                     detail = refusal or gen_error or "self-repair failed"
                     return sql, None, GuardrailVerdict("dry_run", False, detail[:300])
-                repaired_verdicts = validate_sql(repaired)
+                repaired_verdicts = validate_sql(repaired, self.allowed_tables)
                 if not all(v.passed for v in repaired_verdicts):
                     return sql, None, GuardrailVerdict(
                         "dry_run", False, "self-repaired SQL failed guardrails"
@@ -498,23 +519,33 @@ class Text2SqlService:
 
 rate_limiter = RateLimiter()
 
-_service: Text2SqlService | None = None
+_services: dict[str, Text2SqlService | None] = {"real": None, "synth": None}
 
 
-def set_service(service: Text2SqlService | None) -> None:
-    """Swap the process-wide service; tests pass fakes, None resets lazy init."""
-    global _service
-    _service = service
+def set_service(service: Text2SqlService | None, mode: str = "real") -> None:
+    """Swap a process-wide service; tests pass fakes, None resets lazy init."""
+    _services[mode] = service
 
 
-def get_service() -> Text2SqlService:
-    global _service
-    if _service is None:
+def get_service(mode: str = "real") -> Text2SqlService:
+    if mode not in _services:
+        raise ValueError(f"unknown text2sql mode: {mode!r}")
+    if _services[mode] is None:
         llm = VertexLlmClient()
-        _service = Text2SqlService(
-            llm=llm,
-            runner=BigQueryRunner(),
-            schema_context=SCHEMA_CONTEXT_PATH.read_text(encoding="utf-8"),
-            model=llm.model,
-        )
-    return _service
+        if mode == "synth":
+            _services[mode] = Text2SqlService(
+                llm=llm,
+                runner=BigQueryRunner(),
+                schema_context=SCHEMA_CONTEXT_SYNTH_PATH.read_text(encoding="utf-8"),
+                model=llm.model,
+                allowed_tables=ALLOWED_TABLES_SYNTH,
+                dataset_label="synth",
+            )
+        else:
+            _services[mode] = Text2SqlService(
+                llm=llm,
+                runner=BigQueryRunner(),
+                schema_context=SCHEMA_CONTEXT_PATH.read_text(encoding="utf-8"),
+                model=llm.model,
+            )
+    return _services[mode]

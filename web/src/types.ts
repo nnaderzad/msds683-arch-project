@@ -46,6 +46,8 @@ export type AskStatus = "ok" | "refused" | "blocked" | "rate_limited" | "error";
 export type AskResponse = {
   status: AskStatus;
   question: string;
+  dataset?: "real" | "synth";
+  synthetic?: boolean;
   sql?: string | null;
   rows?: Record<string, unknown>[];
   row_count?: number;

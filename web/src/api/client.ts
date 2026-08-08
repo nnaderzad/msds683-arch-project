@@ -59,11 +59,15 @@ export function searchShows(params: SearchParams, signal?: AbortSignal): Promise
   return getJson<ShowSummary[]>(`/search${suffix}`, signal);
 }
 
-export async function askQuestion(question: string, signal?: AbortSignal): Promise<AskResponse> {
+export async function askQuestion(
+  question: string,
+  dataset: "real" | "synth" = "real",
+  signal?: AbortSignal,
+): Promise<AskResponse> {
   const response = await fetch(`${apiBaseUrl()}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, dataset }),
     signal,
   });
 

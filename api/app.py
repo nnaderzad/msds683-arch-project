@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -95,6 +95,9 @@ def get_show(event_id: str) -> dict[str, Any]:
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=500)
+    # "real" = the honest star schema; "synth" = the clearly-labeled synthetic
+    # sandbox (event_demand_synth) with sellout/resale infill.
+    dataset: Literal["real", "synth"] = "real"
 
 
 @app.post("/ask")
@@ -112,7 +115,7 @@ def ask(req: AskRequest, request: Request) -> dict[str, Any]:
     limited = rate_limiter.check(client_key)
     if limited is not None:
         return {"status": "rate_limited", "question": req.question, "answer": limited}
-    return get_service().ask(req.question)
+    return get_service(req.dataset).ask(req.question)
 
 
 # Serve the built web dashboard from the same origin, when present (the Docker image copies
