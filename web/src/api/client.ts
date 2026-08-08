@@ -1,4 +1,4 @@
-import type { ShowDetail, ShowSummary } from "../types";
+import type { AskResponse, ShowDetail, ShowSummary } from "../types";
 
 const DEFAULT_DEV_API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -32,4 +32,21 @@ export function fetchShows(signal?: AbortSignal): Promise<ShowSummary[]> {
 
 export function fetchShow(eventId: string, signal?: AbortSignal): Promise<ShowDetail> {
   return getJson<ShowDetail>(`/show/${encodeURIComponent(eventId)}`, signal);
+}
+
+export async function askQuestion(question: string, signal?: AbortSignal): Promise<AskResponse> {
+  const response = await fetch(`${apiBaseUrl()}/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+    signal,
+  });
+
+  // /ask returns 200 with a status discriminator for every agent outcome; a non-200
+  // here is a transport/validation problem, not an agent verdict.
+  if (!response.ok) {
+    throw new Error(`Ask request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as AskResponse;
 }

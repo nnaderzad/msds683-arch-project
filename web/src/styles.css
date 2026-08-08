@@ -368,3 +368,186 @@ h3 {
     padding-right: 2px;
   }
 }
+
+/* --- Ask the warehouse (text-to-SQL panel) --- */
+
+.header-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #e6eef5;
+  border-radius: 10px;
+}
+
+.view-toggle button {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #334155;
+}
+
+.view-toggle button.is-active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.ask-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ask-form {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ask-form textarea {
+  flex: 1;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.ask-form button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0 22px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ask-form button:disabled {
+  background: #94a3b8;
+  cursor: default;
+}
+
+.ask-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ask-chip {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #334155;
+}
+
+.ask-chip:hover:not(:disabled) {
+  background: #eef6f5;
+  border-color: #0f766e;
+}
+
+.ask-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ask-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ask-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.ask-badge.is-ok,
+.ask-badge.is-pass {
+  background: #d1f2e4;
+  color: #065f46;
+}
+
+.ask-badge.is-fail,
+.ask-badge.is-error {
+  background: #fde2e1;
+  color: #991b1b;
+}
+
+.ask-badge.is-refused,
+.ask-badge.is-blocked,
+.ask-badge.is-rate_limited {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ask-sql {
+  margin: 0;
+  padding: 14px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ask-answer {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.ask-table-wrap {
+  overflow-x: auto;
+}
+
+.ask-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.86rem;
+}
+
+.ask-table th,
+.ask-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.ask-table th {
+  color: #475569;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.ask-table-note,
+.ask-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}

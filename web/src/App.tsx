@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchShow } from "./api/client";
+import { AskPanel } from "./components/AskPanel";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
 import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
@@ -23,7 +24,10 @@ function formatShowOption(show: ShowSummary): string {
   return `${show.artist_name || show.event_name} at ${show.venue_name}`;
 }
 
+type View = "dashboard" | "ask";
+
 function App() {
+  const [view, setView] = useState<View>("dashboard");
   const [shows] = useState<ShowSummary[]>(HERO_SHOWS);
   const [selectedId, setSelectedId] = useState(INITIAL_SELECTED_ID);
   const [selectedShow, setSelectedShow] = useState<ShowDetail | null>(null);
@@ -82,23 +86,48 @@ function App() {
             curated live music events.
           </p>
         </div>
-        <label className="show-picker">
-          <span>Demo show</span>
-          <select
-            value={selectedId}
-            onChange={(event) => setSelectedId(event.target.value)}
-            aria-label="Demo show"
-            disabled={shows.length === 0}
-          >
-            {shows.length === 0 && <option value="">No shows available</option>}
-            {shows.map((show) => (
-              <option key={show.event_id} value={show.event_id}>
-                {formatShowOption(show)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="header-controls">
+          <nav className="view-toggle" aria-label="View">
+            <button
+              type="button"
+              className={view === "dashboard" ? "is-active" : ""}
+              onClick={() => setView("dashboard")}
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              className={view === "ask" ? "is-active" : ""}
+              onClick={() => setView("ask")}
+            >
+              Ask the warehouse
+            </button>
+          </nav>
+          {view === "dashboard" && (
+            <label className="show-picker">
+              <span>Demo show</span>
+              <select
+                value={selectedId}
+                onChange={(event) => setSelectedId(event.target.value)}
+                aria-label="Demo show"
+                disabled={shows.length === 0}
+              >
+                {shows.length === 0 && <option value="">No shows available</option>}
+                {shows.map((show) => (
+                  <option key={show.event_id} value={show.event_id}>
+                    {formatShowOption(show)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       </header>
+
+      {view === "ask" && <AskPanel />}
+
+      {view === "dashboard" && (
+        <>
 
       {errorMessage && (
         <section className="status-panel is-error" role="alert">
@@ -127,7 +156,9 @@ function App() {
         </section>
       )}
 
-      {selectedShow && <DemandSignalsChart show={selectedShow} />}
+          {selectedShow && <DemandSignalsChart show={selectedShow} />}
+        </>
+      )}
     </main>
   );
 }
