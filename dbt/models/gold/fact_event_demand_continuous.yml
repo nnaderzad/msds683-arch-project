@@ -23,6 +23,12 @@ models:
           - accepted_values:
               arguments:
                 values: [true, false]
+                # quote:false is load-bearing on a BOOL column: dbt's default
+                # quoting renders these as strings ('True','False') and BigQuery
+                # rejects `BOOL IN {STRING}` with a Database Error — which aborts
+                # the build regardless of severity (broke the 2026-07-08 gold run
+                # after the image's dbt upgrade changed boolean rendering).
+                quote: false
               config:
                 severity: warn
     tests:
