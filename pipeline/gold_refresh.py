@@ -54,6 +54,20 @@ FORECAST_TABLE = "forecast_event_price"
 # re-reading the whole bronze prefix each run.
 TRENDS_SERIES_LOOKBACK_DAYS = 14
 
+# Scene sources (19hz / RA / ticketpages) land once per day and each capture is
+# self-contained, so the loader only needs a short re-read window (idempotent
+# MERGE makes overlap harmless; the margin covers a missed run or two).
+SCENE_LOOKBACK_DAYS = 7
+
+# fact_trends (ibr snapshot) window: each capture is a self-contained same-day
+# cross-DMA snapshot that never changes after its day, so the nightly run only
+# needs recent partitions (idempotent MERGE makes overlap harmless). Without a
+# window this step re-downloaded the ENTIRE growing ibr bronze every night —
+# 47 min on 2026-07-08 and rising, pushing the whole run toward the job's
+# 3600s task timeout. Historical (re)loads: run trends_to_silver.py by hand
+# with an explicit --start-date.
+TRENDS_SNAPSHOT_LOOKBACK_DAYS = 14
+
 
 @dataclass(frozen=True)
 class Step:
@@ -90,9 +104,21 @@ def build_steps(
     dbt_argv = ["dbt", dbt_verb, "--profiles-dir", ".", "--project-dir", "."]
 
     series_start = (today or date.today()) - timedelta(days=TRENDS_SERIES_LOOKBACK_DAYS)
+    scene_start = (today or date.today()) - timedelta(days=SCENE_LOOKBACK_DAYS)
+    snapshot_start = (today or date.today()) - timedelta(days=TRENDS_SNAPSHOT_LOOKBACK_DAYS)
 
     steps = [
-        Step("trends_silver", [py, "pipeline/silver/trends_to_silver.py", *bq_flags, *run_flags]),
+        Step(
+            "trends_silver",
+            [
+                py,
+                "pipeline/silver/trends_to_silver.py",
+                *bq_flags,
+                "--start-date",
+                snapshot_start.isoformat(),
+                *run_flags,
+            ],
+        ),
         Step(
             "trends_series_silver",
             [
@@ -105,6 +131,17 @@ def build_steps(
             ],
         ),
         Step("youtube_silver", [py, "pipeline/silver/youtube_to_silver.py", *bq_flags, *run_flags]),
+        Step(
+            "scene_silver",
+            [
+                py,
+                "pipeline/silver/scene_to_silver.py",
+                *bq_flags,
+                "--start-date",
+                scene_start.isoformat(),
+                *run_flags,
+            ],
+        ),
         Step("dimensions", [py, "pipeline/silver/build_dimensions.py", *bq_flags, *run_flags]),
         Step("dbt_build", dbt_argv, cwd=DBT_DIR, env=dbt_env),
         Step(
