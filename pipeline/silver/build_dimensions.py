@@ -53,6 +53,7 @@ from geo_lookup import GeoLookup  # noqa: E402
 DEFAULT_PROJECT = "data-architecture-498123"
 DEFAULT_DATASET = "event_demand_analytics"
 DMA_GEO_CSV = REPO_ROOT / "google_trends_api" / "reference" / "dma_geo.csv"
+CAPACITY_CSV = REPO_ROOT / "reference" / "venue_capacities.csv"
 ROSTER_GLOB = "roster_artist_*.csv"
 ROSTER_DIR = REPO_ROOT / "google_trends_api" / "sample_data"
 CALENDAR_FLOOR = date(2026, 6, 1)  # covers the earliest daily snapshot partition
@@ -144,21 +145,58 @@ def build_dim_date(start: date, end: date, holiday_dates: set[date]) -> list[dic
     return out
 
 
-def build_dim_venue(tm_rows: list[dict], geo: GeoLookup) -> list[dict]:
-    """Distinct tm_events venues; dma_code via GeoLookup (ZIP-first, state fallback)."""
+def _norm_venue(name: str | None) -> str:
+    """Venue-name join key for the capacity reference: lowercase, collapsed spaces."""
+    return " ".join((name or "").lower().split())
+
+
+def load_capacity_reference(path: Path = CAPACITY_CSV) -> dict[tuple[str, str], int]:
+    """Curated real venue capacities (web-researched, source URLs in the CSV).
+
+    Keyed on (normalized venue name, state_code). Rows without a sourced capacity
+    are skipped — an unknown stays NULL rather than becoming a guess.
+    """
+    if not path.exists():
+        return {}
+    out: dict[tuple[str, str], int] = {}
+    with path.open(encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            raw = (row.get("capacity") or "").strip()
+            if not raw:
+                continue
+            try:
+                cap = int(float(raw))
+            except ValueError:
+                continue
+            out[(_norm_venue(row.get("venue_name")), (row.get("state_code") or "").upper())] = cap
+    return out
+
+
+def build_dim_venue(
+    tm_rows: list[dict], geo: GeoLookup,
+    capacity_ref: dict[tuple[str, str], int] | None = None,
+) -> list[dict]:
+    """Distinct tm_events venues; dma_code via GeoLookup (ZIP-first, state fallback).
+
+    ``capacity`` fills from the curated reference (reference/venue_capacities.csv)
+    on a (normalized name, state) match — real researched values only, never
+    estimates (the synth layer owns tier estimates, clearly labeled there).
+    """
+    capacity_ref = capacity_ref or {}
     by_tmv: dict[str, dict] = {}
     for r in tm_rows:
         tmv = r.get("venue_id")
         if not tmv:
             continue
         hit = geo.resolve(zip_code=r.get("venue_postal_code"), state=r.get("venue_state_code"))
+        cap_key = (_norm_venue(r.get("venue_name")), (r.get("venue_state_code") or "").upper())
         by_tmv[tmv] = {
             "venue_id": venue_id(tmv),
             "ticketmaster_venue_id": tmv,
             "venue_name": r.get("venue_name"),
             "dma_code": hit.dma if hit else None,
             "ticketmaster_market_id": None,
-            "capacity": None,            # later web/SeatGeek backfill
+            "capacity": capacity_ref.get(cap_key),
             "venue_type": None,
             "city": r.get("venue_city"),
             "state_code": r.get("venue_state_code"),
@@ -418,7 +456,7 @@ def build_all(tm_rows: list[dict], geo: GeoLookup, roster: dict, channel_cache: 
     return {
         "dim_geo": build_dim_geo(read_reference_geo()),
         "dim_date": build_dim_date(start, end, holiday_dates),
-        "dim_venue": build_dim_venue(tm_rows, geo),
+        "dim_venue": build_dim_venue(tm_rows, geo, load_capacity_reference()),
         "dim_artist": build_dim_artist(tm_rows, roster, channel_cache),
         "dim_event": build_dim_event(tm_rows),
         "bridge_event_artist": build_bridge_event_artist(tm_rows),
