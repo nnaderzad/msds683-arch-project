@@ -273,3 +273,58 @@ def test_row_truncation():
     assert result["row_count"] == t2s.MAX_RESPONSE_ROWS + 10
     assert len(result["rows"]) == t2s.MAX_RESPONSE_ROWS
     assert result["truncated"] is True
+
+
+# ---------------------------------------------------------------------------
+# Synth-mode toggle
+# ---------------------------------------------------------------------------
+
+
+def test_synth_service_blocks_real_tables():
+    service = t2s.Text2SqlService(
+        llm=FakeLlm(GOOD_SQL),  # tries to query fact_event_demand
+        runner=FakeRunner(),
+        schema_context="synth context",
+        allowed_tables=t2s.ALLOWED_TABLES_SYNTH,
+        dataset_label="synth",
+    )
+    result = service.ask("How many events?")
+    assert result["status"] == "blocked"
+    assert result["synthetic"] is True and result["dataset"] == "synth"
+
+
+def test_synth_service_allows_synth_tables_and_labels_response():
+    synth_sql = ("SELECT event_name FROM `data-architecture-498123.event_demand_synth"
+                 ".synth_event_demand` WHERE sold_out")
+    service = t2s.Text2SqlService(
+        llm=FakeLlm(synth_sql),
+        runner=FakeRunner(),
+        schema_context="synth context",
+        allowed_tables=t2s.ALLOWED_TABLES_SYNTH,
+        dataset_label="synth",
+    )
+    result = service.ask("Which shows sold out?")
+    assert result["status"] == "ok"
+    assert result["synthetic"] is True
+
+
+def test_ask_endpoint_routes_dataset_field():
+    t2s.set_service(make_service())  # real mode
+    synth = t2s.Text2SqlService(
+        llm=FakeLlm("SELECT 1 FROM `p.d.synth_event_demand`"),
+        runner=FakeRunner(),
+        schema_context="synth",
+        allowed_tables=t2s.ALLOWED_TABLES_SYNTH,
+        dataset_label="synth",
+    )
+    t2s.set_service(synth, mode="synth")
+    with TestClient(app) as client:
+        real = client.post("/ask", json={"question": "How many events?"}).json()
+        via_synth = client.post(
+            "/ask", json={"question": "Which sold out?", "dataset": "synth"}
+        ).json()
+        bad = client.post("/ask", json={"question": "hi there", "dataset": "nope"})
+    assert real["dataset"] == "real" and real["synthetic"] is False
+    assert via_synth["dataset"] == "synth" and via_synth["synthetic"] is True
+    assert bad.status_code == 422
+    t2s.set_service(None, mode="synth")

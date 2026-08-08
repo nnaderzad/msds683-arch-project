@@ -64,19 +64,22 @@ function ResultsTable({ rows }: { rows: Record<string, unknown>[] }) {
   );
 }
 
+const SYNTH_EXAMPLE = "Which sold-out shows have the highest resale markup?";
+
 export function AskPanel() {
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [response, setResponse] = useState<AskResponse | null>(null);
+  const [useSynth, setUseSynth] = useState(false);
 
-  const submit = (text: string) => {
+  const submit = (text: string, dataset?: "real" | "synth") => {
     const trimmed = text.trim();
     if (trimmed.length < 3 || phase === "loading") {
       return;
     }
     setPhase("loading");
     setResponse(null);
-    askQuestion(trimmed)
+    askQuestion(trimmed, dataset ?? (useSynth ? "synth" : "real"))
       .then((result) => {
         setResponse(result);
         setPhase("done");
@@ -133,6 +136,27 @@ export function AskPanel() {
             {example.length > 60 ? `${example.slice(0, 57)}…` : example}
           </button>
         ))}
+        {useSynth && (
+          <button
+            type="button"
+            className="ask-chip is-synth"
+            disabled={phase === "loading"}
+            onClick={() => {
+              setQuestion(SYNTH_EXAMPLE);
+              submit(SYNTH_EXAMPLE, "synth");
+            }}
+          >
+            {SYNTH_EXAMPLE}
+          </button>
+        )}
+        <label className="ask-synth-toggle" title="Simulated sellouts & resale prices — clearly labeled synthetic; real event/venue names">
+          <input
+            type="checkbox"
+            checked={useSynth}
+            onChange={(event) => setUseSynth(event.target.checked)}
+          />
+          Synthetic sandbox (sellouts &amp; resale)
+        </label>
       </div>
 
       {phase === "loading" && (
@@ -155,6 +179,9 @@ export function AskPanel() {
             <span className={`ask-badge is-${response.status}`}>
               {STATUS_COPY[response.status] ?? response.status}
             </span>
+            {response.synthetic && (
+              <span className="ask-badge is-synthetic">SYNTHETIC DATA</span>
+            )}
             {(response.guardrails ?? []).map((verdict) => (
               <span
                 key={verdict.name}
