@@ -26,7 +26,14 @@ with spine as (
         status_code
     from {{ ref('fact_ticketmaster') }}
     {% if is_incremental() %}
-    where snapshot_date > (select coalesce(max(snapshot_date), date '1900-01-01') from {{ this }})
+    -- Reprocess a trailing window, not just new dates: the daily Trends series lands up
+    -- to ~4 days late (tier-1 pair rotation; the loader's 14-day capture window in
+    -- pipeline/gold_refresh.py TRENDS_SERIES_LOOKBACK_DAYS). The MERGE on
+    -- (event_id, snapshot_date) makes the re-run idempotent — rows are updated in
+    -- place as late signals arrive, never duplicated.
+    where snapshot_date > date_sub(
+        (select coalesce(max(snapshot_date), date '1900-01-01') from {{ this }}),
+        interval 14 day)
     {% endif %}
 
 ),
@@ -61,7 +68,12 @@ select
     spine.price_max,
     spine.price_currency,
     spine.status_code,
-    ft.interest               as local_interest,   -- fact_trends (artist + dma + date)
+    -- Daily iot series first (coherent per-(artist,dma) trajectory, dense for tier-1
+    -- pairs), ibr snapshot as fallback (broad cross-DMA coverage on days a snapshot
+    -- lands). Both are 0-100 per-pull Trends interest; fact_trends was already mixing
+    -- pulls across days, so the fallback doesn't add a new scale caveat — see the
+    -- Trends normalization note in CLAUDE.md.
+    coalesce(td.interest, ft.interest) as local_interest,
     fy.official_subscribers   as yt_subscribers,    -- fact_youtube (artist + date)
     fy.official_total_views   as yt_views
 from spine
@@ -69,6 +81,10 @@ left join headliner h
     on h.event_id = spine.event_id
 left join event_venue ev
     on ev.event_id = spine.event_id
+left join {{ source('silver', 'fact_trends_daily') }} td
+    on  td.artist_id     = h.artist_id
+    and td.dma_code      = ev.dma_code
+    and td.snapshot_date = spine.snapshot_date
 left join {{ source('silver', 'fact_trends') }} ft
     on  ft.artist_id     = h.artist_id
     and ft.dma_code      = ev.dma_code
