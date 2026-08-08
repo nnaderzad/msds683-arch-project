@@ -34,6 +34,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -155,8 +156,16 @@ def list_bronze_snapshots(project: str, start: str | None, end: str | None) -> l
 def read_bronze(project: str, start: str | None, end: str | None) -> list[tuple[str, dict]]:
     out = []
     for uri in list_bronze_snapshots(project, start, end):
-        proc = subprocess.run(["gsutil", "cat", uri],
-                              capture_output=True, text=True, check=True)
+        # One transient gsutil failure must not abort a multi-thousand-file read
+        # (a 1h backfill died on exactly this); retry twice before giving up.
+        for attempt in range(3):
+            proc = subprocess.run(["gsutil", "cat", uri],
+                                  capture_output=True, text=True, check=False)
+            if proc.returncode == 0:
+                break
+            if attempt == 2:
+                raise RuntimeError(f"gsutil cat failed 3x for {uri}: {proc.stderr.strip()[:200]}")
+            time.sleep(2 * (attempt + 1))
         out.append((dt_from_path(uri), json.loads(proc.stdout)))
     return out
 
