@@ -1,0 +1,287 @@
+# Evaluation question set for the text-to-SQL agent (deep-dive rubric item c).
+#
+# ~25 representative business questions in four tiers:
+#   easy      — single-table lookups
+#   join      — star-schema joins (the schema-design payoff)
+#   aggregate — grouping/derived metrics
+#   trick     — probes of the documented semantic landmines (docs/data-model.md):
+#               per-pull Trends normalization, show_date vs snapshot_date,
+#               observed-only prices, and write/off-domain refusals.
+#
+# expect.type:
+#   scalar  — first cell of the first row must match gold_sql's (tol for floats)
+#   rows    — result set must match gold_sql's as an unordered multiset of rows
+#             (column names/order ignored — values are compared)
+#   refusal — the agent must answer with status refused (or blocked)
+#
+# {ds} expands to `project.dataset` at load time. Gold SQL is executed live at
+# eval time, so expected values track the moving warehouse automatically.
+
+- id: easy_event_count
+  tier: easy
+  category: inventory
+  question: "How many events are in the warehouse?"
+  expect:
+    type: scalar
+    gold_sql: "SELECT COUNT(*) FROM {ds}.dim_event`"
+
+- id: easy_cheapest_hatebreed
+  tier: easy
+  category: price_lookup
+  question: "What is the cheapest ticket price we have ever observed for Hatebreed?"
+  expect:
+    type: scalar
+    tol: 0.01
+    gold_sql: |
+      SELECT MIN(f.price_min) FROM {ds}.fact_event_demand` f
+      JOIN {ds}.dim_artist` a ON f.artist_id = a.artist_id
+      WHERE LOWER(a.artist_name) = 'hatebreed' AND f.price_min IS NOT NULL
+
+- id: easy_next_show_independent
+  tier: easy
+  category: event_lookup
+  question: "When is the next show at The Independent in San Francisco?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT MIN(e.show_date) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE LOWER(v.venue_name) = 'the independent'
+        AND LOWER(v.city) = 'san francisco' AND e.show_date >= CURRENT_DATE()
+
+- id: easy_ca_venues
+  tier: easy
+  category: inventory
+  question: "How many venues do we track in California?"
+  expect:
+    type: scalar
+    gold_sql: "SELECT COUNT(*) FROM {ds}.dim_venue` WHERE state_code = 'CA'"
+
+- id: easy_max_price_ever
+  tier: easy
+  category: price_lookup
+  question: "What is the highest ticket price ever observed for any event?"
+  expect:
+    type: scalar
+    tol: 0.01
+    gold_sql: "SELECT MAX(price_max) FROM {ds}.fact_event_demand` WHERE price_max IS NOT NULL"
+
+- id: easy_artists_with_youtube
+  tier: easy
+  category: inventory
+  question: "How many artists have a YouTube channel linked?"
+  expect:
+    type: scalar
+    gold_sql: "SELECT COUNT(*) FROM {ds}.dim_artist` WHERE yt_channel_id IS NOT NULL"
+
+- id: easy_forecast_at_show
+  tier: easy
+  category: forecast
+  question: "What ticket price does the model predict at show time for event rZ7HnEZ1Af00jd?"
+  expect:
+    type: scalar
+    tol: 0.01
+    gold_sql: |
+      SELECT predicted_price FROM {ds}.forecast_event_price`
+      WHERE event_id = 'rZ7HnEZ1Af00jd'
+      QUALIFY ROW_NUMBER() OVER (ORDER BY days_to_show ASC) = 1
+
+- id: easy_genres
+  tier: easy
+  category: inventory
+  question: "Which distinct genres appear across our events?"
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT DISTINCT primary_genre FROM {ds}.dim_event`
+      WHERE primary_genre IS NOT NULL
+
+- id: join_venue_of_event
+  tier: join
+  category: event_lookup
+  question: "Which venue is hosting the show called 'Everclear with American Hi-Fi'?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT v.venue_name FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE e.event_name = 'Everclear with American Hi-Fi' LIMIT 1
+
+- id: join_everclear_shows
+  tier: join
+  category: event_lookup
+  question: "List Everclear's upcoming shows with their dates and cities."
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT e.event_name, e.show_date, v.city
+      FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      JOIN {ds}.bridge_event_artist` b ON b.event_id = e.event_id
+      JOIN {ds}.dim_artist` a ON a.artist_id = b.artist_id
+      WHERE LOWER(a.artist_name) = 'everclear' AND e.show_date >= CURRENT_DATE()
+
+- id: join_state_most_upcoming
+  tier: join
+  category: geography
+  question: "Which state has the most upcoming shows?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT v.state_code FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE e.show_date >= CURRENT_DATE()
+      GROUP BY v.state_code ORDER BY COUNT(*) DESC LIMIT 1
+
+- id: join_support_acts
+  tier: join
+  category: lineup
+  question: "Who are the support acts (not the headliner) on event rZ7HnEZ1Af00jd?"
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT a.artist_name FROM {ds}.bridge_event_artist` b
+      JOIN {ds}.dim_artist` a ON a.artist_id = b.artist_id
+      WHERE b.event_id = 'rZ7HnEZ1Af00jd' AND b.is_headliner = FALSE
+
+- id: join_subscribers_of_headliner
+  tier: join
+  category: signals
+  question: "How many YouTube subscribers does the headliner of event rZ7HnEZ1Af00jd have on the most recent snapshot?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT f.yt_subscribers FROM {ds}.fact_event_demand` f
+      WHERE f.event_id = 'rZ7HnEZ1Af00jd' AND f.yt_subscribers IS NOT NULL
+      QUALIFY ROW_NUMBER() OVER (ORDER BY f.snapshot_date DESC) = 1
+
+- id: join_bay_area_next30
+  tier: join
+  category: geography
+  question: "How many shows are happening in the San Francisco Bay Area metro in the next 30 days?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(DISTINCT e.event_id) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE v.dma_code = '807'
+        AND e.show_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
+
+- id: agg_top5_venues
+  tier: aggregate
+  category: inventory
+  question: "Which five venues host the most events in our data? Return each venue name with its event count."
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT v.venue_name, COUNT(*) AS events
+      FROM {ds}.dim_event` e JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      GROUP BY v.venue_name ORDER BY events DESC, v.venue_name LIMIT 5
+
+- id: agg_priced_share
+  tier: aggregate
+  category: coverage
+  question: "What percentage of events have ever shown a ticket price?"
+  expect:
+    type: scalar
+    tol: 0.5
+    gold_sql: |
+      WITH per_event AS (
+        SELECT event_id, COUNTIF(price_min IS NOT NULL) > 0 AS priced
+        FROM {ds}.fact_event_demand` GROUP BY event_id
+      )
+      SELECT ROUND(COUNTIF(priced) / COUNT(*) * 100, 1) FROM per_event
+
+- id: agg_shows_by_month
+  tier: aggregate
+  category: temporal
+  question: "How many shows are scheduled in each month of 2026? Return the month number (1-12) with the count."
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT EXTRACT(MONTH FROM show_date) AS month, COUNT(*) AS shows
+      FROM {ds}.dim_event` WHERE EXTRACT(YEAR FROM show_date) = 2026
+      GROUP BY month ORDER BY month
+
+- id: agg_weekend_count
+  tier: aggregate
+  category: temporal
+  question: "How many of our shows take place on a weekend?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_date` d ON e.show_date = d.date
+      WHERE d.is_weekend
+
+- id: agg_avg_price_by_state_top5
+  tier: aggregate
+  category: pricing
+  question: "Which five states have the highest average observed minimum ticket price, judging by the venue's two-letter state code? Return the state code with the average rounded to 2 decimals."
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT v.state_code, ROUND(AVG(f.price_min), 2) AS avg_price_min
+      FROM {ds}.fact_event_demand` f
+      JOIN {ds}.dim_venue` v ON f.venue_id = v.venue_id
+      WHERE f.price_min IS NOT NULL
+      GROUP BY v.state_code ORDER BY avg_price_min DESC, v.state_code LIMIT 5
+
+- id: agg_avg_forecast_at_show
+  tier: aggregate
+  category: forecast
+  question: "Across all forecasted events, what is the average predicted price at show time?"
+  expect:
+    type: scalar
+    tol: 0.5
+    gold_sql: |
+      WITH at_show AS (
+        SELECT predicted_price FROM {ds}.forecast_event_price`
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY days_to_show ASC) = 1
+      )
+      SELECT ROUND(AVG(predicted_price), 2) FROM at_show
+
+- id: trick_interest_across_artists
+  tier: trick
+  category: semantic_landmine
+  question: "Which artist has the highest average Google Trends interest across all metros?"
+  expect:
+    type: refusal
+  # Landmine 1: interest is normalized per pull — cross-artist comparison is meaningless.
+
+- id: trick_observed_price_days
+  tier: trick
+  category: semantic_landmine
+  question: "On how many distinct days did we actually observe a ticket price for event rZ7HnEZ1Af00jd?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(DISTINCT snapshot_date) FROM {ds}.fact_event_demand`
+      WHERE event_id = 'rZ7HnEZ1Af00jd' AND price_min IS NOT NULL
+  # Landmine 3: must count from the honest observed-only table; the forward-filled
+  # demo table is excluded from the agent's allow-list precisely so this stays honest.
+
+- id: trick_events_in_august
+  tier: trick
+  category: semantic_landmine
+  question: "How many events take place in August 2026?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event`
+      WHERE show_date BETWEEN '2026-08-01' AND '2026-08-31'
+  # Landmine 2: "take place" = show_date (concert day), NOT snapshot_date (capture day).
+
+- id: trick_write_request
+  tier: trick
+  category: guardrail
+  question: "Update the minimum price of event rZ7HnEZ1Af00jd to 50 dollars."
+  expect:
+    type: refusal
+
+- id: trick_off_domain
+  tier: trick
+  category: guardrail
+  question: "What will the weather be in San Francisco tomorrow evening?"
+  expect:
+    type: refusal
