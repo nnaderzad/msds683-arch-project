@@ -6,8 +6,9 @@
 > delete what you can't verify. Refresh the "Last verified" stamps when you
 > re-check a section.
 
-**Last full review:** 2026-07-08 (collection cadence D8; recovery from the 07-01
-billing outage verified complete)
+**Last full review:** 2026-08-08 (post-pause recovery: month-long gold-refresh
+outage repaired — see incident log; lakehouse-class sprint kicked off — plan in
+[`lakehouse-plan.md`](lakehouse-plan.md))
 
 ## What this is
 
@@ -34,9 +35,9 @@ after the previous account closed (see incident log).
 | `gtrends-daily` (Cloud Run job) | Trends national + DMA-snapshot + tier-1 per-DMA daily units → bronze + silver | 11:00 (D8) | `terraform/gtrends/` (remote state, anyone can apply) |
 | `gtrends-backfill` (Cloud Run job) | deep per-DMA daily series, on demand | manual | `terraform/gtrends/` |
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
-| `gold-refresh` (Cloud Run job) | silver loaders (incl. `fact_trends_daily`, image `git-82cafa2`) → dbt build → forecast → GX gate | 16:30 (D8) — 07-05..08 failures fixed, see incident log | `terraform/` |
-| `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 (PR #54 — **pending merge + deploy**) | `terraform/gtrends/scene.tf` |
-| `event-demand-api` (Cloud Run service) | FastAPI + React demo (same origin), reads gold live | scale-to-zero (min-instances 0 since 2026-07-08 — cost cut ~$53/mo → ~$0; first hit after idle pays a few s cold start) | gcloud only (not yet in terraform) |
+| `gold-refresh` (Cloud Run job) | silver loaders (windowed reads, image `git-ab65e00`, task-timeout 5400s) → dbt build → forecast → GX gate | 16:30 (D8) — **broken 06-30→08-08, redeployed 2026-08-08**, see incident log | `terraform/` (image via gcloud, 08-08) |
+| `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 — **live since 2026-08-08** (terraform apply + smoke run; the 07-08→08-07 listings gap is permanent) | `terraform/gtrends/scene.tf` |
+| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex)** + `/search` browse, reads gold live | scale-to-zero (min-instances 0; **measured cold start 152 s, not "a few s"** — set min-instances 1 for demo windows, revert after) | gcloud only (not yet in terraform) |
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
@@ -98,20 +99,22 @@ UNION ALL SELECT "fact_event_demand", CAST(MAX(snapshot_date) AS STRING) FROM `d
 ORDER BY src'
 ```
 
-As of 2026-07-08 (recovery complete):
+As of 2026-08-08 (post-pause recovery day — see incident log):
 
 | Table | Latest snapshot | Note |
 |---|---|---|
-| `tm_observations` | 2026-07-08 | CF redeployed 07-04; backfill Jun 19→Jul 1 merged (462,125 rows). The 18:00 PT sweep lands in the NEXT UTC day — fixed by the D8 cadence (15:00 PT) |
-| `fact_trends` | 2026-07-06 | daily; Trends' freshest reliable day is always yesterday |
-| `fact_trends_daily` | 2026-07-07 | unfrozen 07-08 (manual load); D8 image (`git-77d8e50`) now refreshes it every gold run |
-| `fact_youtube` | 2026-07-07 | daily |
-| `fact_event_demand` | 2026-07-07 | gold; daily |
-| `fact_nineteenhz` / `fact_ra` / `fact_ticketpages` | 2026-07-08 | scene silver, first load 07-08; nightly refresh lands with PR #55 |
+| `tm_observations` | 2026-08-08 | collector never stopped through the outage |
+| `fact_trends` | 2026-08-08 | 28-day backfill from banked bronze, 08-08 (loader now retries transient gsutil failures) |
+| `fact_trends_daily` | 2026-08-08 | 28-day backfill 08-08 (+149,134 rows) |
+| `fact_youtube` | 2026-08-08 | 28-day backfill 08-08 (+20,744 rows) |
+| `fact_event_demand` | 2026-08-08 | full-refresh 08-08 (also backfills `local_interest` history per the PR #58 rewire) |
+| `forecast_event_price` | re-exported 08-08 | was frozen at 06-30 for 39 days |
+| `fact_nineteenhz` / `fact_ra` / `fact_ticketpages` | 2026-08-08 | scene jobs live 08-08; the 07-08→08-07 gap is permanently lost (point-in-time listings) |
 
-Post-fix verification (2026-07-05..07): `gtrends-daily` now lands 392–460
-calls/day (was 28–156 pre-6h-window) with 67–74 tier-1 per-DMA units/day,
-finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --days 5`).
+`dim_venue.capacity` is now populated for 179 venues from the curated
+`reference/venue_capacities.csv` (312 venues researched with sources on
+2026-08-08, 197 with capacities; the remainder are scene-only venues not in
+`dim_venue`).
 
 ## Known bottlenecks (measured)
 
@@ -129,78 +132,79 @@ finishing the whole queue in ~3–4 h (`google_trends_api/check_call_rate.py --d
 
 ## Active work / branch map
 
-- `main` — deployed state of record (2026-07-04 collection redesign merged:
-  PRs #44–#50 — TM 2×/day cut, gtrends 6h window + tier-1 rotation, headliner
-  recovery, 19hz collector + ticket-page JSON-LD poller, RA collector, deploy script).
-- `tk/collection-cadence` — D8 cadence — **merged (PR #51), deployed 2026-07-08**.
-- `tk/data-review` — July data review — **merged (PR #52)**: raw samples, field
-  inventories, price distributions, event trace, 19hz/RA first pulls + overlap.
-- `tk/dims-accumulate` — gold-refresh unblock (relationship-test severity) —
-  **merged (PR #53), deployed 2026-07-08 (image `git-82cafa2`)**.
-- `tk/gold-trends-daily` — gold rewire: `local_interest` from
-  `fact_trends_daily` (ibr fallback) + 14-day incremental reprocess window;
-  **after merge+deploy run a one-time `dbt build --full-refresh -s fact_event_demand`**
-  to backfill history (the trailing window only reaches 14 days back).
-- `tk/scene-schedule` — PR #54: 19hz+RA daily Cloud Run jobs + schedulers.
-- `tk/scene-silver` — PR #55: scene silver loader + gold-refresh `scene_silver`
-  step + `trends_silver` 14-day window (the step was re-downloading ALL ibr
-  bronze nightly — 47 min and growing vs the 3600s task timeout).
-- `tk/dims-merge-alerting` — PR #56: accumulate fact-referenced dims (MERGE, no
-  delete) + project-wide alert on failed Cloud Run job executions.
-- `tk/fix-continuous-bool-test` — PR #57 (**urgent**): `quote: false` on the
-  `price_is_filled` accepted_values test — invalid `BOOL IN {STRING}` SQL
-  aborts every gold run regardless of warn severity.
-- Recovery + collection redesign decisions: `collection_efficiency_review.md`.
-- Older `tk/*` and `niki/*`, `noam/*` branches are merged feature branches (see PRs #17–#43).
+- `main` — state of record. 2026-08-08 lakehouse sprint (all merged same-day):
+  PR #59 repo sync (plan docs → `docs/`, gitignore instructor notes), #60
+  **`docs/lakehouse-plan.md`** (the team plan — task board + Q&A prep), #61
+  text-to-SQL schema context (`api/schema_context.md`, generated + committed),
+  #62 guardrailed `POST /ask` service (Gemini 2.5 Flash on Vertex), #63 trends
+  loader gsutil retry, #64 eval set + harness (25 questions, execution-match),
+  #65 AskPanel UI, #66 windowing benchmark (banked pre-fix log evidence), #67
+  `/search` + `/genres` + dashboard search panel, #81 synth demand heuristics +
+  **197 researched venue capacities** filling `dim_venue.capacity`.
+- July-era PRs #54–#58 (scene jobs/silver, dims MERGE, bool-test hotfix, gold
+  rewire) were merged 2026-08-08 after sitting un-deployed for a month — the
+  outage in the incident log.
+- Open work: GitHub issues AGENT-5/6, SYNTH-2..4, BENCH-2, DOCS-2..4,
+  DEMO-1/2, BLOG-1 (created from the plan's task board).
+- Older `tk/*`, `niki/*`, `noam/*` branches are merged history (PRs #17–#53).
 
-### Pending deploys / user actions (2026-07-08)
+### Pending deploys / user actions (2026-08-08)
 
-D8 cadence rollout — **all four deployed 2026-07-08**:
+The July backlog (PRs #54–#58 deploys) was **fully executed 2026-08-08**:
 
-- [x] TM scheduler → `0 5,15 * * *` PT (gcloud, verified)
-- [x] gold-refresh scheduler → `30 16 * * *` PT (gcloud, verified)
-- [x] gold-refresh image rebuilt (`:git-77d8e50`) + job updated — the
-  `trends_series_silver` step confirmed in the execution log
-- [x] `terraform -chdir=terraform/gtrends apply` (gtrends 11:00 PT, youtube 15:00 PT)
+- [x] gold-refresh image `git-ab65e00` built + job updated (task-timeout
+  3600→5400s headroom); covers the #55 windowing, #56 dims-MERGE, #57 bool-test
+  hotfix, #58 gold rewire.
+- [x] Shared ingestion image rebuilt; `terraform -chdir=terraform/gtrends apply`
+  (nineteenhz-daily + ra-daily jobs, 2 schedulers, scene SA, **project-wide
+  job-failure alert**); `nineteenhz-daily` smoke-executed — fresh bronze landed.
+- [x] 28-day silver backfill from banked bronze (trends, trends_daily, youtube);
+  dims rebuilt (accumulate-MERGE + capacity fill).
+- [x] One-time `dbt build --full-refresh` (both gold models) + forecast
+  re-export + GX gate.
+- [x] Vertex AI enabled; `event-demand-api` SA granted `roles/aiplatform.user`.
 
-New:
+Still open:
 
-- [x] **Fix + redeploy gold-refresh for the dbt relationship-test failures**
-  (PR #53 merged; image `git-82cafa2` built + job updated 2026-07-08 —
-  verification execution result in the incident log).
-- [x] Demo service `event-demand-api` → min-instances 0 (2026-07-08, cost cut)
-
-After the open PRs merge (each deploy needs a go-ahead):
-
-- [ ] **PR #57 (urgent, before the 16:30 PT run): bool accepted_values hotfix**
-  — without it every nightly still aborts at dbt_build (Database Error beats
-  warn severity). Bundle its image rebuild with the one below.
-- [ ] PR #54: rebuild the shared ingestion image
-  (`gcloud builds submit --config google_trends_api/cloudbuild.yaml .`) +
-  `terraform -chdir=terraform/gtrends apply` (2 jobs, 2 schedulers, 1 SA) +
-  smoke-execute `nineteenhz-daily` (the RA job's guard no-ops if the day's
-  request already landed — correct).
-- [ ] PR #55 + #56 + gold rewire: ONE gold-refresh image rebuild + job update
-  covers all three; then a one-time
-  `dbt build --full-refresh -s fact_event_demand fact_event_demand_continuous`
-  to backfill `local_interest` history.
-- [ ] PR #56: `terraform -chdir=terraform/gtrends apply` (+1 alert policy —
-  can share the apply with #54).
-
-Carried over / done from 2026-07-04:
-
-- [x] Redeploy `ticketmaster-daily-extract` (done 07-04 23:07 UTC via
-  `cloud_functions/ticketmaster_daily/deploy.sh`; observations flowing)
-- [x] `terraform -chdir=terraform/gtrends apply` — 6h window + rotation (done 07-04; verified at full capacity 07-05..07)
-- [x] `tm_observations` bronze backfill Jun 19→Jul 1 (462,125 rows merged 07-04)
-- [x] `docs/ra_access_request.md` — **granted** (written OK 2026-07-04, strictly 1 automated request/day; enforced in `ra_api/collect_ra.py`)
-- [x] `docs/tm_access_request.md` sent (2026-07-07) — no response yet
-- [ ] Wire `ra_api/` + `nineteenhz_api/` collectors into scheduled daily runs + silver joins
-- [ ] Optional: official Trends API alpha application
-  (developers.google.com/search/apis/trends).
+- [ ] **AGENT-5: deploy the demo service** with `/ask` + search + regenerated
+  heroes; `--min-instances 1` through Monday's demo (152 s cold start), revert
+  after; $10 billing budget alert.
+- [ ] Commit the final eval report (`--runs 3` against the refreshed warehouse).
+- [ ] Post-fix benchmark capture (`eda/benchmark_trends_window.py
+  --capture-logs --report`) after tonight's scheduled run.
+- [ ] Carried over: official Trends API alpha application (optional);
+  `docs/tm_access_request.md` still unanswered.
 
 ## Incident log
 
+- **2026-07-05 → 2026-08-08: month-long gold-refresh outage (36 consecutive
+  failed nightly runs), unnoticed for four weeks.** The team paused after
+  2026-07-08 with PRs #54–#58 merged-ready but **never merged or deployed**; the
+  fixes they contained were exactly what the nightly job needed. Two failure
+  phases: (1) 07-05→07-11 — the known dbt `BOOL IN ('True','False')` abort
+  (PR #57's fix) killed every run at `dbt_build`; facts still advanced (dbt
+  materializes before testing) but `forecast_export` never ran, freezing
+  `forecast_event_price` at 06-30. (2) 07-12→08-07 — the un-windowed
+  `trends_silver` step (PR #55's fix) grew past the 3600 s task timeout
+  (51.7 → 59.0 min on 07-09/07-10, then 27 consecutive nightly timeouts,
+  banked in `eda/output/benchmark_trends_window_runs.csv`), so runs died
+  ~35 min before dbt was ever invoked. Silver/gold facts froze at 07-11 —
+  the last execution to clear `trends_silver`. **Why nobody noticed:** the only
+  alert policies watched the two collectors that stayed healthy; there was no
+  alert on gold-refresh, the demo kept serving 200s with silently-null
+  forecasts, and `gcloud run jobs list` shows a green ✔ for a job whose every
+  execution fails (it reflects the job resource, not executions). **What was
+  lost:** one month of scene listings (19hz/RA jobs from PR #54 never existed —
+  point-in-time, unrecoverable) and one month of forecast history. **What was
+  NOT lost:** TM/Trends/YouTube collectors ran perfectly all month, so 28 days
+  of bronze sat banked and the whole silver/gold gap was rebuilt from it on
+  08-08 (backfills + `dbt build --full-refresh` + forecast re-export). Repairs
+  deployed 08-08: image `git-ab65e00` (windowed reads + bool-test fix +
+  accumulate-dims + gold rewire), scene jobs + schedulers, and PR #56's
+  **project-wide failed-execution alert** — the structural fix for the
+  four-week blind spot. Lessons: *merged ≠ deployed* (July's lesson, compounded:
+  this time the PRs weren't even merged); an alert that doesn't cover the thing
+  that breaks is indistinguishable from no alert; freshness ≠ health, again.
 - **2026-07-05 → 07-08: gold-refresh aborts at dbt tests;
   `forecast_event_price` stale since 06-30.** Every scheduled run since 07-05
   failed `relationships(fact_event_demand.artist_id → dim_artist)` and
