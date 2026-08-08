@@ -1,0 +1,11 @@
+query_id,description,layout,dry_run_bytes,actual_bytes,median_latency_s
+recent_window,14-day dashboard window (partition pruning),partitioned,0,0,0.39
+recent_window,14-day dashboard window (partition pruning),flat,540544400,540544400,0.39
+single_day,"one capture day (partition pruning, point date)",partitioned,16941200,16941200,0.39
+single_day,"one capture day (partition pruning, point date)",flat,438155600,438155600,0.41
+event_history,one event's full history (clustering),partitioned,1574036049,325072112,0.45
+event_history,one event's full history (clustering),flat,1574036049,1574036049,0.55
+agent_style_join_filter,agent-shaped filter: priced rows in a window,partitioned,909145815,909145815,0.75
+agent_style_join_filter,agent-shaped filter: priced rows in a window,flat,1574036049,1574036049,0.67
+full_scan_control,whole-table aggregate (control — no pruning possible),partitioned,438155600,438155600,0.39
+full_scan_control,whole-table aggregate (control — no pruning possible),flat,438155600,438155600,0.39
