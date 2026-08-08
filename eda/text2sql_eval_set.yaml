@@ -167,6 +167,25 @@
       WHERE v.dma_code = '807'
         AND e.show_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
 
+- id: join_edm_bay_under100
+  tier: join
+  category: compound_filter
+  question: "Which upcoming Dance/Electronic shows in the Bay Area metro in the next 30 days have a predicted price at show time under $100? Return the event name, show date, and predicted price."
+  expect:
+    type: rows
+    gold_sql: |
+      WITH at_show AS (
+        SELECT event_id, predicted_price FROM {ds}.forecast_event_price`
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY days_to_show ASC) = 1
+      )
+      SELECT e.event_name, e.show_date, ROUND(f.predicted_price, 2) AS predicted_price
+      FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      JOIN at_show f ON f.event_id = e.event_id
+      WHERE v.dma_code = '807' AND e.primary_genre = 'Dance/Electronic'
+        AND e.show_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 30 DAY)
+        AND f.predicted_price < 100
+
 - id: agg_top5_venues
   tier: aggregate
   category: inventory

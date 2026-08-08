@@ -6,7 +6,7 @@ import type { AskResponse } from "../types";
 // live audience sees a real answer, a real number, and a refusal in three clicks.
 const EXAMPLE_QUESTIONS = [
   "What is the cheapest ticket price ever observed for Everclear?",
-  "Which five venues host the most events in our data? Return each venue name with its event count.",
+  "Which upcoming Dance/Electronic shows in the Bay Area in the next month have a predicted price under $100? List event, venue, date, and predicted price.",
   "Which artist has the highest average Google Trends interest across all metros?",
 ];
 

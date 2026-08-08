@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchShow } from "./api/client";
 import { AskPanel } from "./components/AskPanel";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
+import { SearchPanel } from "./components/SearchPanel";
 import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
 import { formatDate } from "./utils/formatters";
@@ -29,6 +30,7 @@ type View = "dashboard" | "ask";
 function App() {
   const [view, setView] = useState<View>("dashboard");
   const [shows] = useState<ShowSummary[]>(HERO_SHOWS);
+  const [searchPick, setSearchPick] = useState<ShowSummary | null>(null);
   const [selectedId, setSelectedId] = useState(INITIAL_SELECTED_ID);
   const [selectedShow, setSelectedShow] = useState<ShowDetail | null>(null);
   const [showState, setShowState] = useState<LoadState>("idle");
@@ -68,9 +70,18 @@ function App() {
     return () => controller.abort();
   }, [selectedId]);
 
+  // Search picks join the dropdown so a non-hero show selected from the search
+  // results still renders as the current selection.
+  const dropdownShows = useMemo(() => {
+    if (searchPick && !shows.some((show) => show.event_id === searchPick.event_id)) {
+      return [...shows, searchPick];
+    }
+    return shows;
+  }, [shows, searchPick]);
+
   const selectedSummary = useMemo(
-    () => shows.find((show) => show.event_id === selectedId) ?? null,
-    [selectedId, shows],
+    () => dropdownShows.find((show) => show.event_id === selectedId) ?? null,
+    [selectedId, dropdownShows],
   );
   const summaryShow = selectedShow ?? selectedSummary;
   const isLoadingSelectedShow = showState === "loading" && !selectedShow;
@@ -112,8 +123,8 @@ function App() {
                 aria-label="Demo show"
                 disabled={shows.length === 0}
               >
-                {shows.length === 0 && <option value="">No shows available</option>}
-                {shows.map((show) => (
+                {dropdownShows.length === 0 && <option value="">No shows available</option>}
+                {dropdownShows.map((show) => (
                   <option key={show.event_id} value={show.event_id}>
                     {formatShowOption(show)}
                   </option>
@@ -128,6 +139,12 @@ function App() {
 
       {view === "dashboard" && (
         <>
+          <SearchPanel
+            onPick={(show) => {
+              setSearchPick(show);
+              setSelectedId(show.event_id);
+            }}
+          />
 
       {errorMessage && (
         <section className="status-panel is-error" role="alert">

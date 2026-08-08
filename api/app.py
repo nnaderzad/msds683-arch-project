@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -58,6 +58,29 @@ def health() -> dict[str, str]:
 def list_shows() -> list[dict[str, Any]]:
     """Return show summaries for the frontend dropdown."""
     return get_repository().list_shows()
+
+
+@app.get("/genres")
+def genres() -> list[str]:
+    """Distinct primary genres, for the search panel's dropdown."""
+    return get_repository().genres()
+
+
+@app.get("/search")
+def search_shows(
+    q: str | None = Query(default=None, max_length=80),
+    genre: str | None = Query(default=None, max_length=40),
+    state: str | None = Query(default=None, max_length=2),
+    dma: str | None = Query(default=None, max_length=5),
+    max_price: float | None = Query(default=None, ge=0, le=100000),
+    days_ahead: int | None = Query(default=None, ge=0, le=365),
+    limit: int = Query(default=25, ge=1, le=100),
+) -> list[dict[str, Any]]:
+    """Filtered show summaries for the dashboard's manual search fields."""
+    return get_repository().search(
+        q=q, genre=genre, state=state, dma=dma,
+        max_price=max_price, days_ahead=days_ahead, limit=limit,
+    )
 
 
 @app.get("/show/{event_id}")

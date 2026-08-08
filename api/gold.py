@@ -31,6 +31,8 @@ SUMMARY_COLUMNS = [
     "yt_subscribers",
     "yt_views",
     "forecast_price",
+    "primary_genre",
+    "dma_code",
 ]
 
 HISTORY_COLUMNS = [
@@ -133,8 +135,11 @@ class GoldRepository:
         latest_idx = fact.groupby("event_id", dropna=False)["snapshot_date"].idxmax()
         latest = fact.loc[latest_idx].copy()
 
+        dim_event_cols = ["event_id", "event_name", "show_date", "venue_id"]
+        if "primary_genre" in self._frames.dim_event.columns:
+            dim_event_cols.append("primary_genre")
         latest = latest.merge(
-            self._frames.dim_event[["event_id", "event_name", "show_date", "venue_id"]],
+            self._frames.dim_event[dim_event_cols],
             on="event_id",
             how="left",
             suffixes=("", "_event"),
@@ -173,6 +178,62 @@ class GoldRepository:
     def list_shows(self) -> list[dict[str, Any]]:
         """Return one latest-snapshot summary per event, soonest show first."""
         return _records(self._latest, SUMMARY_COLUMNS)
+
+    def genres(self) -> list[str]:
+        """Distinct primary genres present in the gold layer, sorted."""
+        if "primary_genre" not in self._latest.columns:
+            return []
+        values = self._latest["primary_genre"].dropna().astype(str)
+        return sorted({v for v in values if v.strip()})
+
+    def search(
+        self,
+        *,
+        q: str | None = None,
+        genre: str | None = None,
+        state: str | None = None,
+        dma: str | None = None,
+        max_price: float | None = None,
+        days_ahead: int | None = None,
+        limit: int = 25,
+    ) -> list[dict[str, Any]]:
+        """Filter the latest-snapshot summaries for the dashboard search panel.
+
+        ``max_price`` filters on the projected price where one exists, falling back
+        to the latest observed ``price_min`` (documented in the UI as "projected").
+        ``days_ahead`` keeps upcoming shows within the window (and drops past ones).
+        """
+        df = self._latest
+        if df.empty:
+            return []
+
+        mask = pd.Series(True, index=df.index)
+        if q:
+            needle = q.strip().lower()
+            haystack = (
+                df.reindex(columns=["event_name", "artist_name", "venue_name"])
+                .fillna("")
+                .astype(str)
+                .apply(lambda col: col.str.lower())
+            )
+            mask &= haystack.apply(lambda col: col.str.contains(needle, regex=False)).any(axis=1)
+        if genre and "primary_genre" in df.columns:
+            mask &= df["primary_genre"].astype(str).str.lower() == genre.strip().lower()
+        if state:
+            mask &= df["state_code"].astype(str).str.upper() == state.strip().upper()
+        if dma:
+            mask &= df["dma_code"].astype(str) == str(dma).strip()
+        if max_price is not None:
+            effective = pd.to_numeric(df["forecast_price"], errors="coerce").fillna(
+                pd.to_numeric(df["price_min"], errors="coerce")
+            )
+            mask &= effective.notna() & (effective <= max_price)
+        if days_ahead is not None:
+            today = pd.Timestamp.now().normalize()
+            show = pd.to_datetime(df["show_date"], errors="coerce")
+            mask &= (show >= today) & (show <= today + pd.Timedelta(days=days_ahead))
+
+        return _records(df[mask].head(max(1, min(limit, 100))), SUMMARY_COLUMNS)
 
     def get_show(self, event_id: str) -> dict[str, Any] | None:
         """Return one show summary plus history and forecast series."""

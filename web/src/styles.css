@@ -551,3 +551,85 @@ h3 {
   color: #64748b;
   font-size: 0.8rem;
 }
+
+/* --- Manual search panel (dashboard) --- */
+
+.search-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-fields input,
+.search-fields select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.search-fields input:first-child {
+  flex: 1 1 220px;
+}
+
+.search-state {
+  width: 90px;
+}
+
+.search-price {
+  width: 130px;
+}
+
+.search-bay {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: #334155;
+}
+
+.search-fields button[type="submit"] {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 18px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-fields button[type="submit"]:disabled {
+  background: #94a3b8;
+}
+
+.search-empty {
+  margin: 0;
+  color: #64748b;
+}
+
+.search-view {
+  border: 1px solid #0f766e;
+  background: #ffffff;
+  color: #0f766e;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.search-view:hover {
+  background: #eef6f5;
+}

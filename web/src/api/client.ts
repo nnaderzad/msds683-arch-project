@@ -34,6 +34,31 @@ export function fetchShow(eventId: string, signal?: AbortSignal): Promise<ShowDe
   return getJson<ShowDetail>(`/show/${encodeURIComponent(eventId)}`, signal);
 }
 
+export type SearchParams = {
+  q?: string;
+  genre?: string;
+  state?: string;
+  dma?: string;
+  max_price?: number;
+  days_ahead?: number;
+  limit?: number;
+};
+
+export function fetchGenres(signal?: AbortSignal): Promise<string[]> {
+  return getJson<string[]>("/genres", signal);
+}
+
+export function searchShows(params: SearchParams, signal?: AbortSignal): Promise<ShowSummary[]> {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}` !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return getJson<ShowSummary[]>(`/search${suffix}`, signal);
+}
+
 export async function askQuestion(question: string, signal?: AbortSignal): Promise<AskResponse> {
   const response = await fetch(`${apiBaseUrl()}/ask`, {
     method: "POST",
