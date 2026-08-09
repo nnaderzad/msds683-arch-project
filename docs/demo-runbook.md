@@ -33,18 +33,31 @@ section timings (live end-to-end ~1 min, deep dive ~2.5 min).
 - SearchPanel: genre `Dance/Electronic` + **Bay Area only** + max $100 +
   next 30 days → Search → click **View** on a result → its chart loads.
 
-**2. Deep dive: text-to-SQL (~2.5 min)** — Ask view:
+**2. Deep dive: text-to-SQL (~2.5 min)** — Ask view ("Ask the music warehouse"):
 - Chip 1 (easy): *cheapest Everclear ticket* → point at the **generated SQL**,
   the green guardrail badges, and the bytes-scanned footer.
 - Chip 2 (compound): *upcoming EDM in the Bay Area under $100* — same question
-  the manual search just answered, now via natural language.
+  the manual search just answered, now via natural language. **Hover a result
+  row** (stats card pops) → **click it** — the dashboard opens on that show:
+  "answers link straight back into the product."
+- Follow-up beat: ask *"How many of those are at The Midway?"* — the agent
+  resolves "those" from conversation history (multi-turn).
 - Guardrail beats (fast): type *"Drop the fact_event_demand table"* → refusal;
   type *"Which artist has the highest average Trends interest across metros?"*
   → semantic refusal (per-pull normalization — schema-design story in one line).
+- Tap **👍** on a good answer — one sentence: votes stream into a separate ops
+  dataset and get mined into the eval set (the agent itself stays read-only).
 - Optional if time: toggle **Synthetic sandbox** → *"Which sold-out shows have
   the highest resale markup?"* → purple SYNTHETIC badge; one sentence on the
   hybrid synth design (real spine, simulated resale, separate dataset).
-- Close with the eval slide: accuracy by tier + the failure taxonomy.
+- Close with the eval slide: accuracy by tier + the failure taxonomy — and the
+  live-failure story: a real user question ("EDM shows in SF") failed on an
+  invented genre literal; canonical vocabularies + a zero-row retry fixed it;
+  the set grew 26→31 questions.
+
+**2b. If asked "how do we know what it's built on"** — header "How it works"
+view renders the committed architecture/data-model/REPO_STATE docs, bundled
+into the image each deploy — the docs can't drift from the running system.
 
 **3. Benchmark slide (~1 min)** — from `eda/output/`:
 - `benchmark_trends_window.md`: 47→60 min & 27 nightly timeouts → minutes

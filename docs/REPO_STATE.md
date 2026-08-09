@@ -37,7 +37,16 @@ after the previous account closed (see incident log).
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
 | `gold-refresh` (Cloud Run job) | silver loaders (windowed reads, image `git-ab65e00`, task-timeout 5400s) → dbt build → forecast → GX gate | 16:30 (D8) — **broken 06-30→08-08, redeployed 2026-08-08**, see incident log | `terraform/` (image via gcloud, 08-08) |
 | `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 — **live since 2026-08-08** (terraform apply + smoke run; the 07-08→08-07 listings gap is permanent) | `terraform/gtrends/scene.tf` |
-| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex)** + `/search` browse, reads gold live | scale-to-zero (min-instances 0; **measured cold start 152 s, not "a few s"** — set min-instances 1 for demo windows, revert after) | gcloud only (not yet in terraform) |
+| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex; multi-turn follow-ups, 👍/👎 feedback, canonical-vocab context, answer rows link into the dashboard)** + `/search` browse + **"How it works" docs page** (renders the committed md bundled per deploy) + filled-vs-observed price toggle, reads gold live | min-instances 1 through Mon 08-11, then revert to 0 (cold start **~30 s** since 08-09 — was 152 s; see incident log) | gcloud only (not yet in terraform); image `git-97f2e03` (08-09). SA roles: BQ jobUser + dataset dataViewer + `aiplatform.user` + **`readSessionUser`** (Storage reads) + dataEditor on `event_demand_ops` only |
+
+**Ops telemetry:** `/ask` answers carry thumbs-up/down buttons; votes stream into
+**`event_demand_ops.ask_feedback`** (separate dataset — the service SA has
+`dataEditor` there ONLY, keeping the analytical dataset read-only for the agent).
+Created live via bq CLI 2026-08-09; `terraform/ops.tf` holds the IaC with
+**`terraform import` commands the main-root state holder must run before their
+next apply** (state lives on Niki's machine). Mine thumbs-down rows into the
+eval set — that's the feedback loop's purpose (offline curation, never online
+learning).
 
 Data lands in `gs://data-architecture-498123-{raw,processed,analytics}` and
 BigQuery dataset `event_demand_analytics`.
@@ -104,7 +113,7 @@ As of 2026-08-08 (post-pause recovery day — see incident log):
 | Table | Latest snapshot | Note |
 |---|---|---|
 | `tm_observations` | 2026-08-08 | collector never stopped through the outage |
-| `fact_trends` | 2026-08-08 | current via the nightly 14-day window; ⚠️ **Jul 12–24 hole open** (local backfill runs were interrupted; fill with `python pipeline/silver/trends_to_silver.py --start-date 2026-07-12 --end-date 2026-07-24`, ~45 min) |
+| `fact_trends` | 2026-08-08 | current via the nightly 14-day window; **Jul 12–24 hole FILLED 2026-08-09** (310,800 rows / 13 days merged + verified — the third attempt, succeeding thanks to PR #63's gsutil retry). History is now gap-free |
 | `fact_trends_daily` | 2026-08-08 | 28-day backfill 08-08 (+149,134 rows) |
 | `fact_youtube` | 2026-08-08 | 28-day backfill 08-08 (+20,744 rows) |
 | `fact_event_demand` | 2026-08-08 | full-refresh 08-08 (also backfills `local_interest` history per the PR #58 rewire) |
@@ -132,7 +141,20 @@ As of 2026-08-08 (post-pause recovery day — see incident log):
 
 ## Active work / branch map
 
-- `main` — state of record. 2026-08-08 lakehouse sprint (all merged same-day):
+- `main` — state of record. **2026-08-09 overnight sprint** (user-feedback driven,
+  all merged + deployed as image `git-97f2e03`): PR #92 agent follow-up history +
+  zero-row corrective retry, #93 `/show` gap-filled price series
+  (`history_filled` from the continuous table), #94 `POST /ask_feedback` →
+  `event_demand_ops` (👍/👎), #95 committed-docs endpoints + Docker bundle
+  (+ `.gcloudignore`/`.dockerignore` hygiene: personal notes were reaching build
+  contexts), #96 the web batch (price formatting, legend rebuild, clickable
+  search rows, fill toggle, embedded + multi-turn ask, feedback buttons, "How it
+  works" docs view), #97 hero regeneration (12 heroes, 35–46 signal days each),
+  #98 **canonical vocabularies** — fixes two live user questions the agent
+  answered flat-wrong by inventing genre/metro literals; **eval 100% over 93 runs
+  on the expanded 31-question set** (trajectory 76→92→95→97→100%, each step a
+  documented failure mode — see the report's PR trail).
+- 2026-08-08 lakehouse sprint (all merged same-day):
   PR #59 repo sync (plan docs → `docs/`, gitignore instructor notes), #60
   **`docs/lakehouse-plan.md`** (the team plan — task board + Q&A prep), #61
   text-to-SQL schema context (`api/schema_context.md`, generated + committed),
@@ -181,23 +203,49 @@ Done Friday evening (verification + follow-through):
 - [x] Post-fix benchmark capture (NN, PR #89) + terraform synced to deployed
   reality.
 
+Done overnight Sat 2026-08-09 (see the 08-09 sprint in the branch map):
+
+- [x] `fact_trends` Jul 12–24 hole **filled + verified** (310,800 rows, 13 days).
+- [x] Heroes regenerated (12 credible, 35–46 signal days each) — shipped in the
+  08-09 image.
+- [x] Eval re-run after the vocab/context + event_id fixes: **100%** (93 runs,
+  31 questions — set expanded with the five live-failure probes).
+- [x] Service rebuilt + redeployed (`git-97f2e03`): multi-turn ask, feedback
+  buttons, fill toggle, search click-through, docs page, fresh heroes.
+
 Still open (weekend handoff):
 
-- [ ] `fact_trends` Jul 12–24 hole (command in the freshness table above).
 - [ ] Sat: confirm the scene jobs' **first scheduled fires** (08:00/08:15 PT) land
   `dt=2026-08-09` bronze, and Sat's 16:30 PT gold-refresh stays green.
-- [ ] Sun: regenerate heroes (`python eda/hero_candidates.py` — 5 of 9 current
-  heroes are past shows) → rebuild + redeploy the service image; optional eval
-  re-run after PR #90's context fixes (did 92% improve?);
-  `eda/benchmark_partitioning.py --setup --run` re-run (un-degenerates the
-  14-day-window query against fresh gold), then `--cleanup` the 3.98 GiB twins
-  after the blog numbers are final; timed demo dry run (`docs/demo-runbook.md`).
+- [ ] Sat/Sun: `eda/benchmark_partitioning.py --setup --run` re-run
+  (un-degenerates the 14-day-window query against fresh gold), then `--cleanup`
+  the 3.98 GiB twins after the blog numbers are final; timed demo dry run
+  (`docs/demo-runbook.md`).
+- [ ] Niki: `terraform import` the three `ops.tf` resources before the next
+  main-root apply (commands in the file header).
 - [ ] Mon after the demo: `--min-instances 0` revert (runbook's revert list).
 - [ ] Carried over: official Trends API alpha application (optional);
   `docs/tm_access_request.md` still unanswered.
 
 ## Incident log
 
+- **2026-08-09: service deploy failed on the startup probe (no user impact).**
+  Revision `00011` never became healthy: the FastAPI lifespan **blocked the
+  port** on the full gold pre-warm, which ran through BigQuery's paginated REST
+  path (the Storage client was never installed — the "152 s cold start" was
+  mostly REST pagination), and adding the continuous-price frame pushed it past
+  Cloud Run's 4-minute probe. Traffic stayed on the old healthy revision
+  throughout. Fix (PR #99): pre-warm in a daemon thread (port binds in seconds;
+  requests mid-warm block on a thread-safe lazy-load lock) +
+  `google-cloud-bigquery-storage` (Arrow streaming). Follow-on: the Storage path
+  needs `bigquery.readsessions.create` → granted **`roles/bigquery.readSessionUser`**
+  to the service SA (read-only; the never-writes invariant holds). Full gold
+  load measured at **30 s** post-fix. Lesson: a "startup pre-warm" that blocks
+  serving is a probe timeout waiting for its tables to grow.
+- **2026-08-09 ops note:** this machine's `gcloud` default project changed
+  externally mid-session (to an unrelated project) — one deploy failed with
+  SERVICE_DISABLED against the wrong project. All deploy/log commands should
+  pass `--project data-architecture-498123` explicitly.
 - **2026-07-05 → 2026-08-08: month-long gold-refresh outage (36 consecutive
   failed nightly runs), unnoticed for four weeks.** The team paused after
   2026-07-08 with PRs #54–#58 merged-ready but **never merged or deployed**; the

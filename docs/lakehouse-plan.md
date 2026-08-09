@@ -171,10 +171,11 @@ Format:
      `status/sql/rows/answer/guardrails[]/bytes/latency`.
    - Tests / done-when: `tests/test_text2sql.py` offline (FakeLlm/FakeRunner): DROP
      blocked, allow-list, CTE aliases, LIMIT injection, refusal, retry, `/ask` contract.
-- [ ] **AGENT-3 · Eval set + harness + committed report** · Owner: `TK` (PR #64)
-   - Remaining: harness + eval set merged, but the report
-     (`eda/output/text_to_sql_eval.md`) is not committed yet — regenerate with
-     `--runs 3` against the refreshed warehouse.
+- [x] **AGENT-3 · Eval set + harness + committed report** · Owner: `TK` (PR #64)
+   - ▶ Report committed at **92%** (NN, PR #89), then the set was EXPANDED 26→31
+     questions with five live-user-failure probes (invented genre/metro literals)
+     and re-run after the canonical-vocab + event_id context fixes: **100% over 93 runs**
+     (easy 100 · join 93 · aggregate 86 · trick 100) — PRs #92/#98, 2026-08-09.
    - Prereqs: AGENT-2.
    - Build: `eda/text2sql_eval_set.yaml` (~24 q: easy/join/aggregate/trick — tricks
      probe the semantic landmines incl. expected refusals);
@@ -187,13 +188,13 @@ Format:
    - Build: `web/src/components/AskPanel.tsx` (question box, example chips, guardrail
      badges, SQL block prominent, results table, answer, bytes/model/latency footer)
      + header toggle + `askQuestion()` client + vitest.
-- [ ] **AGENT-5 · Deploy + demo hardening** · Owner: `NN`
-   - ▶ 08-08 (NN): service live on image `git-5f71ebb` (functionally current —
-     only README changes after it) with `TEXT2SQL_MODEL`/`VERTEX_LOCATION`,
-     `min-instances 1`, `max-instances 2`, startup-cpu-boost. Live smoke passed:
-     easy question ok (all guardrail badges), `DROP` refused, synth mode answers.
-   - Remaining: $10 billing budget alert — blocked on billing-account perms
-     (account `01EB77-...` is TK's; needs TK or a Costs Manager grant).
+- [x] **AGENT-5 · Deploy + demo hardening** · Owner: `NN`
+   - ▶ 08-08 (NN): service live on image `git-5f71ebb` with
+     `TEXT2SQL_MODEL`/`VERTEX_LOCATION`, `min-instances 1`, `max-instances 2`,
+     startup-cpu-boost. Live smoke passed. ▶ 08-09 (TK): redeployed `git-97f2e03`
+     (multi-turn ask + feedback + docs page + fresh heroes + vocab context).
+   - Budget alert: waived by TK 2026-08-09 ("don't worry about it") — rate caps +
+     bytes-billed limits remain the cost guard.
    - Prereqs: AGENT-2 (AGENT-4 ideally), R4 (fresh hero shows).
    - Build: rebuild service image (includes regenerated `heroShows.ts`), deploy with
      `TEXT2SQL_MODEL`/`VERTEX_LOCATION`, `--max-instances 2`, `--min-instances 1`
@@ -287,10 +288,13 @@ the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $50
 
 ## Dependency quick-reference (what's unblocked)
 
-> **Frontier (Sat eve, post-merge of PRs #59–#88):** AGENT-3 report (`--runs 3`
-> vs fresh warehouse, commit md) · AGENT-5 budget alert (needs TK's billing
-> access) · DEMO-2 dry run Sunday · then BLOG. Everything else is merged,
-> deployed, and verified (see checked boxes).
+> **Frontier (Sat 08-09, post PRs #92–#98):** DEMO-2 dry run · BENCH-2 re-run
+> against fresh gold + twin cleanup · Sat scheduled-fire checks (scene 08:00/
+> 08:15 PT, gold-refresh 16:30 PT) · then BLOG. Everything else on this board is
+> merged, deployed (`git-97f2e03`), and verified — incl. the 08-09 user-feedback
+> batch: multi-turn ask + 👍/👎 feedback (`event_demand_ops`), canonical-vocab
+> fix for the two live-failed questions (eval 100%/31q), fill toggle, search
+> click-through, "How it works" docs page, fresh heroes.
 
 - After AGENT-2: AGENT-3 (eval), AGENT-4 (UI) in parallel.
 - After SYNTH-2: SYNTH-3 + SYNTH-4 → BENCH-2.
