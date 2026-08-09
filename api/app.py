@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -12,10 +13,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from api.feedback import client_hash, get_sink
 from api.gold import get_repository
-from api.text2sql import get_service, rate_limiter
+from api.text2sql import RateLimiter, get_service, rate_limiter
 
 logger = logging.getLogger(__name__)
+
+
+def _client_key(request: Request) -> str:
+    """Best-effort client identity for rate limiting (first X-Forwarded-For hop)."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    return forwarded.split(",")[0].strip() or (
+        request.client.host if request.client else "unknown"
+    )
 
 
 @asynccontextmanager
@@ -115,16 +125,53 @@ def ask(req: AskRequest, request: Request) -> dict[str, Any]:
     (ok | refused | blocked | rate_limited | error) so the demo UI renders
     blocked/refused attempts as first-class outcomes, never a raw 500.
     """
-    forwarded = request.headers.get("x-forwarded-for", "")
-    client_key = forwarded.split(",")[0].strip() or (
-        request.client.host if request.client else "unknown"
-    )
-    limited = rate_limiter.check(client_key)
+    limited = rate_limiter.check(_client_key(request))
     if limited is not None:
         return {"status": "rate_limited", "question": req.question, "answer": limited}
     return get_service(req.dataset).ask(
         req.question, history=[turn.model_dump() for turn in req.history]
     )
+
+
+class AskFeedback(BaseModel):
+    verdict: Literal["up", "down"]
+    question: str = Field(min_length=1, max_length=500)
+    sql: str | None = Field(default=None, max_length=6000)
+    answer: str | None = Field(default=None, max_length=2000)
+    dataset: str = Field(default="real", max_length=10)
+    model: str | None = Field(default=None, max_length=100)
+    status: str | None = Field(default=None, max_length=20)
+    latency_ms: int | None = Field(default=None, ge=0)
+    bytes_processed: int | None = Field(default=None, ge=0)
+
+
+# Looser than the /ask limiter (feedback is cheap) but still bounded; separate
+# instance so voting never consumes the question budget.
+feedback_limiter = RateLimiter(per_minute=12, daily_cap=1000)
+
+
+@app.post("/ask_feedback")
+def ask_feedback(fb: AskFeedback, request: Request) -> dict[str, str]:
+    """Record a thumbs-up/down on an /ask answer (fire-and-forget from the UI).
+
+    Rows land in the separate ops dataset (see api/feedback.py) and are mined
+    offline into the eval set — always HTTP 200, never a raw 500.
+    """
+    key = _client_key(request)
+    limited = feedback_limiter.check(key)
+    if limited is not None:
+        return {"status": "rate_limited"}
+    row = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "client_hash": client_hash(key),
+        **fb.model_dump(),
+    }
+    try:
+        get_sink().record(row)
+    except Exception:  # noqa: BLE001 - losing one vote is fine; failing the UI is not
+        logger.exception("ask_feedback insert failed")
+        return {"status": "error"}
+    return {"status": "ok"}
 
 
 # Serve the built web dashboard from the same origin, when present (the Docker image copies
