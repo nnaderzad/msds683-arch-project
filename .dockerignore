@@ -12,3 +12,11 @@ web/dist/
 **/__pycache__/
 *.pyc
 *.pyo
+# Gitignored personal/instructor notes — the API image COPYs docs/*.md for the
+# public "How it works" page, so these must be excluded from local builds too.
+notes/
+notes.md
+docs/team_messages.md
+docs/PROJECT_STRATEGY.md
+docs/collection_cadence_plan.md
+docs/handoff-jun-14.md
