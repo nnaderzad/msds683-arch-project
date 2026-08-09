@@ -113,8 +113,10 @@
   question: "List Everclear's upcoming shows with their dates and cities."
   expect:
     type: rows
+    # event_id included per semantic rule 10 (2026-08-09): show listings carry it
+    # so the UI can link each row to its dashboard page.
     gold_sql: |
-      SELECT e.event_name, e.show_date, v.city
+      SELECT e.event_id, e.event_name, e.show_date, v.city
       FROM {ds}.dim_event` e
       JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
       JOIN {ds}.bridge_event_artist` b ON b.event_id = e.event_id
