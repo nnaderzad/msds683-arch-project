@@ -36,7 +36,7 @@
 
 - date: 2026-08-09
   question: "does rising search interest for an artist playing in san francisco precede rising prices?"
-  observed: "Refused, citing rule 1 (cross-artist Trends comparison) — but this is a WITHIN-artist over-time question, the allowed direction."
+  observed: "Originally refused by over-applying the cross-artist Trends rule. Re-tested live after the fix: it answered that 3 Bay Area events had a price rise and interest rose first for 1 of them (33.3%), while exposing the generated SQL and the small sample size."
   root_cause: "Rule 1 stated the prohibition without stating the permitted direction; the model over-applied it."
   disposition: fixed
   held_out: false
@@ -44,7 +44,114 @@
 
 - date: 2026-08-09
   question: "How many of those are at The Midway?"
-  observed: "Correctly resolved 'those' from the prior EDM answer via multi-turn history: 1 event."
+  observed: "Correctly resolved 'those' from the prior EDM answer via multi-turn history: 1 event. Re-tested after a 38-row Bay Area EDM listing and still returned 1; UI count column is displayed as f0_ because COUNT is not aliased."
+  root_cause: ""
+  disposition: works
+  held_out: true
+
+- date: 2026-08-09
+  question: "When is the next show at The Independent in San Francisco?"
+  observed: "Correctly joined dim_event to dim_venue, restricted results to today or later, and returned August 9, 2026 as the earliest matching show date."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question easy_next_show_independent."
+
+- date: 2026-08-09
+  question: "List Everclear's upcoming shows with their dates, venues, and cities."
+  observed: "Correctly returned 22 upcoming appearances in show-date order with event IDs, dates, venue names, cities, and working View links."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question join_everclear_shows."
+
+- date: 2026-08-09
+  question: "Which upcoming Dance/Electronic shows in the Bay Area in the next 30 days have a predicted show-time price under $100?"
+  observed: "Correctly used DMA 807, the canonical Dance/Electronic genre, the 30-day show window, and the day-zero forecast. Returned one clickable show, Gimme Gimme Disco, with a $26.73 predicted price. UI note: the answer rounds to currency, but the result cell displays the raw 26.734957749680206 value."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question join_edm_bay_under100; raw numeric cell formatting remains a UI-polish opportunity."
+
+- date: 2026-08-09
+  question: "Which five venues host the most upcoming events?"
+  observed: "Correctly counted upcoming dim_event rows by venue, sorted descending, and returned five venues. UI note: the count column is displayed as f0_ because the generated SQL does not alias COUNT(t1.event_id)."
+  root_cause: ""
+  disposition: works
+  held_out: true
+
+- date: 2026-08-09
+  question: "What are the five most popular artists with upcoming shows?"
+  observed: "Correctly interpreted popularity as the latest worldwide YouTube official-subscriber count and returned BTS, Ed Sheeran, Marshmello, Alan Walker, and Bruno Mars in descending order. It did not misuse Google Trends for cross-artist ranking."
+  root_cause: ""
+  disposition: works
+  held_out: true
+
+- date: 2026-08-09
+  question: "What percentage of events have ever shown an observed ticket price?"
+  observed: "Correctly calculated a distinct-event coverage rate using a left join between dim_event and fact_event_demand and returned 25.9%. This is newer live coverage than the approximately 23% figure still present in some project documentation."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question agg_priced_share; presentation and documentation metrics should use a clearly dated measurement."
+
+- date: 2026-08-09
+  question: "What upcoming EDM shows are you tracking in the San Francisco Bay Area?"
+  observed: "Correctly mapped EDM to Dance/Electronic and the Bay Area to DMA 807, returned 38 headliner shows in date order with clickable event IDs, but included the event named 'CANCELED - OLIVER TREE'."
+  root_cause: "The generated listing SQL filters primary_genre, dma_code, show_date, and is_headliner but does not join the latest event snapshot or exclude status_code = 'cancelled'. Whether all inventory or only active shows should be the default needs a product decision."
+  disposition: open
+  held_out: true
+  fix: ""
+
+- date: 2026-08-09
+  question: "What will the weather be in San Francisco tomorrow?"
+  observed: "Correctly refused the off-domain weather request and explained that the warehouse contains live-music demand data, not weather forecasts. No SQL was generated or executed."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question trick_off_domain."
+
+- date: 2026-08-09
+  question: "Delete all events that have no ticket price."
+  observed: "Correctly refused the write request and explained that the agent can only read from the warehouse. No SQL was generated or executed."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Variant of graded eval question trick_write_request."
+
+- date: 2026-08-09
+  question: "Which artist has the highest average Google Trends interest across all metros?"
+  observed: "Correctly refused an invalid cross-artist average because Trends scores are normalized per pull. Wording caveat: the response says values cannot be compared across metros generally, although fact_trends cross-metro values for one artist within one pull can support that narrower comparison."
+  root_cause: ""
+  disposition: works
+  held_out: false
+  fix: "Already covered by graded eval question trick_interest_across_artists."
+
+- date: 2026-08-09
+  question: "Which upcoming shows are sold out and have the highest resale markup?"
+  observed: "Correctly refused in Real data mode because the agent's real analytical schema does not provide reliable sellout or secondary-market markup data. It did not silently substitute synthetic results."
+  root_cause: ""
+  disposition: works
+  held_out: true
+
+- date: 2026-08-09
+  question: "How many upcoming hip hop shows are we tracking nationwide?"
+  observed: "Returned 1,935 after correctly translating 'hip hop' to the canonical 'Hip-Hop/Rap' spelling, but the SQL filtered dim_artist.primary_genre through bridge_event_artist rather than dim_event.primary_genre. The result can count an event when any linked artist is classified as hip-hop, so it does not implement the benchmarked event-genre question. The scalar result column is also displayed as f0_ because COUNT is not aliased."
+  root_cause: "The vocabulary alias worked, but SQL generation selected the wrong genre grain: artist genre instead of event genre."
+  disposition: open
+  held_out: false
+  fix: "Generate COUNT(*) directly from dim_event with primary_genre = 'Hip-Hop/Rap' and show_date >= CURRENT_DATE(); covered by graded eval question vocab_hiphop_alias."
+
+- date: 2026-08-09
+  question: "What upcoming shows are at Madison Cube Garden?"
+  observed: "Correctly refused because 'Madison Cube Garden' is not a recognized warehouse venue. It did not silently change the request to Madison Square Garden or invent event rows."
+  root_cause: ""
+  disposition: works
+  held_out: true
+
+- date: 2026-08-09
+  question: "Which small venues have the highest simulated selloutprobability?"
+  observed: "Correctly refused because the question was submitted in Real data mode with the Synthetic sandbox checkbox off. The real warehouse has no sellout-probability metric. Synthetic mode does expose sellout_probability and capacity, so this question should be re-tested with the sandbox enabled."
   root_cause: ""
   disposition: works
   held_out: true
