@@ -19,7 +19,8 @@ text-to-SQL agent) serve it. One nightly job refreshes the whole analytical stat
 in a single fail-fast execution so the layers never drift apart.
 
 ```mermaid
-flowchart LR
+%%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 55}}}%%
+flowchart TB
     subgraph sources["Sources"]
         TM["Ticketmaster<br/>Discovery API"]
         GT["Google Trends<br/>(pytrends)"]
