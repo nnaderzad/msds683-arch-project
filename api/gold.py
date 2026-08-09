@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
@@ -47,6 +47,16 @@ HISTORY_COLUMNS = [
 
 FORECAST_COLUMNS = ["days_to_show", "predicted_price"]
 
+# The gap-filled price series (fact_event_demand_continuous): real observed prices
+# carried forward across interior gaps, every carried row flagged price_is_filled.
+HISTORY_FILLED_COLUMNS = [
+    "snapshot_date",
+    "days_to_show",
+    "price_min",
+    "price_max",
+    "price_is_filled",
+]
+
 
 @dataclass(frozen=True)
 class GoldFrames:
@@ -55,6 +65,9 @@ class GoldFrames:
     dim_event: pd.DataFrame
     dim_venue: pd.DataFrame
     dim_artist: pd.DataFrame
+    # Slim projection of fact_event_demand_continuous (price columns only); defaults
+    # empty so existing 5-frame constructions and tests keep working.
+    continuous: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
 def _to_numpy_backed(df: pd.DataFrame) -> pd.DataFrame:
@@ -82,9 +95,20 @@ def load_gold_frames(project: str | None = None, dataset: str | None = None) -> 
     dataset = dataset or os.environ.get("DBT_BQ_DATASET", DEFAULT_DATASET)
     client = bigquery.Client(project=project)
 
-    def q(table: str) -> pd.DataFrame:
-        df = client.query(f"SELECT * FROM `{project}.{dataset}.{table}`").to_dataframe()
+    def q(table: str, columns: str = "*") -> pd.DataFrame:
+        df = client.query(f"SELECT {columns} FROM `{project}.{dataset}.{table}`").to_dataframe()
         return _to_numpy_backed(df)
+
+    def q_continuous() -> pd.DataFrame:
+        # Slim projection keeps the in-memory footprint small; a missing/broken
+        # continuous table must never take the honest dashboard down with it.
+        try:
+            return q(
+                "fact_event_demand_continuous",
+                "event_id, snapshot_date, days_to_show, price_min, price_max, price_is_filled",
+            )
+        except Exception:  # noqa: BLE001 - filled view is optional; observed view still serves
+            return pd.DataFrame()
 
     return GoldFrames(
         fact=q("fact_event_demand"),
@@ -92,6 +116,7 @@ def load_gold_frames(project: str | None = None, dataset: str | None = None) -> 
         dim_event=q("dim_event"),
         dim_venue=q("dim_venue"),
         dim_artist=q("dim_artist"),
+        continuous=q_continuous(),
     )
 
 
@@ -243,6 +268,7 @@ class GoldRepository:
 
         show = _records(matches.head(1), SUMMARY_COLUMNS)[0]
         show["history"] = self._history(event_id)
+        show["history_filled"] = self._history_filled(event_id)
         show["forecast"] = self._forecast(event_id)
         return show
 
@@ -254,6 +280,25 @@ class GoldRepository:
         fact["snapshot_date"] = pd.to_datetime(fact["snapshot_date"], errors="coerce")
         fact = fact.sort_values("snapshot_date")
         return _records(fact, HISTORY_COLUMNS)
+
+    def _history_filled(self, event_id: str) -> list[dict[str, Any]]:
+        continuous = self._frames.continuous
+        if continuous.empty or "event_id" not in continuous.columns:
+            return []
+
+        rows = continuous[continuous["event_id"] == event_id].copy()
+        if rows.empty:
+            return []
+
+        rows["snapshot_date"] = pd.to_datetime(rows["snapshot_date"], errors="coerce")
+        rows = rows.sort_values("snapshot_date")
+        if "price_is_filled" in rows.columns:
+            # BQ BOOL arrives as a nullable extension dtype that _to_numpy_backed maps
+            # to float64 — coerce back so the API serves true booleans.
+            rows["price_is_filled"] = (
+                pd.to_numeric(rows["price_is_filled"], errors="coerce").fillna(0).astype(bool)
+            )
+        return _records(rows, HISTORY_FILLED_COLUMNS)
 
     def _forecast(self, event_id: str) -> list[dict[str, Any]]:
         forecast = self._frames.forecast[self._frames.forecast["event_id"] == event_id].copy()
