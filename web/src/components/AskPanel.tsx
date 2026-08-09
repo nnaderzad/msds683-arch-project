@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { askQuestion } from "../api/client";
-import type { AskResponse } from "../types";
+import { askQuestion, sendAskFeedback } from "../api/client";
+import type { AskExchange, AskFeedbackVerdict, AskResponse } from "../types";
 
 // Demo insurance: one easy lookup, one aggregate, and one guardrail probe so the
 // live audience sees a real answer, a real number, and a refusal in three clicks.
@@ -66,11 +66,39 @@ function ResultsTable({ rows }: { rows: Record<string, unknown>[] }) {
 
 const SYNTH_EXAMPLE = "Which sold-out shows have the highest resale markup?";
 
-export function AskPanel() {
+type AskPanelProps = {
+  // Embedded-below-the-dashboard mode: fewer example chips, tighter spacing.
+  compact?: boolean;
+};
+
+// Feedback is offered on every completed agent verdict, not just answered ones.
+const FEEDBACK_STATUSES: AskResponse["status"][] = ["ok", "refused", "blocked"];
+
+// One completed Q&A turn in the session transcript.
+type AskTurn = {
+  question: string;
+  response: AskResponse;
+};
+
+// /ask follow-up context: the last 3 answered turns (status ok only), older first.
+function historyFromTurns(turns: AskTurn[]): AskExchange[] {
+  return turns
+    .filter((turn) => turn.response.status === "ok" && turn.response.answer != null)
+    .slice(-3)
+    .map((turn) => ({ question: turn.question, answer: turn.response.answer as string }));
+}
+
+export function AskPanel({ compact = false }: AskPanelProps) {
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "failed">("idle");
-  const [response, setResponse] = useState<AskResponse | null>(null);
+  const [turns, setTurns] = useState<AskTurn[]>([]);
   const [useSynth, setUseSynth] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+
+  // The latest turn keeps the full detail rendering; earlier turns collapse into
+  // the compact conversation thread above the input.
+  const latestTurn = turns.at(-1) ?? null;
+  const olderTurns = turns.slice(0, -1);
 
   const submit = (text: string, dataset?: "real" | "synth") => {
     const trimmed = text.trim();
@@ -78,10 +106,11 @@ export function AskPanel() {
       return;
     }
     setPhase("loading");
-    setResponse(null);
-    askQuestion(trimmed, dataset ?? (useSynth ? "synth" : "real"))
+    // One vote per answer: a new question re-enables the feedback buttons.
+    setFeedbackSent(false);
+    askQuestion(trimmed, dataset ?? (useSynth ? "synth" : "real"), historyFromTurns(turns))
       .then((result) => {
-        setResponse(result);
+        setTurns((current) => [...current, { question: trimmed, response: result }]);
         setPhase("done");
       })
       .catch(() => {
@@ -89,17 +118,69 @@ export function AskPanel() {
       });
   };
 
+  const clearConversation = () => {
+    setTurns([]);
+    setPhase("idle");
+    setFeedbackSent(false);
+  };
+
+  const giveFeedback = (verdict: AskFeedbackVerdict) => {
+    if (!latestTurn || feedbackSent) {
+      return;
+    }
+    const { question: askedQuestion, response } = latestTurn;
+    // Fire-and-forget: show the thanks state immediately and never nag the user,
+    // even if the POST fails or comes back rate_limited.
+    setFeedbackSent(true);
+    sendAskFeedback({
+      verdict,
+      question: askedQuestion,
+      sql: response.sql ?? null,
+      answer: response.answer ?? null,
+      dataset: response.dataset,
+      model: response.model,
+      latency_ms: response.latency_ms,
+      bytes_processed: response.bytes_processed ?? null,
+      status: response.status,
+    }).catch(() => {
+      // Intentionally swallowed; the UI already acknowledged the vote.
+    });
+  };
+
+  const exampleQuestions = compact ? EXAMPLE_QUESTIONS.slice(0, 2) : EXAMPLE_QUESTIONS;
+  // The latest answer keeps the existing full-detail rendering (it stays visible
+  // while a follow-up is loading; a new answer collapses it into the thread).
+  const response = latestTurn?.response ?? null;
+
   return (
-    <section className="ask-panel" aria-label="Ask the warehouse">
+    <section className={compact ? "ask-panel is-compact" : "ask-panel"} aria-label="Ask the music warehouse">
       <div className="combined-heading">
         <div>
-          <h3>Ask the warehouse</h3>
+          <h3>Ask the music warehouse</h3>
           <p>
             Natural-language questions become guardrailed BigQuery SQL over the gold star
             schema (Gemini on Vertex AI). The generated SQL is always shown.
           </p>
         </div>
+        {turns.length > 0 && (
+          <button type="button" className="ask-clear" onClick={clearConversation}>
+            Clear conversation
+          </button>
+        )}
       </div>
+
+      {olderTurns.length > 0 && (
+        <div className="ask-thread" aria-label="Earlier exchanges">
+          {olderTurns.map((turn, index) => (
+            <div key={index} className="ask-turn">
+              <p className="ask-turn-question">{turn.question}</p>
+              <p className="ask-turn-answer">
+                {turn.response.answer ?? STATUS_COPY[turn.response.status] ?? turn.response.status}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <form
         className="ask-form"
@@ -122,7 +203,7 @@ export function AskPanel() {
       </form>
 
       <div className="ask-examples">
-        {EXAMPLE_QUESTIONS.map((example) => (
+        {exampleQuestions.map((example) => (
           <button
             key={example}
             type="button"
@@ -173,7 +254,7 @@ export function AskPanel() {
         </section>
       )}
 
-      {phase === "done" && response && (
+      {response && (
         <div className="ask-result">
           <div className="ask-badges" aria-label="Guardrail verdicts">
             <span className={`ask-badge is-${response.status}`}>
@@ -202,6 +283,34 @@ export function AskPanel() {
           {response.answer && <p className="ask-answer">{response.answer}</p>}
 
           {response.status === "ok" && <ResultsTable rows={response.rows ?? []} />}
+
+          {FEEDBACK_STATUSES.includes(response.status) && (
+            <div className="ask-feedback">
+              <button
+                type="button"
+                aria-label="Thumbs up"
+                disabled={feedbackSent}
+                onClick={() => giveFeedback("up")}
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                aria-label="Thumbs down"
+                disabled={feedbackSent}
+                onClick={() => giveFeedback("down")}
+              >
+                👎
+              </button>
+              {feedbackSent ? (
+                <span className="ask-feedback-note">Thanks — feedback logged.</span>
+              ) : (
+                <span className="ask-feedback-caption">
+                  Feedback is collected to improve the agent.
+                </span>
+              )}
+            </div>
+          )}
 
           <p className="ask-meta">
             {[

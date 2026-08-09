@@ -14,6 +14,7 @@ import {
   buildDemandChartData,
   dateKey,
   getSignalAvailability,
+  hasFilledPriceHistory,
   latestHistory,
   observedLowestPrice,
   priceAxisDomain,
@@ -22,7 +23,7 @@ import {
   type SignalKey,
   type SignalVisibility,
 } from "../utils/chartData";
-import { formatAxisMoney, formatMoney, formatNumber, formatShortDate } from "../utils/formatters";
+import { formatNumber, formatPrice, formatShortDate } from "../utils/formatters";
 import { MetricCard } from "./MetricCard";
 
 type ChartTooltipPayload = {
@@ -61,12 +62,71 @@ function PopularityAxisLabel({ viewBox }: { viewBox?: AxisLabelViewBox }) {
       fontSize={12}
       fontWeight={600}
     >
-      <tspan fill="#3f8f5f">Local</tspan>
+      <tspan fill="#3f8f5f">Local interest</tspan>
       <tspan fill="#475569">{" & "}</tspan>
-      <tspan fill="#dd6b20">Global</tspan>
-      <tspan fill="#475569"> popularity (0–100)</tspan>
+      <tspan fill="#dd6b20">YouTube</tspan>
+      <tspan fill="#475569"> (0–100)</tspan>
     </text>
   );
+}
+
+type LegendSwatchProps = {
+  color: string;
+  dash?: string | null;
+  marker?: boolean;
+  hollow?: boolean;
+};
+
+// Legend swatch drawn with the same stroke/dash/marker as the series it names,
+// so "dashed line" and "line with circles" are answerable from the legend itself.
+function LegendSwatch({ color, dash, marker, hollow }: LegendSwatchProps) {
+  return (
+    <svg className="legend-swatch" width={28} height={12} viewBox="0 0 28 12" aria-hidden="true">
+      <line
+        x1={2}
+        y1={6}
+        x2={26}
+        y2={6}
+        stroke={color}
+        strokeWidth={hollow ? 2 : 3}
+        strokeDasharray={dash ?? undefined}
+        strokeLinecap="round"
+      />
+      {marker &&
+        (hollow ? (
+          <circle cx={14} cy={6} r={4} fill="#ffffff" stroke={color} strokeWidth={2} />
+        ) : (
+          <circle cx={14} cy={6} r={4} fill={color} />
+        ))}
+    </svg>
+  );
+}
+
+// Tooltip/series names come from the same legend entries so the two never drift.
+const signalLabels = Object.fromEntries(
+  signalOptions.map((signal) => [signal.key, signal.label]),
+) as Record<SignalKey, string>;
+
+// Carried-forward prices are real observed prices carried through interior gaps —
+// drawn lighter and dashed, with hollow markers, so they never pass as observations.
+const CARRIED_COLOR = "#7fa8c6";
+const CARRIED_DASH = "3 4";
+const CARRIED_LABEL = "Carried forward (not observed)";
+
+type CarriedDotProps = {
+  cx?: number;
+  cy?: number;
+  payload?: ChartRow;
+};
+
+// Hollow marker on carried rows only; observed rows already carry the solid
+// price dot, so the filled series stays invisible where prices were observed.
+function CarriedDot({ cx, cy, payload }: CarriedDotProps) {
+  if (cx == null || cy == null || !payload?.priceIsFilled) {
+    return <g />;
+  }
+
+  return <circle cx={cx} cy={cy} r={4} fill="#ffffff" stroke={CARRIED_COLOR} strokeWidth={2} />;
 }
 
 const defaultVisibility: SignalVisibility = {
@@ -82,11 +142,15 @@ function tooltipRawValue(row: ChartRow | undefined, key: string): string {
   }
 
   if (key === "price") {
-    return formatMoney(row.observedPriceRaw);
+    return formatPrice(row.observedPriceRaw);
   }
 
   if (key === "forecast") {
-    return formatMoney(row.forecastPriceRaw);
+    return formatPrice(row.forecastPriceRaw);
+  }
+
+  if (key === "priceFilled") {
+    return formatPrice(row.priceFilledRaw);
   }
 
   if (key === "trends") {
@@ -101,7 +165,7 @@ function tooltipRawValue(row: ChartRow | undefined, key: string): string {
 }
 
 function tooltipScaleLabel(key: string, value: number | undefined): string {
-  if (key === "price" || key === "forecast") {
+  if (key === "price" || key === "forecast" || key === "priceFilled") {
     return "Right axis: price";
   }
 
@@ -120,6 +184,12 @@ function DemandTooltip({ active, label, payload }: DemandTooltipProps) {
         const key = String(item.dataKey);
         const row = item.payload as ChartRow | undefined;
 
+        // On observed rows the filled series duplicates the observed price —
+        // only surface it where the value was actually carried forward.
+        if (key === "priceFilled" && !row?.priceIsFilled) {
+          return null;
+        }
+
         return (
           <div key={key} className="tooltip-row">
             <span style={{ backgroundColor: item.color }} />
@@ -136,7 +206,14 @@ function DemandTooltip({ active, label, payload }: DemandTooltipProps) {
 
 export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
   const [visibleSignals, setVisibleSignals] = useState<SignalVisibility>(defaultVisibility);
-  const combinedData = useMemo(() => buildDemandChartData(show), [show]);
+  // Checked by default; hidden (and off) when the API sends no history_filled rows.
+  const [fillPrices, setFillPrices] = useState(true);
+  const filledAvailable = hasFilledPriceHistory(show);
+  const fillActive = filledAvailable && fillPrices;
+  const combinedData = useMemo(
+    () => buildDemandChartData(show, { fillPrices: fillActive }),
+    [show, fillActive],
+  );
   const signalAvailability = useMemo(() => getSignalAvailability(combinedData), [combinedData]);
   const priceDomain = useMemo(() => priceAxisDomain(combinedData), [combinedData]);
   const latest = latestHistory(show);
@@ -150,6 +227,8 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
   const hasVisibleSignals = signalOptions.some(
     (signal) => visibleSignals[signal.key] && signalAvailability[signal.key],
   );
+  // The carried series is part of the price encoding, so it follows the price toggle.
+  const showCarried = fillActive && visibleSignals.price && signalAvailability.price;
 
   const toggleSignal = (signal: SignalKey) => {
     if (!signalAvailability[signal]) {
@@ -181,17 +260,34 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               <label key={signal.key} className={disabled ? "is-disabled" : undefined}>
                 <input
                   type="checkbox"
-                  style={{ accentColor: signal.color }}
                   checked={signalAvailability[signal.key] && visibleSignals[signal.key]}
                   disabled={disabled}
                   onChange={() => toggleSignal(signal.key)}
                 />
+                <LegendSwatch color={signal.color} dash={signal.dash} marker={signal.marker} />
                 <span>{signal.label}</span>
               </label>
             );
           })}
+          {showCarried && (
+            <span className="legend-static">
+              <LegendSwatch color={CARRIED_COLOR} dash={CARRIED_DASH} marker hollow />
+              <span>{CARRIED_LABEL}</span>
+            </span>
+          )}
         </div>
       </div>
+
+      {filledAvailable && (
+        <label className="fill-toggle">
+          <input
+            type="checkbox"
+            checked={fillPrices}
+            onChange={(event) => setFillPrices(event.target.checked)}
+          />
+          Fill price gaps (carry last observed price forward)
+        </label>
+      )}
 
       <div className="combined-chart">
         {!hasVisibleSignals && (
@@ -216,7 +312,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               domain={priceDomain}
               tickLine={false}
               axisLine={{ stroke: "#8bb8d4" }}
-              tickFormatter={(value) => formatAxisMoney(Number(value))}
+              tickFormatter={(value) => formatPrice(Number(value))}
               width={64}
               label={{
                 value: "Ticket price ($)",
@@ -226,12 +322,26 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               }}
             />
             <Tooltip content={<DemandTooltip />} />
+            {showCarried && (
+              <Line
+                type="monotone"
+                dataKey="priceFilled"
+                yAxisId="price"
+                name={CARRIED_LABEL}
+                stroke={CARRIED_COLOR}
+                strokeWidth={2}
+                strokeDasharray={CARRIED_DASH}
+                dot={<CarriedDot />}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
             {visibleSignals.price && signalAvailability.price && (
               <Line
                 type="monotone"
                 dataKey="price"
                 yAxisId="price"
-                name="Observed lowest price"
+                name={signalLabels.price}
                 stroke="#2f6f96"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -244,7 +354,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="forecast"
                 yAxisId="price"
-                name="Forecast lowest price"
+                name={signalLabels.forecast}
                 stroke="#2f6f96"
                 strokeWidth={3}
                 strokeDasharray="8 6"
@@ -258,7 +368,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="trends"
                 yAxisId="index"
-                name="Local popularity"
+                name={signalLabels.trends}
                 stroke="#3f8f5f"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -271,7 +381,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="youtube"
                 yAxisId="index"
-                name="Global popularity"
+                name={signalLabels.youtube}
                 stroke="#dd6b20"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -313,11 +423,11 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
       <div className="combined-notes">
         <MetricCard
           label="Latest lowest price"
-          value={formatMoney(observedLowestPrice(latest?.price_min ?? null))}
+          value={formatPrice(observedLowestPrice(latest?.price_min ?? null))}
         />
         <MetricCard label="Trend signal" value={formatNumber(latest?.local_interest ?? null)} />
         <MetricCard label="YouTube signal" value={formatNumber(latest?.yt_views ?? null)} />
-        <MetricCard label="Forecasted lowest price" value={formatMoney(show.forecast_price)} />
+        <MetricCard label="Forecasted lowest price" value={formatPrice(show.forecast_price)} />
       </div>
     </section>
   );

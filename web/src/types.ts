@@ -13,6 +13,16 @@ export type ForecastPoint = {
   predicted_price: number;
 };
 
+// Same series as HistoryPoint but with interior price gaps filled by carrying the
+// last observed price forward; price_is_filled marks carried (not observed) rows.
+export type FilledHistoryPoint = {
+  snapshot_date: string;
+  days_to_show: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  price_is_filled: boolean;
+};
+
 export type ShowSummary = {
   event_id: string;
   event_name: string;
@@ -33,6 +43,8 @@ export type ShowSummary = {
 export type ShowDetail = ShowSummary & {
   history: HistoryPoint[];
   forecast: ForecastPoint[];
+  // Optional so older API responses (without the field) still render observed-only.
+  history_filled?: FilledHistoryPoint[];
 };
 
 export type GuardrailVerdict = {
@@ -42,6 +54,42 @@ export type GuardrailVerdict = {
 };
 
 export type AskStatus = "ok" | "refused" | "blocked" | "rate_limited" | "error";
+
+// One completed Q&A exchange; /ask accepts up to 3 (older first) as `history`.
+export type AskExchange = {
+  question: string;
+  answer: string;
+};
+
+export type AskFeedbackVerdict = "up" | "down";
+
+export type AskFeedbackRequest = {
+  verdict: AskFeedbackVerdict;
+  question: string;
+  sql?: string | null;
+  answer?: string | null;
+  dataset?: string;
+  model?: string;
+  latency_ms?: number;
+  bytes_processed?: number | null;
+  status?: string;
+};
+
+export type AskFeedbackResponse = {
+  status: "ok" | "rate_limited" | "error";
+};
+
+export type RepoDocSummary = {
+  name: string;
+  title: string;
+  description: string;
+};
+
+export type RepoDoc = {
+  name: string;
+  title: string;
+  markdown: string;
+};
 
 export type AskResponse = {
   status: AskStatus;

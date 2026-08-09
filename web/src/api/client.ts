@@ -1,4 +1,13 @@
-import type { AskResponse, ShowDetail, ShowSummary } from "../types";
+import type {
+  AskExchange,
+  AskFeedbackRequest,
+  AskFeedbackResponse,
+  AskResponse,
+  RepoDoc,
+  RepoDocSummary,
+  ShowDetail,
+  ShowSummary,
+} from "../types";
 
 const DEFAULT_DEV_API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -62,12 +71,18 @@ export function searchShows(params: SearchParams, signal?: AbortSignal): Promise
 export async function askQuestion(
   question: string,
   dataset: "real" | "synth" = "real",
+  history?: AskExchange[],
   signal?: AbortSignal,
 ): Promise<AskResponse> {
+  // history is at most 3 completed exchanges, older first; omit it when empty.
+  const body =
+    history && history.length > 0
+      ? { question, dataset, history: history.slice(-3) }
+      : { question, dataset };
   const response = await fetch(`${apiBaseUrl()}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, dataset }),
+    body: JSON.stringify(body),
     signal,
   });
 
@@ -78,4 +93,26 @@ export async function askQuestion(
   }
 
   return (await response.json()) as AskResponse;
+}
+
+export function fetchRepoDocs(signal?: AbortSignal): Promise<RepoDocSummary[]> {
+  return getJson<RepoDocSummary[]>("/repo-docs", signal);
+}
+
+export function fetchRepoDoc(name: string, signal?: AbortSignal): Promise<RepoDoc> {
+  return getJson<RepoDoc>(`/repo-doc/${encodeURIComponent(name)}`, signal);
+}
+
+export async function sendAskFeedback(payload: AskFeedbackRequest): Promise<AskFeedbackResponse> {
+  const response = await fetch(`${apiBaseUrl()}/ask_feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Feedback request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return (await response.json()) as AskFeedbackResponse;
 }

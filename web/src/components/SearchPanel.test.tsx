@@ -63,7 +63,24 @@ describe("SearchPanel", () => {
     expect(searchCall).toContain("max_price=50");
     expect(searchCall).toContain("days_ahead=14");
 
-    await userEvent.click(screen.getByRole("button", { name: "View" }));
+    await userEvent.click(screen.getByRole("button", { name: "View Warehouse Rave" }));
+    expect(onPick).toHaveBeenCalledWith(edmShow);
+  });
+
+  it("renders result prices as $X.XX and picks a row from the keyboard", async () => {
+    mockFetch([edmShow]);
+    const onPick = vi.fn();
+    render(<SearchPanel onPick={onPick} />);
+    await userEvent.click(screen.getByRole("button", { name: "Search" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("$30.00")).toBeInTheDocument();
+    });
+    expect(screen.getByText("$45.00")).toBeInTheDocument();
+
+    const row = screen.getByRole("button", { name: "View Warehouse Rave" });
+    row.focus();
+    await userEvent.keyboard("{Enter}");
     expect(onPick).toHaveBeenCalledWith(edmShow);
   });
 

@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { fetchShow } from "./api/client";
 import { AskPanel } from "./components/AskPanel";
 import { DemandSignalsChart } from "./components/DemandSignalsChart";
 import { SearchPanel } from "./components/SearchPanel";
+
+// The docs view pulls in react-markdown + mermaid; lazy-load it so the default
+// dashboard bundle stays lean.
+const DocsPanel = lazy(() => import("./components/DocsPanel"));
 import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
 import { formatDate } from "./utils/formatters";
@@ -25,7 +29,7 @@ function formatShowOption(show: ShowSummary): string {
   return `${show.artist_name || show.event_name} at ${show.venue_name}`;
 }
 
-type View = "dashboard" | "ask";
+type View = "dashboard" | "ask" | "docs";
 
 function App() {
   const [view, setView] = useState<View>("dashboard");
@@ -111,7 +115,14 @@ function App() {
               className={view === "ask" ? "is-active" : ""}
               onClick={() => setView("ask")}
             >
-              Ask the warehouse
+              Ask the music warehouse
+            </button>
+            <button
+              type="button"
+              className={view === "docs" ? "is-active" : ""}
+              onClick={() => setView("docs")}
+            >
+              How it works
             </button>
           </nav>
           {view === "dashboard" && (
@@ -136,6 +147,19 @@ function App() {
       </header>
 
       {view === "ask" && <AskPanel />}
+
+      {view === "docs" && (
+        <Suspense
+          fallback={
+            <section className="status-panel" aria-live="polite">
+              <strong>Loading documentation view</strong>
+              <p>Fetching the markdown and diagram renderers…</p>
+            </section>
+          }
+        >
+          <DocsPanel />
+        </Suspense>
+      )}
 
       {view === "dashboard" && (
         <>
@@ -174,6 +198,10 @@ function App() {
       )}
 
           {selectedShow && <DemandSignalsChart show={selectedShow} />}
+
+          {/* Same panel as the dedicated view (shared component), embedded so a
+              viewer can ask questions in context without switching views. */}
+          <AskPanel compact />
         </>
       )}
     </main>

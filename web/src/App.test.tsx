@@ -87,10 +87,10 @@ test("renders the dashboard from the pre-cached heroes and the live show detail"
 
   // The chart and all three signal series come from the live /show/{id} detail.
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
-  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /observed ticket price/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /price forecast/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /local search interest/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeChecked();
 
   // Only the selected show is fetched — never the full /shows list.
   expect(fetchMock).toHaveBeenCalledWith(
@@ -98,6 +98,9 @@ test("renders the dashboard from the pre-cached heroes and the live show detail"
     expect.any(Object),
   );
   expect(fetchMock).not.toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
+
+  // The ask panel is embedded below the dashboard, not only behind the view toggle.
+  expect(screen.getByRole("heading", { name: "Ask the music warehouse" })).toBeInTheDocument();
 });
 
 test("selecting another hero fetches that show's history and forecast", async () => {
@@ -121,13 +124,65 @@ test("signal toggles can hide and show chart series", async () => {
   render(<App />);
 
   await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
-  const trendsToggle = await screen.findByRole("checkbox", { name: /local popularity/i });
+  const trendsToggle = await screen.findByRole("checkbox", { name: /local search interest/i });
 
   expect(trendsToggle).toBeChecked();
   await user.click(trendsToggle);
   expect(trendsToggle).not.toBeChecked();
   await user.click(trendsToggle);
   expect(trendsToggle).toBeChecked();
+});
+
+test("clicking a search result row loads the full view for a non-hero show", async () => {
+  const user = userEvent.setup();
+  const nonHero: ShowSummary = {
+    event_id: "not-a-hero",
+    event_name: "Warehouse Rave",
+    artist_name: "DJ Fixture",
+    venue_name: "Public Works",
+    city: "San Francisco",
+    state_code: "CA",
+    show_date: "2026-08-15",
+    status_code: "onsale",
+    price_min: 30,
+    price_max: 60,
+    local_interest: 80,
+    yt_subscribers: 5000,
+    yt_views: 12000,
+    forecast_price: 45,
+  };
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/genres")) {
+      return Promise.resolve(jsonResponse(["Dance/Electronic"]));
+    }
+    if (url.includes("/search")) {
+      return Promise.resolve(jsonResponse([nonHero]));
+    }
+    if (url.endsWith(`/show/${defaultHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(defaultHero)));
+    }
+    if (url.endsWith(`/show/${nonHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(nonHero)));
+    }
+    return Promise.resolve(jsonResponse({ detail: "Not found" }, 404));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
+
+  await user.click(screen.getByRole("button", { name: "Search" }));
+  await user.click(await screen.findByRole("button", { name: "View Warehouse Rave" }));
+
+  // The arbitrary (non-hero) event is fetched live and rendered as the full view.
+  expect(await screen.findByRole("heading", { name: /warehouse rave/i })).toBeInTheDocument();
+  expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith(
+    `http://127.0.0.1:8000/show/${nonHero.event_id}`,
+    expect.any(Object),
+  );
+  expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue(nonHero.event_id);
 });
 
 test("shows a clear error when the selected show cannot be loaded", async () => {
@@ -141,6 +196,46 @@ test("shows a clear error when the selected show cannot be loaded", async () => 
   expect(await screen.findByRole("alert")).toHaveTextContent(/could not load the selected show/i);
   // The dropdown stays usable (heroes are pre-cached, not fetched).
   expect(screen.getByRole("combobox", { name: /demo show/i })).toBeEnabled();
+});
+
+test("fill-price toggle is on by default and reverts to the observed-only view", async () => {
+  const user = userEvent.setup();
+  const detail = detailFor(defaultHero);
+  const filledShow: ShowDetail = {
+    ...detail,
+    history_filled: [
+      {
+        snapshot_date: "2026-06-24T00:00:00",
+        days_to_show: 105,
+        price_min: detail.price_min,
+        price_max: detail.price_max,
+        price_is_filled: false,
+      },
+      {
+        snapshot_date: "2026-06-25T00:00:00",
+        days_to_show: 104,
+        price_min: detail.price_min,
+        price_max: detail.price_max,
+        price_is_filled: true,
+      },
+    ],
+  };
+
+  render(<DemandSignalsChart show={filledShow} />);
+
+  const fillToggle = screen.getByRole("checkbox", { name: /fill price gaps/i });
+  expect(fillToggle).toBeChecked();
+  expect(screen.getByText(/carried forward \(not observed\)/i)).toBeInTheDocument();
+
+  await user.click(fillToggle);
+  expect(fillToggle).not.toBeChecked();
+  expect(screen.queryByText(/carried forward \(not observed\)/i)).not.toBeInTheDocument();
+});
+
+test("fill-price toggle is hidden when the API sends no history_filled rows", () => {
+  render(<DemandSignalsChart show={{ ...detailFor(defaultHero), history_filled: [] }} />);
+
+  expect(screen.queryByRole("checkbox", { name: /fill price gaps/i })).not.toBeInTheDocument();
 });
 
 test("missing signals are disabled instead of crashing the chart", () => {
@@ -175,9 +270,9 @@ test("missing signals are disabled instead of crashing the chart", () => {
 
   render(<DemandSignalsChart show={missingSignalShow} />);
 
-  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /observed ticket price/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /price forecast/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /local search interest/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeDisabled();
   expect(screen.getByText(/no selected signals are available/i)).toBeInTheDocument();
 });

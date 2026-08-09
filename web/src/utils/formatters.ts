@@ -1,7 +1,9 @@
-const currency = new Intl.NumberFormat("en-US", {
+// Every user-visible price renders as $X.XX (two decimals, thousands separators).
+const priceCurrency = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 const compactNumber = new Intl.NumberFormat("en-US", {
@@ -24,14 +26,10 @@ export function formatShortDate(value: string): string {
   }).format(new Date(`${value}T00:00:00`));
 }
 
-export function formatMoney(value: number | null): string {
-  return value === null ? "No price" : currency.format(value);
+export function formatPrice(value: number | null | undefined): string {
+  return value == null ? "—" : priceCurrency.format(value);
 }
 
 export function formatNumber(value: number | null): string {
   return value === null ? "No signal" : compactNumber.format(value);
-}
-
-export function formatAxisMoney(value: number): string {
-  return currency.format(value);
 }

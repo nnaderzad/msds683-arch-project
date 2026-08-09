@@ -12,6 +12,7 @@ The F3 frontend reads live show data from the FastAPI service. The local mock sh
 - Google Trends is already a 0-100 local interest index, so it stays on the left 0-100 axis.
 - YouTube views can be much larger than Trends, so the UI indexes YouTube views to the same 0-100 visual scale for comparison.
 - Missing source signals do not remove the show. The chart disables unavailable signal toggles and keeps null values visible as a data-quality issue.
+- `history_filled[]` (when present) is the same price series with interior gaps filled by carrying the last observed price forward; `price_is_filled: true` marks carried rows. The "Fill price gaps" toggle (on by default) draws carried values as a lighter dashed segment with hollow markers, labeled "Carried forward (not observed)". These are real observed prices carried forward, never synthetic values. Unchecking the toggle is exactly the observed-only view; Trends/YouTube are unaffected.
 
 ## API Wiring
 

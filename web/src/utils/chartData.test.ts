@@ -2,6 +2,7 @@ import type { ShowDetail } from "../types";
 import {
   buildDemandChartData,
   getSignalAvailability,
+  hasFilledPriceHistory,
   observedLowestPrice,
   priceAxisDomain,
 } from "./chartData";
@@ -78,6 +79,86 @@ test("builds chart rows with observed prices, future forecast points, and indexe
   });
   expect(rows[0].youtube).toBe(15);
   expect(rows[1].youtube).toBe(85);
+});
+
+test("merges history_filled into the rows only when fillPrices is on", () => {
+  // Observed on Jul 1, gap on Jul 2 (price null), carried forward from Jul 1.
+  const gappyShow: ShowDetail = {
+    ...baseShow,
+    history: [
+      baseShow.history[0],
+      { ...baseShow.history[1], price_min: null, price_max: null },
+    ],
+    history_filled: [
+      {
+        snapshot_date: "2026-07-01T00:00:00",
+        days_to_show: 9,
+        price_min: 20,
+        price_max: 60,
+        price_is_filled: false,
+      },
+      {
+        snapshot_date: "2026-07-02T00:00:00",
+        days_to_show: 8,
+        price_min: 20,
+        price_max: 60,
+        price_is_filled: true,
+      },
+    ],
+  };
+
+  const filled = buildDemandChartData(gappyShow, { fillPrices: true });
+  expect(filled[0]).toMatchObject({ priceFilledRaw: 20, priceIsFilled: false });
+  expect(filled[1]).toMatchObject({
+    observedPriceRaw: null,
+    priceFilledRaw: 20,
+    priceIsFilled: true,
+  });
+
+  // Off (or omitted) is exactly the observed-only view.
+  const observedOnly = buildDemandChartData(gappyShow);
+  expect(observedOnly.every((row) => row.priceFilledRaw === null)).toBe(true);
+  expect(observedOnly.every((row) => !row.priceIsFilled)).toBe(true);
+});
+
+test("drops history_filled snapshots taken after the show date", () => {
+  const pastShow: ShowDetail = {
+    ...baseShow,
+    show_date: "2026-07-02T00:00:00",
+    history_filled: [
+      {
+        snapshot_date: "2026-07-05T00:00:00",
+        days_to_show: -3,
+        price_min: 99,
+        price_max: 120,
+        price_is_filled: true,
+      },
+    ],
+    forecast: [],
+  };
+  const rows = buildDemandChartData(pastShow, { fillPrices: true });
+
+  expect(rows.every((row) => row.date <= "2026-07-02")).toBe(true);
+  expect(rows.some((row) => row.priceFilledRaw === 99)).toBe(false);
+});
+
+test("reports whether a show has a filled price history", () => {
+  expect(hasFilledPriceHistory(baseShow)).toBe(false);
+  expect(hasFilledPriceHistory({ ...baseShow, history_filled: [] })).toBe(false);
+  expect(
+    hasFilledPriceHistory({
+      ...baseShow,
+      history_filled: [
+        {
+          snapshot_date: "2026-07-01T00:00:00",
+          days_to_show: 9,
+          price_min: 20,
+          price_max: 60,
+          price_is_filled: false,
+        },
+      ],
+    }),
+  ).toBe(true);
 });
 
 test("drops snapshots taken after the show date for popularity and observed price", () => {
