@@ -104,7 +104,7 @@ As of 2026-08-08 (post-pause recovery day — see incident log):
 | Table | Latest snapshot | Note |
 |---|---|---|
 | `tm_observations` | 2026-08-08 | collector never stopped through the outage |
-| `fact_trends` | 2026-08-08 | 28-day backfill from banked bronze, 08-08 (loader now retries transient gsutil failures) |
+| `fact_trends` | 2026-08-08 | current via the nightly 14-day window; ⚠️ **Jul 12–24 hole open** (local backfill runs were interrupted; fill with `python pipeline/silver/trends_to_silver.py --start-date 2026-07-12 --end-date 2026-07-24`, ~45 min) |
 | `fact_trends_daily` | 2026-08-08 | 28-day backfill 08-08 (+149,134 rows) |
 | `fact_youtube` | 2026-08-08 | 28-day backfill 08-08 (+20,744 rows) |
 | `fact_event_demand` | 2026-08-08 | full-refresh 08-08 (also backfills `local_interest` history per the PR #58 rewire) |
@@ -164,14 +164,35 @@ The July backlog (PRs #54–#58 deploys) was **fully executed 2026-08-08**:
   re-export + GX gate.
 - [x] Vertex AI enabled; `event-demand-api` SA granted `roles/aiplatform.user`.
 
-Still open:
+Done Friday evening (verification + follow-through):
 
-- [ ] **AGENT-5: deploy the demo service** with `/ask` + search + regenerated
-  heroes; `--min-instances 1` through Monday's demo (152 s cold start), revert
-  after; $10 billing budget alert.
-- [ ] Commit the final eval report (`--runs 3` against the refreshed warehouse).
-- [ ] Post-fix benchmark capture (`eda/benchmark_trends_window.py
-  --capture-logs --report`) after tonight's scheduled run.
+- [x] **Nightly verified GREEN**: execution `gold-refresh-9mlf8` (Fri 16:30 PT
+  schedule) SUCCEEDED in 41 min — first success since 2026-06-30. `trends_silver`
+  windowed: **33.1 min** (vs 52–60 min + 27 timeouts pre-fix; still serial
+  per-file gsutil reads — batching is the next optimization, good blog material).
+  Forecast re-exported same run (17:11 PT); 13,956 shows serve non-null
+  `forecast_price` (verified NN).
+- [x] Demo service deployed (rev `git-5f71ebb`): `/ask` agent + `/search` +
+  synthetic-sandbox toggle live, `--min-instances 1` (0.15 s loads),
+  `TEXT2SQL_MODEL`/`VERTEX_LOCATION` env, $10 budget alert.
+- [x] Final eval committed (NN, PR #89): **92% overall** across 26 questions × 3
+  runs — easy 100%, join 86%, aggregate 83%, trick refusals 100%. Context fixes
+  for the four failure modes followed in PR #90.
+- [x] Post-fix benchmark capture (NN, PR #89) + terraform synced to deployed
+  reality.
+
+Still open (weekend handoff):
+
+- [ ] `fact_trends` Jul 12–24 hole (command in the freshness table above).
+- [ ] Sat: confirm the scene jobs' **first scheduled fires** (08:00/08:15 PT) land
+  `dt=2026-08-09` bronze, and Sat's 16:30 PT gold-refresh stays green.
+- [ ] Sun: regenerate heroes (`python eda/hero_candidates.py` — 5 of 9 current
+  heroes are past shows) → rebuild + redeploy the service image; optional eval
+  re-run after PR #90's context fixes (did 92% improve?);
+  `eda/benchmark_partitioning.py --setup --run` re-run (un-degenerates the
+  14-day-window query against fresh gold), then `--cleanup` the 3.98 GiB twins
+  after the blog numbers are final; timed demo dry run (`docs/demo-runbook.md`).
+- [ ] Mon after the demo: `--min-instances 0` revert (runbook's revert list).
 - [ ] Carried over: official Trends API alpha application (optional);
   `docs/tm_access_request.md` still unanswered.
 
@@ -205,6 +226,9 @@ Still open:
   four-week blind spot. Lessons: *merged ≠ deployed* (July's lesson, compounded:
   this time the PRs weren't even merged); an alert that doesn't cover the thing
   that breaks is indistinguishable from no alert; freshness ≠ health, again.
+  **CLOSED 2026-08-08 17:11 PT:** the same-day scheduled run (`gold-refresh-9mlf8`)
+  succeeded end-to-end in 41 min — windowed `trends_silver` 33.1 min, dbt green,
+  forecast re-exported, GX gate passed.
 - **2026-07-05 → 07-08: gold-refresh aborts at dbt tests;
   `forecast_event_price` stale since 06-30.** Every scheduled run since 07-05
   failed `relationships(fact_event_demand.artist_id → dim_artist)` and
