@@ -99,6 +99,13 @@ COLUMN_NOTES: dict[tuple[str, str], str] = {
         "within one (artist, metro) only"
     ),
     ("fact_event_demand", "dma_code"): "venue's Nielsen DMA (join dim_geo)",
+    ("dim_event", "primary_genre"): (
+        "Ticketmaster segment genre; NULL when unclassified — exclude NULLs when "
+        "listing or counting genres"
+    ),
+    ("dim_venue", "state_code"): (
+        "two-letter US state, e.g. 'CA' — the ONLY state column (there is no `state`)"
+    ),
     ("forecast_event_price", "days_to_show"): "days before the show this prediction targets",
     ("dim_event", "show_date"): "concert day",
     ("dim_venue", "capacity"): "researched real capacity; NULL where unknown",
