@@ -378,3 +378,14 @@
       GROUP BY v.venue_name
       ORDER BY upcoming_shows DESC
       LIMIT 1
+
+- id: trick_leadlag_answerable
+  tier: trick
+  category: semantic_landmine
+  question: "Does rising search interest for an artist playing in San Francisco precede rising prices?"
+  expect:
+    type: answers
+  # The INVERSE refusal probe (real user question, 2026-08-09): the agent wrongly
+  # refused this citing rule 1 — but within-artist over-time comparison is the
+  # ALLOWED direction. Passes iff it answers with rows; the SQL shape is open
+  # (many defensible lead-lag designs), so quality review is manual.

@@ -1,0 +1,50 @@
+# User testing log — real questions typed at the live agent, with outcomes.
+#
+# WHY THIS FILE EXISTS: the graded eval set (text2sql_eval_set.yaml) drifts
+# toward what we've already fixed; this log is the record of what REAL usage
+# surfaced, in order, with the disposition each finding got. It doubles as the
+# testing-evidence trail for the writeup.
+#
+# CONTAMINATION RULE: the serving agent sees ONLY api/schema_context*.md —
+# nothing here reaches it. Entries marked `held_out: true` must additionally
+# NEVER be turned into few-shots or semantic-rule examples; they exist to
+# measure generalization, not to be trained away. (Entries that DID drive a
+# fix are marked held_out: false with the fix recorded.)
+#
+# disposition values:
+#   fixed        — root-caused; a deterministic fix landed (PR noted)
+#   works        — answered correctly when tried; kept as a regression probe
+#   open         — known-wrong or undecided; awaiting a fix or a product call
+#
+# Append new entries at the bottom. Date = when the user tried it.
+
+- date: 2026-08-09
+  question: "What shows are you tracking in the San Francisco Bay Area for the remainder of 2026?"
+  observed: "Answered 'no shows tracked' — warehouse holds 1,152 upcoming Bay Area shows."
+  root_cause: "Model invented a metro_name literal (comma that the Nielsen string lacks) -> valid SQL, zero rows, confident wrong summary."
+  disposition: fixed
+  held_out: false
+  fix: "Canonical metro vocabulary + geo rule 9 (dma_code '807') + few-shot; zero-row corrective retry as backstop (PRs #92/#98). Graded as vocab_bay_area_2026."
+
+- date: 2026-08-09
+  question: "What are some EDM shows you're tracking in San Francisco?"
+  observed: "Answered 'no EDM shows tracked' — 39 upcoming matched after the fix."
+  root_cause: "Invented genre literal 'Electronic Dance Music (EDM)' — canonical value is 'Dance/Electronic'."
+  disposition: fixed
+  held_out: false
+  fix: "Canonical genre vocabulary + alias list (rule 8) + few-shot (PR #98). Graded as vocab_edm_bay_area."
+
+- date: 2026-08-09
+  question: "does rising search interest for an artist playing in san francisco precede rising prices?"
+  observed: "Refused, citing rule 1 (cross-artist Trends comparison) — but this is a WITHIN-artist over-time question, the allowed direction."
+  root_cause: "Rule 1 stated the prohibition without stating the permitted direction; the model over-applied it."
+  disposition: fixed
+  held_out: false
+  fix: "Rule 1 clarified (within-series over-time is the intended use) + lead-lag few-shot; graded as trick_leadlag_answerable (expect: answers). Honest current answer: 3 qualifying events, 1 led by interest — small-n by price-coverage ceiling."
+
+- date: 2026-08-09
+  question: "How many of those are at The Midway?"
+  observed: "Correctly resolved 'those' from the prior EDM answer via multi-turn history: 1 event."
+  root_cause: ""
+  disposition: works
+  held_out: true
