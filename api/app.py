@@ -93,11 +93,18 @@ def get_show(event_id: str) -> dict[str, Any]:
     raise HTTPException(status_code=404, detail=f"Show not found: {event_id}")
 
 
+class AskTurn(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    answer: str = Field(max_length=2000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=500)
     # "real" = the honest star schema; "synth" = the clearly-labeled synthetic
     # sandbox (event_demand_synth) with sellout/resale infill.
     dataset: Literal["real", "synth"] = "real"
+    # Prior completed exchanges (older first) so follow-up questions resolve.
+    history: list[AskTurn] = Field(default_factory=list, max_length=3)
 
 
 @app.post("/ask")
@@ -115,7 +122,9 @@ def ask(req: AskRequest, request: Request) -> dict[str, Any]:
     limited = rate_limiter.check(client_key)
     if limited is not None:
         return {"status": "rate_limited", "question": req.question, "answer": limited}
-    return get_service(req.dataset).ask(req.question)
+    return get_service(req.dataset).ask(
+        req.question, history=[turn.model_dump() for turn in req.history]
+    )
 
 
 # Serve the built web dashboard from the same origin, when present (the Docker image copies
