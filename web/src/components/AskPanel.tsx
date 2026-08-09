@@ -177,6 +177,14 @@ export function AskPanel({ compact = false, onOpenShow }: AskPanelProps) {
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter submits like the Ask button (submit() applies the same
+            // too-short/in-flight guards); Shift+Enter still inserts a newline.
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              submit(question);
+            }
+          }}
           placeholder="e.g. When is the next show at The Independent in San Francisco?"
           aria-label="Question"
           rows={2}

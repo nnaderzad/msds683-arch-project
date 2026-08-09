@@ -353,6 +353,54 @@ describe("AskPanel", () => {
     expect(onOpenShow).toHaveBeenCalledWith("rZ7HnEZ1Af00jd");
   });
 
+  it("submits on Enter but keeps Shift+Enter as a newline", async () => {
+    mockAskResponse({
+      status: "ok",
+      question: "How many events?",
+      sql: "SELECT 1",
+      rows: [],
+      answer: "There are 40,000 events.",
+      guardrails: [],
+    });
+
+    render(<AskPanel />);
+    const questionBox = screen.getByLabelText("Question");
+
+    // Shift+Enter inserts a newline and never submits.
+    await userEvent.type(questionBox, "How many{Shift>}{Enter}{/Shift}events?");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(questionBox).toHaveValue("How many\nevents?");
+
+    // Plain Enter submits the same ask path as the button.
+    await userEvent.type(questionBox, "{Enter}");
+    expect(await screen.findByText("There are 40,000 events.")).toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    const [, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string).question).toBe(
+      "How many\nevents?",
+    );
+  });
+
+  it("ignores Enter for too-short questions and while a request is in flight", async () => {
+    // A fetch that never resolves keeps the panel in the loading phase.
+    const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AskPanel />);
+    const questionBox = screen.getByLabelText("Question");
+
+    // Under the 3-character minimum: Enter does nothing (mirrors the disabled button).
+    await userEvent.type(questionBox, "Hi{Enter}");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    await userEvent.type(questionBox, " there?{Enter}");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // While the request is in flight, another Enter must not double-submit.
+    await userEvent.type(questionBox, "{Enter}");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("surfaces a transport failure as an alert", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
