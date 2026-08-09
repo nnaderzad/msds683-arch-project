@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from api.feedback import client_hash, get_sink
 from api.gold import get_repository
+from api.repo_docs import list_docs, read_doc
 from api.text2sql import RateLimiter, get_service, rate_limiter
 
 logger = logging.getLogger(__name__)
@@ -172,6 +173,21 @@ def ask_feedback(fb: AskFeedback, request: Request) -> dict[str, str]:
         logger.exception("ask_feedback insert failed")
         return {"status": "error"}
     return {"status": "ok"}
+
+
+@app.get("/repo-docs")
+def repo_docs() -> list[dict[str, Any]]:
+    """Catalog of the committed docs bundled into this build (for the docs page)."""
+    return list_docs()
+
+
+@app.get("/repo-doc/{name}")
+def repo_doc(name: str) -> dict[str, Any]:
+    """One committed doc's markdown; names come from the curated catalog only."""
+    doc = read_doc(name)
+    if doc is not None:
+        return doc
+    raise HTTPException(status_code=404, detail=f"Unknown doc: {name}")
 
 
 # Serve the built web dashboard from the same origin, when present (the Docker image copies

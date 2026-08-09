@@ -9,6 +9,15 @@
 /terraform/
 /data/
 /downloads/
+# Gitignored personal/instructor notes — .gcloudignore does NOT fall back to
+# .gitignore when it exists, so these must be repeated here explicitly
+# (docs/*.md is COPY'd into the service image for the "How it works" page).
+/notes/
+/notes.md
+/docs/team_messages.md
+/docs/PROJECT_STRATEGY.md
+/docs/collection_cadence_plan.md
+/docs/handoff-jun-14.md
 **/__pycache__/
 *.pyc
 *.pyo

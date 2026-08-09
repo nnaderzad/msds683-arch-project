@@ -23,6 +23,14 @@ RUN pip install --no-cache-dir -r /app/api/requirements.txt
 COPY api/ /app/api/
 COPY --from=web /web/dist /app/api/static
 
+# Committed docs served by the public "How it works" page (api/repo_docs.py) —
+# bundled at the repo-relative layout so local dev and the image resolve the
+# same paths; every deploy therefore ships the docs current at build time.
+# (Top-level *.md only; local-only notes are excluded via .dockerignore/.gcloudignore.)
+COPY README.md /app/README.md
+COPY docs/*.md /app/docs/
+COPY pipeline/GOLD_REFRESH.md /app/pipeline/GOLD_REFRESH.md
+
 EXPOSE 8080
 
 CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8080"]
