@@ -10,6 +10,7 @@ const DocsPanel = lazy(() => import("./components/DocsPanel"));
 import { DEFAULT_HERO_EVENT_ID, HERO_SHOWS } from "./data/heroShows";
 import type { ShowDetail, ShowSummary } from "./types";
 import { formatDate } from "./utils/formatters";
+import { scrollToPageTop } from "./utils/scroll";
 
 type LoadState = "idle" | "loading" | "success" | "error";
 
@@ -75,10 +76,14 @@ function App() {
   }, [selectedId]);
 
   // Ask-result rows carry only an event_id: select it (the effect above fetches
-  // /show/{id}) and make sure the dashboard view is the one showing.
+  // /show/{id}) and make sure the dashboard view is the one showing. The rows sit
+  // below the chart (embedded panel) or on another view, so scroll the dashboard
+  // back into sight; search picks stay put because their results render above the
+  // chart and the updated view appears right below the clicked row.
   const openShowById = (eventId: string) => {
     setSelectedId(eventId);
     setView("dashboard");
+    scrollToPageTop();
   };
 
   // Search picks join the dropdown so a non-hero show selected from the search

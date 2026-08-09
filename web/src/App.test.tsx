@@ -73,6 +73,7 @@ function mockSuccessfulApi() {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 test("renders the dashboard from the pre-cached heroes and the live show detail", async () => {
@@ -229,6 +230,7 @@ test("an ask-answer row with an event_id jumps from the ask view to the dashboar
     return Promise.resolve(jsonResponse({ detail: "Not found" }, 404));
   });
   vi.stubGlobal("fetch", fetchMock);
+  const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
 
   render(<App />);
   await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
@@ -237,6 +239,9 @@ test("an ask-answer row with an event_id jumps from the ask view to the dashboar
   await user.type(screen.getByLabelText("Question"), "Which shows?");
   await user.click(screen.getByRole("button", { name: "Ask" }));
   await user.click(await screen.findByRole("button", { name: `View show ${askShow.event_id}` }));
+
+  // The pick scrolls the viewport back up so the dashboard update is visible.
+  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
 
   // Back on the dashboard with the ask-picked show fetched and fully rendered.
   expect(await screen.findByRole("heading", { name: rx(askShow.event_name) })).toBeInTheDocument();
@@ -275,6 +280,7 @@ test("a failed show fetch after an ask-row pick shows the error notice, not a sp
     return Promise.resolve(jsonResponse({ detail: "Server error" }, 500));
   });
   vi.stubGlobal("fetch", fetchMock);
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
 
   render(<App />);
   await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
