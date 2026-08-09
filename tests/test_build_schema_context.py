@@ -84,3 +84,24 @@ def test_budget_overflow_fails(monkeypatch):
 
 def test_every_allowed_table_has_curated_note():
     assert ALLOWED_TABLES <= bsc.TABLE_NOTES.keys()
+
+
+def test_vocab_section_renders_canonical_values_and_aliases():
+    vocab = {
+        "genres": ["Dance/Electronic", "Rock"],
+        "statuses": ["onsale", "offsale"],
+        "metros": [
+            {"dma_code": "807", "metro_name": "San Francisco-Oakland-San Jose CA", "events": "9"}
+        ],
+    }
+    text = bsc.render_context(fake_columns(), fake_stats(), "proj", "ds", AS_OF, vocab=vocab)
+    assert "## Canonical values" in text
+    assert "Dance/Electronic | Rock" in text
+    assert "'Dance/Electronic'" in text  # the EDM alias line
+    assert "onsale | offsale" in text
+    assert "'807' = San Francisco-Oakland-San Jose CA (9 upcoming)" in text
+
+
+def test_vocab_section_absent_without_vocab():
+    text = bsc.render_context(fake_columns(), fake_stats(), "proj", "ds", AS_OF)
+    assert "## Canonical values" not in text

@@ -99,6 +99,13 @@ COLUMN_NOTES: dict[tuple[str, str], str] = {
         "within one (artist, metro) only"
     ),
     ("fact_event_demand", "dma_code"): "venue's Nielsen DMA (join dim_geo)",
+    ("dim_event", "primary_genre"): (
+        "Ticketmaster segment genre; NULL when unclassified — exclude NULLs when "
+        "listing or counting genres"
+    ),
+    ("dim_venue", "state_code"): (
+        "two-letter US state, e.g. 'CA' — the ONLY state column (there is no `state`)"
+    ),
     ("forecast_event_price", "days_to_show"): "days before the show this prediction targets",
     ("dim_event", "show_date"): "concert day",
     ("dim_venue", "capacity"): "researched real capacity; NULL where unknown",
@@ -145,7 +152,23 @@ SEMANTIC_RULES = """\
    over per-event nearest-forecast rows, QUALIFY inside a subquery/CTE first, then
    aggregate over it in the outer query.
 7. Only SELECT statements over the tables listed here. Refuse anything else politely —
-   including questions unrelated to the event-demand domain."""
+   including questions unrelated to the event-demand domain.
+8. NEVER invent a literal for a categorical column (genre, metro, status). Copy strings
+   from the "Canonical values" section EXACTLY; translate user slang via the alias list.
+   If nothing there plausibly matches, refuse and name a few values that DO exist.
+9. Geography: "Bay Area" / "San Francisco area" / "SF" questions filter dma_code = '807'
+   (that metro includes Oakland, San Jose, Berkeley...). Filter dim_venue.city =
+   'San Francisco' only when the user clearly means the city proper. Never filter on
+   metro_name. "Shows we track / are tracking" = rows in dim_event (upcoming ones have
+   show_date >= CURRENT_DATE())."""
+
+# Deterministic slang -> canonical-genre translations (Ticketmaster segment labels).
+# Curated by hand — extend when live questions surface a new alias.
+GENRE_ALIASES = (
+    '"EDM" / "electronic" / "house" / "techno" / "dance music" -> \'Dance/Electronic\' ; '
+    '"hip hop" / "rap" -> \'Hip-Hop/Rap\' ; "indie" -> \'Alternative\' ; '
+    '"country music" -> \'Country\' ; "classical music" / "orchestra" -> \'Classical\''
+)
 
 # Few-shot examples — each is dry-run compiled against the live dataset at generation
 # time, so a schema change that breaks an example fails the build, not the demo.
@@ -208,6 +231,28 @@ JOIN {ds}.dim_artist a ON t.artist_id = a.artist_id
 WHERE LOWER(a.artist_name) = 'everclear' AND t.dma_code = '807'
   AND t.snapshot_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
 ORDER BY t.snapshot_date""",
+    ),
+    (
+        # Real user question the agent got wrong by guessing a metro_name string:
+        # area questions filter dma_code (rule 9), never metro_name/city guesses.
+        "What shows are you tracking in the San Francisco Bay Area for the rest of 2026?",
+        """SELECT e.event_name, e.show_date, v.venue_name, v.city
+FROM {ds}.dim_event e
+JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
+WHERE v.dma_code = '807'
+  AND e.show_date BETWEEN CURRENT_DATE() AND '2026-12-31'
+ORDER BY e.show_date""",
+    ),
+    (
+        # Real user question the agent got wrong by inventing a genre label:
+        # "EDM" translates via the alias list to the canonical 'Dance/Electronic'.
+        "What are some EDM shows coming up in San Francisco?",
+        """SELECT e.event_name, e.show_date, v.venue_name
+FROM {ds}.dim_event e
+JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
+WHERE e.primary_genre = 'Dance/Electronic' AND v.dma_code = '807'
+  AND e.show_date >= CURRENT_DATE()
+ORDER BY e.show_date""",
     ),
 ]
 
@@ -297,6 +342,7 @@ def render_context(
     semantic_rules: str | None = None,
     few_shots=None,
     intro: str | None = None,
+    vocab: dict | None = None,
 ) -> str:
     """Render the full markdown context from schema rows + per-table stats.
 
@@ -339,6 +385,24 @@ def render_context(
         "## Join map",
         "",
         join_map,
+    ]
+    if vocab:
+        lines += [
+            "",
+            "## Canonical values — copy these strings EXACTLY; never invent variants",
+        ]
+        if vocab.get("genres"):
+            lines += ["", "primary_genre: " + " | ".join(vocab["genres"])]
+            lines += ["", f"Genre aliases (user's term -> canonical): {GENRE_ALIASES}"]
+        if vocab.get("statuses"):
+            lines += ["", "status_code: " + " | ".join(vocab["statuses"])]
+        if vocab.get("metros"):
+            lines += ["", "Top metros by upcoming shows (filter by dma_code, quoted string):"]
+            lines += [
+                f"- '{m['dma_code']}' = {m['metro_name']} ({m['events']} upcoming)"
+                for m in vocab["metros"]
+            ]
+    lines += [
         "",
         "## Tables",
     ]
@@ -403,6 +467,46 @@ def fetch_stats(project: str, dataset: str, allowed=None) -> dict[str, dict[str,
     return stats
 
 
+def fetch_vocab(project: str, dataset: str, synth: bool = False) -> dict:
+    """Canonical categorical values, live from the warehouse at generation time.
+
+    Exists because the dominant real-user failure was the model INVENTING literals
+    ('Electronic Dance Music (EDM)', a metro_name with a comma) — matching zero
+    rows and answering "we track nothing". Deterministic given the warehouse.
+    """
+    if synth:
+        genres = bq_rows(
+            f"SELECT DISTINCT primary_genre AS g FROM `{project}.{dataset}.synth_event_demand` "
+            f"WHERE primary_genre IS NOT NULL ORDER BY g",
+            project,
+        )
+        return {"genres": [r["g"] for r in genres]}
+    genres = bq_rows(
+        f"SELECT DISTINCT primary_genre AS g FROM `{project}.{dataset}.dim_event` "
+        f"WHERE primary_genre IS NOT NULL ORDER BY g",
+        project,
+    )
+    statuses = bq_rows(
+        f"SELECT DISTINCT status_code AS s FROM `{project}.{dataset}.fact_event_demand` "
+        f"WHERE status_code IS NOT NULL ORDER BY s",
+        project,
+    )
+    metros = bq_rows(
+        f"SELECT v.dma_code, g.metro_name, COUNT(DISTINCT e.event_id) AS events "
+        f"FROM `{project}.{dataset}.dim_event` e "
+        f"JOIN `{project}.{dataset}.dim_venue` v ON e.venue_id = v.venue_id "
+        f"JOIN `{project}.{dataset}.dim_geo` g ON v.dma_code = g.dma_code "
+        f"WHERE e.show_date >= CURRENT_DATE() "
+        f"GROUP BY v.dma_code, g.metro_name ORDER BY events DESC, v.dma_code LIMIT 12",
+        project,
+    )
+    return {
+        "genres": [r["g"] for r in genres],
+        "statuses": [r["s"] for r in statuses],
+        "metros": metros,
+    }
+
+
 def dry_run_examples(project: str, dataset: str, few_shots=None) -> None:
     """Compile every few-shot against the live schema; fail generation on error."""
 
@@ -459,6 +563,7 @@ def main() -> None:
         args.project,
         dataset,
         utc_now_iso(),
+        vocab=fetch_vocab(args.project, dataset, synth=args.synth),
         **profile,
     )
     output.write_text(text + "\n", encoding="utf-8")

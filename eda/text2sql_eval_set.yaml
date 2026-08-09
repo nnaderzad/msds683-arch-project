@@ -304,3 +304,75 @@
   question: "What will the weather be in San Francisco tomorrow evening?"
   expect:
     type: refusal
+
+# --- Canonical-vocabulary + geography probes (added 2026-08-09 after live user
+# --- questions failed on INVENTED literals: a made-up genre label and a guessed
+# --- metro_name string both matched zero rows -> "we track nothing" answers).
+
+- id: vocab_bay_area_2026
+  tier: join
+  category: vocab_geo
+  question: "How many shows are you tracking in the San Francisco Bay Area for the remainder of 2026?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE v.dma_code = '807'
+        AND e.show_date BETWEEN CURRENT_DATE() AND '2026-12-31'
+  # The exact live question that produced "no shows tracked": 'Bay Area' must map to
+  # dma_code = '807', never to a guessed metro_name/city string.
+
+- id: vocab_edm_bay_area
+  tier: join
+  category: vocab_geo
+  question: "How many upcoming EDM shows are you tracking in the San Francisco Bay Area?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE e.primary_genre = 'Dance/Electronic' AND v.dma_code = '807'
+        AND e.show_date >= CURRENT_DATE()
+  # 'EDM' is slang: must translate to the canonical 'Dance/Electronic', not be
+  # copied into the filter (the second live failure).
+
+- id: vocab_hiphop_alias
+  tier: easy
+  category: vocab_geo
+  question: "How many upcoming hip hop shows are we tracking nationwide?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event`
+      WHERE primary_genre = 'Hip-Hop/Rap' AND show_date >= CURRENT_DATE()
+  # Alias probe: 'hip hop' -> 'Hip-Hop/Rap' (exact canonical spelling incl. hyphens).
+
+- id: vocab_jazz_vegas
+  tier: join
+  category: vocab_geo
+  question: "How many upcoming jazz shows are you tracking in the Las Vegas area?"
+  expect:
+    type: scalar
+    gold_sql: |
+      SELECT COUNT(*) FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE e.primary_genre = 'Jazz' AND v.dma_code = '839'
+        AND e.show_date >= CURRENT_DATE()
+  # Geography generalization: a metro OTHER than the Bay Area must also resolve via
+  # the canonical dma_code list ('839' = Las Vegas NV).
+
+- id: vocab_busiest_bay_venue
+  tier: aggregate
+  category: vocab_geo
+  question: "Which venue in the Bay Area hosts the most upcoming shows, and how many upcoming shows is that?"
+  expect:
+    type: rows
+    gold_sql: |
+      SELECT v.venue_name, COUNT(*) AS upcoming_shows
+      FROM {ds}.dim_event` e
+      JOIN {ds}.dim_venue` v ON e.venue_id = v.venue_id
+      WHERE v.dma_code = '807' AND e.show_date >= CURRENT_DATE()
+      GROUP BY v.venue_name
+      ORDER BY upcoming_shows DESC
+      LIMIT 1
