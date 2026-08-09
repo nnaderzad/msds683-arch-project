@@ -191,7 +191,7 @@ Format:
 - [x] **AGENT-5 · Deploy + demo hardening** · Owner: `NN`
    - ▶ 08-08 (NN): service live on image `git-5f71ebb` with
      `TEXT2SQL_MODEL`/`VERTEX_LOCATION`, `min-instances 1`, `max-instances 2`,
-     startup-cpu-boost. Live smoke passed. ▶ 08-09 (TK): redeployed `git-64eb072`
+     startup-cpu-boost. Live smoke passed. ▶ 08-09 (TK): redeployed `git-87afd36`
      (multi-turn ask + feedback + docs page + fresh heroes + vocab context).
    - Budget alert: waived by TK 2026-08-09 ("don't worry about it") — rate caps +
      bytes-billed limits remain the cost guard.
@@ -291,7 +291,7 @@ the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $50
 > **Frontier (Sat 08-09, post PRs #92–#98):** DEMO-2 dry run · BENCH-2 re-run
 > against fresh gold + twin cleanup · Sat scheduled-fire checks (scene 08:00/
 > 08:15 PT, gold-refresh 16:30 PT) · then BLOG. Everything else on this board is
-> merged, deployed (`git-64eb072`), and verified — incl. the 08-09 user-feedback
+> merged, deployed (`git-87afd36`), and verified — incl. the 08-09 user-feedback
 > batch: multi-turn ask + 👍/👎 feedback (`event_demand_ops`), canonical-vocab
 > fix for the two live-failed questions (eval 95%/31q), fill toggle, search
 > click-through, "How it works" docs page, fresh heroes.

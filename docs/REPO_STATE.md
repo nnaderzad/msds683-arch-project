@@ -37,7 +37,7 @@ after the previous account closed (see incident log).
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
 | `gold-refresh` (Cloud Run job) | silver loaders (windowed reads, image `git-ab65e00`, task-timeout 5400s) → dbt build → forecast → GX gate | 16:30 (D8) — **broken 06-30→08-08, redeployed 2026-08-08**, see incident log | `terraform/` (image via gcloud, 08-08) |
 | `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 — **live since 2026-08-08** (terraform apply + smoke run; the 07-08→08-07 listings gap is permanent) | `terraform/gtrends/scene.tf` |
-| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex; multi-turn follow-ups, 👍/👎 feedback, canonical-vocab context)** + `/search` browse + **"How it works" docs page** (renders the committed md bundled per deploy) + filled-vs-observed price toggle, reads gold live | min-instances 1 through Mon 08-11, then revert to 0 (**measured cold start 152 s**) | gcloud only (not yet in terraform); image `git-64eb072` (08-09) |
+| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex; multi-turn follow-ups, 👍/👎 feedback, canonical-vocab context)** + `/search` browse + **"How it works" docs page** (renders the committed md bundled per deploy) + filled-vs-observed price toggle, reads gold live | min-instances 1 through Mon 08-11, then revert to 0 (**measured cold start 152 s**) | gcloud only (not yet in terraform); image `git-87afd36` (08-09) |
 
 **Ops telemetry:** `/ask` answers carry thumbs-up/down buttons; votes stream into
 **`event_demand_ops.ask_feedback`** (separate dataset — the service SA has
@@ -142,7 +142,7 @@ As of 2026-08-08 (post-pause recovery day — see incident log):
 ## Active work / branch map
 
 - `main` — state of record. **2026-08-09 overnight sprint** (user-feedback driven,
-  all merged + deployed as image `git-64eb072`): PR #92 agent follow-up history +
+  all merged + deployed as image `git-87afd36`): PR #92 agent follow-up history +
   zero-row corrective retry, #93 `/show` gap-filled price series
   (`history_filled` from the continuous table), #94 `POST /ask_feedback` →
   `event_demand_ops` (👍/👎), #95 committed-docs endpoints + Docker bundle
@@ -209,7 +209,7 @@ Done overnight Sat 2026-08-09 (see the 08-09 sprint in the branch map):
   08-09 image.
 - [x] Eval re-run after the vocab/context fixes: **95%** (93 runs, 31 questions —
   set expanded with the five live-failure probes).
-- [x] Service rebuilt + redeployed (`git-64eb072`): multi-turn ask, feedback
+- [x] Service rebuilt + redeployed (`git-87afd36`): multi-turn ask, feedback
   buttons, fill toggle, search click-through, docs page, fresh heroes.
 
 Still open (weekend handoff):
