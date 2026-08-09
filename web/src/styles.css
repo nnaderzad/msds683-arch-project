@@ -447,6 +447,13 @@ h3 {
   gap: 16px;
 }
 
+/* Embedded below the dashboard: same panel, tighter rhythm. */
+.ask-panel.is-compact {
+  margin-top: 22px;
+  padding: 18px;
+  gap: 12px;
+}
+
 .ask-form {
   display: flex;
   gap: 12px;

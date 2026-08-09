@@ -66,7 +66,12 @@ function ResultsTable({ rows }: { rows: Record<string, unknown>[] }) {
 
 const SYNTH_EXAMPLE = "Which sold-out shows have the highest resale markup?";
 
-export function AskPanel() {
+type AskPanelProps = {
+  // Embedded-below-the-dashboard mode: fewer example chips, tighter spacing.
+  compact?: boolean;
+};
+
+export function AskPanel({ compact = false }: AskPanelProps) {
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [response, setResponse] = useState<AskResponse | null>(null);
@@ -89,8 +94,10 @@ export function AskPanel() {
       });
   };
 
+  const exampleQuestions = compact ? EXAMPLE_QUESTIONS.slice(0, 2) : EXAMPLE_QUESTIONS;
+
   return (
-    <section className="ask-panel" aria-label="Ask the warehouse">
+    <section className={compact ? "ask-panel is-compact" : "ask-panel"} aria-label="Ask the warehouse">
       <div className="combined-heading">
         <div>
           <h3>Ask the warehouse</h3>
@@ -122,7 +129,7 @@ export function AskPanel() {
       </form>
 
       <div className="ask-examples">
-        {EXAMPLE_QUESTIONS.map((example) => (
+        {exampleQuestions.map((example) => (
           <button
             key={example}
             type="button"

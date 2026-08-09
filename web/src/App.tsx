@@ -174,6 +174,10 @@ function App() {
       )}
 
           {selectedShow && <DemandSignalsChart show={selectedShow} />}
+
+          {/* Same panel as the dedicated view (shared component), embedded so a
+              viewer can ask questions in context without switching views. */}
+          <AskPanel compact />
         </>
       )}
     </main>
