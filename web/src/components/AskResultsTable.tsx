@@ -204,6 +204,18 @@ export function AskResultsTable({ rows, onOpenShow }: AskResultsTableProps) {
         )}
       </div>
 
+      {/* Linkability is not self-evident (older answers and aggregates have no
+          event_id) — say out loud whether these rows click through. */}
+      {onOpenShow && anyLinkable && (
+        <p className="ask-table-note">Click a row to open that show in the dashboard.</p>
+      )}
+      {onOpenShow && !anyLinkable && (
+        <p className="ask-table-note">
+          These results aren&apos;t linked to shows — ask for a list of shows to get clickable
+          rows.
+        </p>
+      )}
+
       {hoverCard && cardShow && (
         <div
           className="ask-show-card"

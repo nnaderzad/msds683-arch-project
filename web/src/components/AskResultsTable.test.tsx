@@ -71,15 +71,35 @@ describe("AskResultsTable", () => {
 
     fireEvent.keyDown(row, { key: "Enter" });
     expect(onOpenShow).toHaveBeenCalledTimes(2);
+
+    // Linkable tables say so.
+    expect(
+      screen.getByText("Click a row to open that show in the dashboard."),
+    ).toBeInTheDocument();
   });
 
-  it("renders rows without an event id column exactly as before", () => {
+  it("renders rows without an event id column as plain rows with a caption", () => {
     render(<AskResultsTable rows={[{ cheapest_price: 136.05 }]} onOpenShow={vi.fn()} />);
 
     expect(screen.getByRole("cell", { name: "136.05" })).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader")).toHaveLength(1);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByText("view →")).not.toBeInTheDocument();
+    expect(screen.getByText(/these results aren't linked to shows/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText("Click a row to open that show in the dashboard."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders no captions for empty result sets or when no pick handler exists", () => {
+    const { container, rerender } = render(<AskResultsTable rows={[]} onOpenShow={vi.fn()} />);
+    expect(container).toBeEmptyDOMElement();
+
+    rerender(<AskResultsTable rows={[{ cheapest_price: 136.05 }]} />);
+    expect(screen.queryByText(/these results aren't linked to shows/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Click a row to open that show in the dashboard."),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the stats card after the 300 ms debounce and caches per event_id", async () => {
