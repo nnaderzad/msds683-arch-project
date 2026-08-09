@@ -288,6 +288,27 @@ describe("AskPanel", () => {
     });
   });
 
+  it("makes agent rows carrying an event_id clickable through to the dashboard", async () => {
+    mockAskResponse({
+      status: "ok",
+      question: "Which shows?",
+      sql: "SELECT event_id, event_name FROM fact_event_demand",
+      rows: [{ event_id: "rZ7HnEZ1Af00jd", event_name: "Everclear with American Hi-Fi" }],
+      answer: "One show.",
+      guardrails: [],
+    });
+    const onOpenShow = vi.fn();
+
+    render(<AskPanel onOpenShow={onOpenShow} />);
+    await userEvent.type(screen.getByLabelText("Question"), "Which shows?");
+    await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "View show rZ7HnEZ1Af00jd" }),
+    );
+    expect(onOpenShow).toHaveBeenCalledWith("rZ7HnEZ1Af00jd");
+  });
+
   it("surfaces a transport failure as an alert", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
