@@ -557,13 +557,26 @@ h3 {
   color: #5b21b6;
 }
 
+.ask-synth-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: auto;
+  max-width: 340px;
+}
+
 .ask-synth-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
   color: #5b21b6;
-  margin-left: auto;
+}
+
+.ask-synth-caption {
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .ask-sql {
@@ -723,6 +736,12 @@ h3 {
 .ask-turn-answer {
   color: #64748b;
   font-size: 0.9rem;
+}
+
+.ask-turn-hint {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-style: italic;
 }
 
 .ask-feedback {
