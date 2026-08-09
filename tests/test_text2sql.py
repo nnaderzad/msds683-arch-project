@@ -45,10 +45,17 @@ class FakeLlm:
 
 
 class FakeRunner:
-    def __init__(self, rows=None, dry_bytes: int = 1024, fail_dry_times: int = 0):
+    def __init__(
+        self,
+        rows=None,
+        dry_bytes: int = 1024,
+        fail_dry_times: int = 0,
+        rows_sequence: list[list[dict]] | None = None,
+    ):
         self.rows = rows if rows is not None else [{"event_id": "abc"}]
         self.dry_bytes = dry_bytes
         self.fail_dry_times = fail_dry_times
+        self.rows_sequence = list(rows_sequence) if rows_sequence is not None else None
         self.executed: list[str] = []
 
     def dry_run(self, sql: str) -> int:
@@ -59,7 +66,12 @@ class FakeRunner:
 
     def run(self, sql: str) -> t2s.QueryResult:
         self.executed.append(sql)
-        return t2s.QueryResult(rows=self.rows, total_bytes_processed=self.dry_bytes)
+        rows = self.rows
+        if self.rows_sequence is not None:
+            rows = self.rows_sequence.pop(0) if len(self.rows_sequence) > 1 else (
+                self.rows_sequence[0]
+            )
+        return t2s.QueryResult(rows=rows, total_bytes_processed=self.dry_bytes)
 
 
 def make_service(llm=None, runner=None) -> t2s.Text2SqlService:
@@ -328,3 +340,140 @@ def test_ask_endpoint_routes_dataset_field():
     assert via_synth["dataset"] == "synth" and via_synth["synthetic"] is True
     assert bad.status_code == 422
     t2s.set_service(None, mode="synth")
+
+
+# ---------------------------------------------------------------------------
+# Follow-up history (multi-turn) — prompt rendering + endpoint plumbing
+# ---------------------------------------------------------------------------
+
+
+def test_history_rendered_into_sql_prompt():
+    llm = FakeLlm(GOOD_SQL)
+    result = make_service(llm=llm).ask(
+        "And how many of those are in Oakland?",
+        history=[{"question": "What EDM shows are upcoming?", "answer": "There are 12."}],
+    )
+    assert result["status"] == "ok"
+    sql_prompt = llm.prompts[0]
+    assert "Previous exchanges" in sql_prompt
+    assert "What EDM shows are upcoming?" in sql_prompt
+    assert "There are 12." in sql_prompt
+
+
+def test_no_history_block_without_history():
+    llm = FakeLlm(GOOD_SQL)
+    make_service(llm=llm).ask("How many shows are tracked?")
+    assert "Previous exchanges" not in llm.prompts[0]
+
+
+def test_history_truncated_to_last_three_turns():
+    turns = [{"question": f"q{i}", "answer": f"a{i}"} for i in range(5)]
+    prompt = t2s.build_sql_prompt("ctx", "next?", history=turns)
+    assert "q0" not in prompt and "q1" not in prompt
+    assert "q2" in prompt and "q4" in prompt
+
+
+def test_ask_endpoint_forwards_history():
+    captured: dict = {}
+
+    class Recorder:
+        def ask(self, question, history=None):
+            captured["history"] = history
+            return {"status": "ok", "question": question}
+
+    t2s.set_service(Recorder())  # type: ignore[arg-type]
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={
+                "question": "and in Oakland?",
+                "history": [{"question": "q1", "answer": "a1"}],
+            },
+        )
+    assert response.status_code == 200
+    assert captured["history"] == [{"question": "q1", "answer": "a1"}]
+
+
+def test_ask_endpoint_rejects_oversized_history():
+    with TestClient(app) as client:
+        response = client.post(
+            "/ask",
+            json={
+                "question": "hello there",
+                "history": [{"question": "q", "answer": "a"}] * 4,
+            },
+        )
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Zero-row second look — corrective retry after an empty result
+# ---------------------------------------------------------------------------
+
+EMPTY_FILTER_SQL = (
+    f"SELECT event_id FROM {DS}.dim_event` WHERE primary_genre = 'Electronic Dance Music (EDM)'"
+)
+CORRECTED_SQL = f"SELECT event_id FROM {DS}.dim_event` WHERE primary_genre = 'Dance/Electronic'"
+
+
+def test_zero_row_retry_corrects_bad_literal():
+    llm = FakeLlm(EMPTY_FILTER_SQL, CORRECTED_SQL)
+    runner = FakeRunner(rows_sequence=[[], [{"event_id": "abc"}]])
+    result = make_service(llm=llm, runner=runner).ask("What EDM shows are you tracking?")
+    assert result["status"] == "ok"
+    assert result["row_count"] == 1
+    assert "Dance/Electronic" in result["sql"]
+    assert len(runner.executed) == 2
+    retry = [g for g in result["guardrails"] if g["name"] == "zero_row_retry"]
+    assert retry and retry[0]["passed"] and "corrected literals" in retry[0]["detail"]
+    # the corrective prompt carried the zero-row hint
+    assert any("ZERO rows" in p for p in llm.prompts)
+
+
+def test_zero_row_retry_keeps_original_when_still_empty():
+    llm = FakeLlm(EMPTY_FILTER_SQL, CORRECTED_SQL)
+    runner = FakeRunner(rows_sequence=[[]])
+    result = make_service(llm=llm, runner=runner).ask("What EDM shows are you tracking?")
+    assert result["status"] == "ok"
+    assert result["row_count"] == 0
+    assert "Electronic Dance Music" in result["sql"]  # original kept
+    retry = [g for g in result["guardrails"] if g["name"] == "zero_row_retry"]
+    assert retry and "matched nothing" in retry[0]["detail"]
+
+
+def test_zero_row_retry_skipped_without_string_literal():
+    numeric_sql = f"SELECT event_id FROM {DS}.fact_event_demand` WHERE price_min > 5000"
+    runner = FakeRunner(rows=[])
+    result = make_service(llm=FakeLlm(numeric_sql), runner=runner).ask(
+        "Any shows above five thousand dollars?"
+    )
+    assert result["row_count"] == 0
+    assert len(runner.executed) == 1
+    assert "zero_row_retry" not in {g["name"] for g in result["guardrails"]}
+
+
+def test_zero_row_retry_noop_when_model_repeats_itself():
+    llm = FakeLlm(EMPTY_FILTER_SQL)  # exhausted queue repeats the same SQL
+    runner = FakeRunner(rows=[])
+    result = make_service(llm=llm, runner=runner).ask("What EDM shows are you tracking?")
+    assert result["row_count"] == 0
+    assert len(runner.executed) == 1  # identical retry SQL is not re-executed
+    retry = [g for g in result["guardrails"] if g["name"] == "zero_row_retry"]
+    assert retry and "kept its query" in retry[0]["detail"]
+
+
+def test_zero_row_retry_rejects_disallowed_correction():
+    bad_correction = f"SELECT event_id FROM {DS}.tm_events` WHERE name = 'x'"
+    llm = FakeLlm(EMPTY_FILTER_SQL, bad_correction)
+    runner = FakeRunner(rows=[])
+    result = make_service(llm=llm, runner=runner).ask("What EDM shows are you tracking?")
+    assert result["row_count"] == 0
+    assert "tm_events" not in (result["sql"] or "")
+    retry = [g for g in result["guardrails"] if g["name"] == "zero_row_retry"]
+    assert retry and "failed guardrails" in retry[0]["detail"]
+
+
+def test_empty_result_answer_prompt_names_the_filters():
+    prompt = t2s.build_answer_prompt("What EDM shows?", EMPTY_FILTER_SQL, [])
+    assert prompt.startswith("Summarize")
+    assert "matched nothing" in prompt or "no records matched" in prompt
