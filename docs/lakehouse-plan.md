@@ -278,7 +278,7 @@ the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $50
 - [ ] **DEMO-2 · Dry run Sunday evening** · Owner: `____`
    - Full 7-min walkthrough against the live URL, timed.
 
-### BLOG — after Monday
+### BLOG — after Monday · Owner: 'NF'
 
 - [ ] **BLOG-1 · Draft** — sections map to existing docs: transformations_showcase →
   architecture; eval report → deep dive; benchmark mds → benchmark; incident log →
