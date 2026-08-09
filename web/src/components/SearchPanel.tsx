@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchGenres, searchShows } from "../api/client";
 import type { ShowSummary } from "../types";
-import { formatDate } from "../utils/formatters";
+import { formatDate, formatPrice } from "../utils/formatters";
 
 // The Bay Area is DMA 807 — the project's home metro and the demo's default story
 // ("upcoming EDM shows in the Bay Area under $50").
@@ -14,10 +14,6 @@ const HORIZONS = [
   { label: "Next 30 days", value: "30" },
   { label: "Next 90 days", value: "90" },
 ];
-
-function formatPrice(value: number | null): string {
-  return value == null ? "—" : `$${value.toFixed(0)}`;
-}
 
 type Props = {
   onPick: (show: ShowSummary) => void;

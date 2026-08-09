@@ -22,7 +22,7 @@ import {
   type SignalKey,
   type SignalVisibility,
 } from "../utils/chartData";
-import { formatAxisMoney, formatMoney, formatNumber, formatShortDate } from "../utils/formatters";
+import { formatNumber, formatPrice, formatShortDate } from "../utils/formatters";
 import { MetricCard } from "./MetricCard";
 
 type ChartTooltipPayload = {
@@ -82,11 +82,11 @@ function tooltipRawValue(row: ChartRow | undefined, key: string): string {
   }
 
   if (key === "price") {
-    return formatMoney(row.observedPriceRaw);
+    return formatPrice(row.observedPriceRaw);
   }
 
   if (key === "forecast") {
-    return formatMoney(row.forecastPriceRaw);
+    return formatPrice(row.forecastPriceRaw);
   }
 
   if (key === "trends") {
@@ -216,7 +216,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               domain={priceDomain}
               tickLine={false}
               axisLine={{ stroke: "#8bb8d4" }}
-              tickFormatter={(value) => formatAxisMoney(Number(value))}
+              tickFormatter={(value) => formatPrice(Number(value))}
               width={64}
               label={{
                 value: "Ticket price ($)",
@@ -313,11 +313,11 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
       <div className="combined-notes">
         <MetricCard
           label="Latest lowest price"
-          value={formatMoney(observedLowestPrice(latest?.price_min ?? null))}
+          value={formatPrice(observedLowestPrice(latest?.price_min ?? null))}
         />
         <MetricCard label="Trend signal" value={formatNumber(latest?.local_interest ?? null)} />
         <MetricCard label="YouTube signal" value={formatNumber(latest?.yt_views ?? null)} />
-        <MetricCard label="Forecasted lowest price" value={formatMoney(show.forecast_price)} />
+        <MetricCard label="Forecasted lowest price" value={formatPrice(show.forecast_price)} />
       </div>
     </section>
   );
