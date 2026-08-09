@@ -201,14 +201,20 @@ export function AskPanel({ compact = false, onOpenShow }: AskPanelProps) {
             {SYNTH_EXAMPLE}
           </button>
         )}
-        <label className="ask-synth-toggle" title="Simulated sellouts & resale prices — clearly labeled synthetic; real event/venue names">
-          <input
-            type="checkbox"
-            checked={useSynth}
-            onChange={(event) => setUseSynth(event.target.checked)}
-          />
-          Synthetic sandbox (sellouts &amp; resale)
-        </label>
+        <span className="ask-synth-group">
+          <label className="ask-synth-toggle">
+            <input
+              type="checkbox"
+              checked={useSynth}
+              onChange={(event) => setUseSynth(event.target.checked)}
+            />
+            Synthetic sandbox (sellouts &amp; resale)
+          </label>
+          <span className="ask-synth-caption">
+            Simulated sellout &amp; resale data over real events — for questions real sources
+            can&apos;t answer.
+          </span>
+        </span>
       </div>
 
       {phase === "loading" && (
