@@ -55,6 +55,30 @@ export type GuardrailVerdict = {
 
 export type AskStatus = "ok" | "refused" | "blocked" | "rate_limited" | "error";
 
+// One completed Q&A exchange; /ask accepts up to 3 (older first) as `history`.
+export type AskExchange = {
+  question: string;
+  answer: string;
+};
+
+export type AskFeedbackVerdict = "up" | "down";
+
+export type AskFeedbackRequest = {
+  verdict: AskFeedbackVerdict;
+  question: string;
+  sql?: string | null;
+  answer?: string | null;
+  dataset?: string;
+  model?: string;
+  latency_ms?: number;
+  bytes_processed?: number | null;
+  status?: string;
+};
+
+export type AskFeedbackResponse = {
+  status: "ok" | "rate_limited" | "error";
+};
+
 export type AskResponse = {
   status: AskStatus;
   question: string;

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { askQuestion } from "../api/client";
-import type { AskResponse } from "../types";
+import { askQuestion, sendAskFeedback } from "../api/client";
+import type { AskFeedbackVerdict, AskResponse } from "../types";
 
 // Demo insurance: one easy lookup, one aggregate, and one guardrail probe so the
 // live audience sees a real answer, a real number, and a refusal in three clicks.
@@ -71,11 +71,16 @@ type AskPanelProps = {
   compact?: boolean;
 };
 
+// Feedback is offered on every completed agent verdict, not just answered ones.
+const FEEDBACK_STATUSES: AskResponse["status"][] = ["ok", "refused", "blocked"];
+
 export function AskPanel({ compact = false }: AskPanelProps) {
   const [question, setQuestion] = useState("");
+  const [askedQuestion, setAskedQuestion] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [response, setResponse] = useState<AskResponse | null>(null);
   const [useSynth, setUseSynth] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
 
   const submit = (text: string, dataset?: "real" | "synth") => {
     const trimmed = text.trim();
@@ -84,6 +89,9 @@ export function AskPanel({ compact = false }: AskPanelProps) {
     }
     setPhase("loading");
     setResponse(null);
+    setAskedQuestion(trimmed);
+    // One vote per answer: a new question re-enables the feedback buttons.
+    setFeedbackSent(false);
     askQuestion(trimmed, dataset ?? (useSynth ? "synth" : "real"))
       .then((result) => {
         setResponse(result);
@@ -92,6 +100,28 @@ export function AskPanel({ compact = false }: AskPanelProps) {
       .catch(() => {
         setPhase("failed");
       });
+  };
+
+  const giveFeedback = (verdict: AskFeedbackVerdict) => {
+    if (!response || feedbackSent) {
+      return;
+    }
+    // Fire-and-forget: show the thanks state immediately and never nag the user,
+    // even if the POST fails or comes back rate_limited.
+    setFeedbackSent(true);
+    sendAskFeedback({
+      verdict,
+      question: askedQuestion || response.question,
+      sql: response.sql ?? null,
+      answer: response.answer ?? null,
+      dataset: response.dataset,
+      model: response.model,
+      latency_ms: response.latency_ms,
+      bytes_processed: response.bytes_processed ?? null,
+      status: response.status,
+    }).catch(() => {
+      // Intentionally swallowed; the UI already acknowledged the vote.
+    });
   };
 
   const exampleQuestions = compact ? EXAMPLE_QUESTIONS.slice(0, 2) : EXAMPLE_QUESTIONS;
@@ -209,6 +239,34 @@ export function AskPanel({ compact = false }: AskPanelProps) {
           {response.answer && <p className="ask-answer">{response.answer}</p>}
 
           {response.status === "ok" && <ResultsTable rows={response.rows ?? []} />}
+
+          {FEEDBACK_STATUSES.includes(response.status) && (
+            <div className="ask-feedback">
+              <button
+                type="button"
+                aria-label="Thumbs up"
+                disabled={feedbackSent}
+                onClick={() => giveFeedback("up")}
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                aria-label="Thumbs down"
+                disabled={feedbackSent}
+                onClick={() => giveFeedback("down")}
+              >
+                👎
+              </button>
+              {feedbackSent ? (
+                <span className="ask-feedback-note">Thanks — feedback logged.</span>
+              ) : (
+                <span className="ask-feedback-caption">
+                  Feedback is collected to improve the agent.
+                </span>
+              )}
+            </div>
+          )}
 
           <p className="ask-meta">
             {[

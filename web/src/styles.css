@@ -615,6 +615,42 @@ h3 {
   font-size: 0.8rem;
 }
 
+.ask-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ask-feedback button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.ask-feedback button:hover:not(:disabled) {
+  background: #eef6f5;
+  border-color: #0f766e;
+}
+
+.ask-feedback button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ask-feedback-caption,
+.ask-feedback-note {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.ask-feedback-note {
+  color: #065f46;
+  font-weight: 600;
+}
+
 /* --- Manual search panel (dashboard) --- */
 
 .search-panel {
