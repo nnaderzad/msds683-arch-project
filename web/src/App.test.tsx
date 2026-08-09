@@ -98,6 +98,9 @@ test("renders the dashboard from the pre-cached heroes and the live show detail"
     expect.any(Object),
   );
   expect(fetchMock).not.toHaveBeenCalledWith("http://127.0.0.1:8000/shows", expect.any(Object));
+
+  // The ask panel is embedded below the dashboard, not only behind the view toggle.
+  expect(screen.getByRole("heading", { name: "Ask the music warehouse" })).toBeInTheDocument();
 });
 
 test("selecting another hero fetches that show's history and forecast", async () => {
