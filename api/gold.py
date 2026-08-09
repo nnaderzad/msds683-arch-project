@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 import os
+import threading
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -311,17 +312,25 @@ class GoldRepository:
 
 
 _repo: GoldRepository | None = None
+_repo_lock = threading.Lock()
 
 
 def set_repository(repository: GoldRepository | None) -> None:
     """Swap the process-wide repository; tests pass None to reset lazy loading."""
     global _repo
-    _repo = repository
+    with _repo_lock:
+        _repo = repository
 
 
 def get_repository() -> GoldRepository:
-    """Return the process-wide repository, lazily loading gold data on first use."""
+    """Return the process-wide repository, lazily loading gold data on first use.
+
+    Thread-safe: the startup pre-warm thread (api/app.py lifespan) races the first
+    HTTP requests, and the multi-minute BigQuery load must happen exactly once.
+    """
     global _repo
     if _repo is None:
-        _repo = GoldRepository(load_gold_frames())
+        with _repo_lock:
+            if _repo is None:
+                _repo = GoldRepository(load_gold_frames())
     return _repo

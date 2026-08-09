@@ -1,5 +1,8 @@
 fastapi>=0.115,<1.0
 google-cloud-bigquery>=3.20
+# Storage read API: to_dataframe() streams via Arrow instead of paginating REST —
+# measured to be the difference between a ~4 min and a ~1 min gold pre-warm.
+google-cloud-bigquery-storage>=2.24
 google-genai>=2.0,<3.0
 sqlglot>=25
 httpx>=0.27,<1.0
