@@ -615,6 +615,46 @@ h3 {
   font-size: 0.8rem;
 }
 
+.ask-clear {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ask-clear:hover {
+  background: #eef6f5;
+  border-color: #0f766e;
+}
+
+/* Compact transcript of earlier exchanges, above the input. */
+.ask-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 3px solid #e2e8f0;
+  padding-left: 12px;
+}
+
+.ask-turn p {
+  margin: 0;
+}
+
+.ask-turn-question {
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.ask-turn-answer {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
 .ask-feedback {
   display: flex;
   align-items: center;
