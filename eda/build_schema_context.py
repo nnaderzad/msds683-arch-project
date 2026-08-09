@@ -62,7 +62,8 @@ TABLE_NOTES: dict[str, str] = {
     ),
     "dim_venue": (
         "One row per venue. capacity is curated from public sources and may be NULL "
-        "(never guess a missing capacity)."
+        "(never guess a missing capacity). US state lives in state_code (two-letter); "
+        "there is no 'state' column."
     ),
     "dim_geo": (
         "Nielsen DMA metro lookup. dma_code is the bare code (e.g. '807' = SF Bay Area). "
@@ -144,7 +145,9 @@ SEMANTIC_RULES = """\
 6. BigQuery dialect: QUALIFY cannot share a SELECT with aggregate functions. To aggregate
    over per-event nearest-forecast rows, QUALIFY inside a subquery/CTE first, then
    aggregate over it in the outer query.
-7. Only SELECT statements over the tables listed here. Refuse anything else politely —
+7. Inventory questions ("which genres/venues/values exist") exclude NULLs: add
+   WHERE <col> IS NOT NULL to DISTINCT listings — NULL means unknown, not a category.
+8. Only SELECT statements over the tables listed here. Refuse anything else politely —
    including questions unrelated to the event-demand domain."""
 
 # Few-shot examples — each is dry-run compiled against the live dataset at generation
