@@ -160,7 +160,10 @@ SEMANTIC_RULES = """\
    (that metro includes Oakland, San Jose, Berkeley...). Filter dim_venue.city =
    'San Francisco' only when the user clearly means the city proper. Never filter on
    metro_name. "Shows we track / are tracking" = rows in dim_event (upcoming ones have
-   show_date >= CURRENT_DATE())."""
+   show_date >= CURRENT_DATE()).
+10. When listing or naming specific shows/events, ALSO select the event_id column —
+   the UI turns rows carrying event_id into clickable links to that show's dashboard
+   page. Leave event_id out of pure aggregates (counts, averages, shares)."""
 
 # Deterministic slang -> canonical-genre translations (Ticketmaster segment labels).
 # Curated by hand — extend when live questions surface a new alias.
@@ -236,7 +239,7 @@ ORDER BY t.snapshot_date""",
         # Real user question the agent got wrong by guessing a metro_name string:
         # area questions filter dma_code (rule 9), never metro_name/city guesses.
         "What shows are you tracking in the San Francisco Bay Area for the rest of 2026?",
-        """SELECT e.event_name, e.show_date, v.venue_name, v.city
+        """SELECT e.event_id, e.event_name, e.show_date, v.venue_name, v.city
 FROM {ds}.dim_event e
 JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
 WHERE v.dma_code = '807'
@@ -247,7 +250,7 @@ ORDER BY e.show_date""",
         # Real user question the agent got wrong by inventing a genre label:
         # "EDM" translates via the alias list to the canonical 'Dance/Electronic'.
         "What are some EDM shows coming up in San Francisco?",
-        """SELECT e.event_name, e.show_date, v.venue_name
+        """SELECT e.event_id, e.event_name, e.show_date, v.venue_name
 FROM {ds}.dim_event e
 JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
 WHERE e.primary_genre = 'Dance/Electronic' AND v.dma_code = '807'
