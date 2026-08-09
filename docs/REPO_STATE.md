@@ -147,7 +147,7 @@ As of 2026-08-08 (post-pause recovery day — see incident log):
   (`history_filled` from the continuous table), #94 `POST /ask_feedback` →
   `event_demand_ops` (👍/👎), #95 committed-docs endpoints + Docker bundle
   (+ `.gcloudignore`/`.dockerignore` hygiene: personal notes were reaching build
-  contexts), #96 the web batch (price formatting, legend rebuild, clickable
+  contexts), #96 the web batch (see also #104 link-clarity captions, #105 listing-order/popularity rules, #106 QA smoke + product decisions) (price formatting, legend rebuild, clickable
   search rows, fill toggle, embedded + multi-turn ask, feedback buttons, "How it
   works" docs view), #97 hero regeneration (12 heroes, 35–46 signal days each),
   #98 **canonical vocabularies** — fixes two live user questions the agent

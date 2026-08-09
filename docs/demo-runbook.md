@@ -14,6 +14,11 @@ section timings (live end-to-end ~1 min, deep dive ~2.5 min).
       the current image (AskPanel + SearchPanel + fresh heroes).
 - [ ] `eda/output/text_to_sql_eval.md` regenerated on the fresh warehouse; the
       accuracy table screenshotted into the deck.
+- [ ] **`python eda/qa_smoke.py`** — 14 deterministic live checks (endpoints,
+      guardrails, the answer-row click-path contract). All must PASS.
+- [ ] Pick 1–2 variability shows from `eda/output/demo_variability.md`
+      (re-run `python eda/demo_variability.py` for fresh candidates) to show a
+      price chart that actually moves.
 - [ ] Timed dry run of the full click path below (target: under 4 min total).
 
 ## T-30min (before class)
