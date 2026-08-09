@@ -19,10 +19,15 @@ export type ChartRow = {
   label: string;
   observedPriceRaw: number | null;
   forecastPriceRaw: number | null;
+  // Gap-filled price series (observed values carried forward through interior
+  // gaps); priceIsFilled marks the carried — not observed — rows.
+  priceFilledRaw: number | null;
+  priceIsFilled: boolean;
   trendsRaw: number | null;
   youtubeRaw: number | null;
   price: number | null;
   forecast: number | null;
+  priceFilled: number | null;
   trends: number | null;
   youtube: number | null;
 };
@@ -31,9 +36,21 @@ type RawChartRow = {
   date: string;
   observedPriceRaw: number | null;
   forecastPriceRaw: number | null;
+  priceFilledRaw: number | null;
+  priceIsFilled: boolean;
   trendsRaw: number | null;
   youtubeRaw: number | null;
 };
+
+export type BuildDemandChartOptions = {
+  // Merge history_filled into the rows so the chart can draw the carried-forward
+  // price series alongside the observed one. Off = exactly the observed-only view.
+  fillPrices?: boolean;
+};
+
+export function hasFilledPriceHistory(show: ShowDetail): boolean {
+  return (show.history_filled?.length ?? 0) > 0;
+}
 
 export function latestHistory(show: ShowDetail): HistoryPoint | null {
   return show.history.at(-1) ?? null;
@@ -78,9 +95,21 @@ export function createIndexScale(values: Array<number | null>) {
   };
 }
 
-export function buildDemandChartData(show: ShowDetail): ChartRow[] {
+export function buildDemandChartData(
+  show: ShowDetail,
+  options: BuildDemandChartOptions = {},
+): ChartRow[] {
   const rowsByDate = new Map<string, RawChartRow>();
   const showIso = dateKey(show.show_date);
+  const emptyRow = (date: string): RawChartRow => ({
+    date,
+    observedPriceRaw: null,
+    forecastPriceRaw: null,
+    priceFilledRaw: null,
+    priceIsFilled: false,
+    trendsRaw: null,
+    youtubeRaw: null,
+  });
 
   show.history.forEach((point) => {
     const snapshotDate = dateKey(point.snapshot_date);
@@ -92,9 +121,8 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
     }
 
     rowsByDate.set(snapshotDate, {
-      date: snapshotDate,
+      ...emptyRow(snapshotDate),
       observedPriceRaw: observedLowestPrice(point.price_min),
-      forecastPriceRaw: null,
       trendsRaw: point.local_interest,
       youtubeRaw: point.yt_views,
     });
@@ -111,12 +139,7 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
 
   if (latestDate && latestObservedPrice !== null) {
     rowsByDate.set(latestDate, {
-      ...(rowsByDate.get(latestDate) ?? {
-        date: latestDate,
-        observedPriceRaw: null,
-        trendsRaw: null,
-        youtubeRaw: null,
-      }),
+      ...(rowsByDate.get(latestDate) ?? emptyRow(latestDate)),
       forecastPriceRaw: latestObservedPrice,
     });
   }
@@ -133,15 +156,28 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
     }
 
     rowsByDate.set(forecastDate, {
-      ...(rowsByDate.get(forecastDate) ?? {
-        date: forecastDate,
-        observedPriceRaw: null,
-        trendsRaw: null,
-        youtubeRaw: null,
-      }),
+      ...(rowsByDate.get(forecastDate) ?? emptyRow(forecastDate)),
       forecastPriceRaw: point.predicted_price,
     });
   });
+
+  // Merge the gap-filled price series last so the observed rows, forecast anchor,
+  // and forecast points above are byte-identical to the observed-only view.
+  if (options.fillPrices) {
+    (show.history_filled ?? []).forEach((point) => {
+      const snapshotDate = dateKey(point.snapshot_date);
+
+      if (snapshotDate > showIso) {
+        return;
+      }
+
+      rowsByDate.set(snapshotDate, {
+        ...(rowsByDate.get(snapshotDate) ?? emptyRow(snapshotDate)),
+        priceFilledRaw: observedLowestPrice(point.price_min),
+        priceIsFilled: point.price_is_filled,
+      });
+    });
+  }
 
   const rows = Array.from(rowsByDate.values()).sort((left, right) =>
     left.date.localeCompare(right.date),
@@ -153,6 +189,7 @@ export function buildDemandChartData(show: ShowDetail): ChartRow[] {
     label: formatShortDate(row.date),
     price: row.observedPriceRaw,
     forecast: row.forecastPriceRaw,
+    priceFilled: row.priceFilledRaw,
     trends: row.trendsRaw,
     youtube: youtubeScale(row.youtubeRaw),
   }));

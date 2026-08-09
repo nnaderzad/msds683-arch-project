@@ -13,6 +13,16 @@ export type ForecastPoint = {
   predicted_price: number;
 };
 
+// Same series as HistoryPoint but with interior price gaps filled by carrying the
+// last observed price forward; price_is_filled marks carried (not observed) rows.
+export type FilledHistoryPoint = {
+  snapshot_date: string;
+  days_to_show: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  price_is_filled: boolean;
+};
+
 export type ShowSummary = {
   event_id: string;
   event_name: string;
@@ -33,6 +43,8 @@ export type ShowSummary = {
 export type ShowDetail = ShowSummary & {
   history: HistoryPoint[];
   forecast: ForecastPoint[];
+  // Optional so older API responses (without the field) still render observed-only.
+  history_filled?: FilledHistoryPoint[];
 };
 
 export type GuardrailVerdict = {

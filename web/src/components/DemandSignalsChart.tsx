@@ -14,6 +14,7 @@ import {
   buildDemandChartData,
   dateKey,
   getSignalAvailability,
+  hasFilledPriceHistory,
   latestHistory,
   observedLowestPrice,
   priceAxisDomain,
@@ -106,6 +107,28 @@ const signalLabels = Object.fromEntries(
   signalOptions.map((signal) => [signal.key, signal.label]),
 ) as Record<SignalKey, string>;
 
+// Carried-forward prices are real observed prices carried through interior gaps —
+// drawn lighter and dashed, with hollow markers, so they never pass as observations.
+const CARRIED_COLOR = "#7fa8c6";
+const CARRIED_DASH = "3 4";
+const CARRIED_LABEL = "Carried forward (not observed)";
+
+type CarriedDotProps = {
+  cx?: number;
+  cy?: number;
+  payload?: ChartRow;
+};
+
+// Hollow marker on carried rows only; observed rows already carry the solid
+// price dot, so the filled series stays invisible where prices were observed.
+function CarriedDot({ cx, cy, payload }: CarriedDotProps) {
+  if (cx == null || cy == null || !payload?.priceIsFilled) {
+    return <g />;
+  }
+
+  return <circle cx={cx} cy={cy} r={4} fill="#ffffff" stroke={CARRIED_COLOR} strokeWidth={2} />;
+}
+
 const defaultVisibility: SignalVisibility = {
   price: true,
   forecast: true,
@@ -126,6 +149,10 @@ function tooltipRawValue(row: ChartRow | undefined, key: string): string {
     return formatPrice(row.forecastPriceRaw);
   }
 
+  if (key === "priceFilled") {
+    return formatPrice(row.priceFilledRaw);
+  }
+
   if (key === "trends") {
     return row.trendsRaw === null ? "No signal" : `${row.trendsRaw} interest`;
   }
@@ -138,7 +165,7 @@ function tooltipRawValue(row: ChartRow | undefined, key: string): string {
 }
 
 function tooltipScaleLabel(key: string, value: number | undefined): string {
-  if (key === "price" || key === "forecast") {
+  if (key === "price" || key === "forecast" || key === "priceFilled") {
     return "Right axis: price";
   }
 
@@ -157,6 +184,12 @@ function DemandTooltip({ active, label, payload }: DemandTooltipProps) {
         const key = String(item.dataKey);
         const row = item.payload as ChartRow | undefined;
 
+        // On observed rows the filled series duplicates the observed price —
+        // only surface it where the value was actually carried forward.
+        if (key === "priceFilled" && !row?.priceIsFilled) {
+          return null;
+        }
+
         return (
           <div key={key} className="tooltip-row">
             <span style={{ backgroundColor: item.color }} />
@@ -173,7 +206,14 @@ function DemandTooltip({ active, label, payload }: DemandTooltipProps) {
 
 export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
   const [visibleSignals, setVisibleSignals] = useState<SignalVisibility>(defaultVisibility);
-  const combinedData = useMemo(() => buildDemandChartData(show), [show]);
+  // Checked by default; hidden (and off) when the API sends no history_filled rows.
+  const [fillPrices, setFillPrices] = useState(true);
+  const filledAvailable = hasFilledPriceHistory(show);
+  const fillActive = filledAvailable && fillPrices;
+  const combinedData = useMemo(
+    () => buildDemandChartData(show, { fillPrices: fillActive }),
+    [show, fillActive],
+  );
   const signalAvailability = useMemo(() => getSignalAvailability(combinedData), [combinedData]);
   const priceDomain = useMemo(() => priceAxisDomain(combinedData), [combinedData]);
   const latest = latestHistory(show);
@@ -187,6 +227,8 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
   const hasVisibleSignals = signalOptions.some(
     (signal) => visibleSignals[signal.key] && signalAvailability[signal.key],
   );
+  // The carried series is part of the price encoding, so it follows the price toggle.
+  const showCarried = fillActive && visibleSignals.price && signalAvailability.price;
 
   const toggleSignal = (signal: SignalKey) => {
     if (!signalAvailability[signal]) {
@@ -227,8 +269,25 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               </label>
             );
           })}
+          {showCarried && (
+            <span className="legend-static">
+              <LegendSwatch color={CARRIED_COLOR} dash={CARRIED_DASH} marker hollow />
+              <span>{CARRIED_LABEL}</span>
+            </span>
+          )}
         </div>
       </div>
+
+      {filledAvailable && (
+        <label className="fill-toggle">
+          <input
+            type="checkbox"
+            checked={fillPrices}
+            onChange={(event) => setFillPrices(event.target.checked)}
+          />
+          Fill price gaps (carry last observed price forward)
+        </label>
+      )}
 
       <div className="combined-chart">
         {!hasVisibleSignals && (
@@ -263,6 +322,20 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               }}
             />
             <Tooltip content={<DemandTooltip />} />
+            {showCarried && (
+              <Line
+                type="monotone"
+                dataKey="priceFilled"
+                yAxisId="price"
+                name={CARRIED_LABEL}
+                stroke={CARRIED_COLOR}
+                strokeWidth={2}
+                strokeDasharray={CARRIED_DASH}
+                dot={<CarriedDot />}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
             {visibleSignals.price && signalAvailability.price && (
               <Line
                 type="monotone"

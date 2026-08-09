@@ -195,6 +195,46 @@ test("shows a clear error when the selected show cannot be loaded", async () => 
   expect(screen.getByRole("combobox", { name: /demo show/i })).toBeEnabled();
 });
 
+test("fill-price toggle is on by default and reverts to the observed-only view", async () => {
+  const user = userEvent.setup();
+  const detail = detailFor(defaultHero);
+  const filledShow: ShowDetail = {
+    ...detail,
+    history_filled: [
+      {
+        snapshot_date: "2026-06-24T00:00:00",
+        days_to_show: 105,
+        price_min: detail.price_min,
+        price_max: detail.price_max,
+        price_is_filled: false,
+      },
+      {
+        snapshot_date: "2026-06-25T00:00:00",
+        days_to_show: 104,
+        price_min: detail.price_min,
+        price_max: detail.price_max,
+        price_is_filled: true,
+      },
+    ],
+  };
+
+  render(<DemandSignalsChart show={filledShow} />);
+
+  const fillToggle = screen.getByRole("checkbox", { name: /fill price gaps/i });
+  expect(fillToggle).toBeChecked();
+  expect(screen.getByText(/carried forward \(not observed\)/i)).toBeInTheDocument();
+
+  await user.click(fillToggle);
+  expect(fillToggle).not.toBeChecked();
+  expect(screen.queryByText(/carried forward \(not observed\)/i)).not.toBeInTheDocument();
+});
+
+test("fill-price toggle is hidden when the API sends no history_filled rows", () => {
+  render(<DemandSignalsChart show={{ ...detailFor(defaultHero), history_filled: [] }} />);
+
+  expect(screen.queryByRole("checkbox", { name: /fill price gaps/i })).not.toBeInTheDocument();
+});
+
 test("missing signals are disabled instead of crashing the chart", () => {
   const missingSignalShow: ShowDetail = {
     event_id: "missing-signals",
