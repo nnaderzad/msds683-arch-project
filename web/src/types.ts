@@ -79,6 +79,18 @@ export type AskFeedbackResponse = {
   status: "ok" | "rate_limited" | "error";
 };
 
+export type RepoDocSummary = {
+  name: string;
+  title: string;
+  description: string;
+};
+
+export type RepoDoc = {
+  name: string;
+  title: string;
+  markdown: string;
+};
+
 export type AskResponse = {
   status: AskStatus;
   question: string;

@@ -3,6 +3,8 @@ import type {
   AskFeedbackRequest,
   AskFeedbackResponse,
   AskResponse,
+  RepoDoc,
+  RepoDocSummary,
   ShowDetail,
   ShowSummary,
 } from "../types";
@@ -91,6 +93,14 @@ export async function askQuestion(
   }
 
   return (await response.json()) as AskResponse;
+}
+
+export function fetchRepoDocs(signal?: AbortSignal): Promise<RepoDocSummary[]> {
+  return getJson<RepoDocSummary[]>("/repo-docs", signal);
+}
+
+export function fetchRepoDoc(name: string, signal?: AbortSignal): Promise<RepoDoc> {
+  return getJson<RepoDoc>(`/repo-doc/${encodeURIComponent(name)}`, signal);
 }
 
 export async function sendAskFeedback(payload: AskFeedbackRequest): Promise<AskFeedbackResponse> {
