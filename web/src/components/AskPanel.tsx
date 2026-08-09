@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { askQuestion, sendAskFeedback } from "../api/client";
 import type { AskExchange, AskFeedbackVerdict, AskResponse } from "../types";
-import { AskResultsTable } from "./AskResultsTable";
+import { AskResultsTable, findEventIdColumn, linkableEventId } from "./AskResultsTable";
 
 // Demo insurance: one easy lookup, one aggregate, and one guardrail probe so the
 // live audience sees a real answer, a real number, and a refusal in three clicks.
@@ -50,6 +50,17 @@ type AskTurn = {
   question: string;
   response: AskResponse;
 };
+
+// Older turns render without their tables — flag the ones that had clickable rows
+// so a viewer knows why those rows are no longer on screen.
+function turnHadLinkableRows(response: AskResponse): boolean {
+  const rows = response.rows ?? [];
+  if (rows.length === 0) {
+    return false;
+  }
+  const column = findEventIdColumn(Object.keys(rows[0]));
+  return rows.some((row) => linkableEventId(row, column) != null);
+}
 
 // /ask follow-up context: the last 3 answered turns (status ok only), older first.
 function historyFromTurns(turns: AskTurn[]): AskExchange[] {
@@ -148,6 +159,9 @@ export function AskPanel({ compact = false, onOpenShow }: AskPanelProps) {
               <p className="ask-turn-answer">
                 {turn.response.answer ?? STATUS_COPY[turn.response.status] ?? turn.response.status}
               </p>
+              {turnHadLinkableRows(turn.response) && (
+                <p className="ask-turn-hint">(rows available in the latest answer only)</p>
+              )}
             </div>
           ))}
         </div>

@@ -242,6 +242,50 @@ describe("AskPanel", () => {
     expect(screen.queryByText("There are 900 venues.")).not.toBeInTheDocument();
   });
 
+  it("flags compact older turns that had linkable rows", async () => {
+    const responses: AskResponse[] = [
+      {
+        status: "ok",
+        question: "Which shows?",
+        sql: "SELECT event_id FROM fact_event_demand",
+        rows: [{ event_id: "rZ7HnEZ1Af00jd", event_name: "Everclear with American Hi-Fi" }],
+        answer: "One show.",
+        guardrails: [],
+      },
+      {
+        status: "ok",
+        question: "How many events?",
+        sql: "SELECT COUNT(*) FROM fact_event_demand",
+        rows: [{ n: 40000 }],
+        answer: "There are 40,000 events.",
+        guardrails: [],
+      },
+    ];
+    let call = 0;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      const payload = responses[call];
+      call += 1;
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(payload) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AskPanel onOpenShow={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText("Question"), "Which shows?");
+    await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("One show.");
+    expect(screen.queryByText("(rows available in the latest answer only)")).not.toBeInTheDocument();
+
+    await userEvent.clear(screen.getByLabelText("Question"));
+    await userEvent.type(screen.getByLabelText("Question"), "How many events?");
+    await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await screen.findByText("There are 40,000 events.");
+
+    // The linkable-row turn collapsed into the thread and says where its rows went;
+    // the aggregate-only latest answer earns no hint.
+    const thread = screen.getByLabelText("Earlier exchanges");
+    expect(thread).toHaveTextContent("(rows available in the latest answer only)");
+  });
+
   it("skips refused turns when building follow-up history", async () => {
     const responses: AskResponse[] = [
       {
