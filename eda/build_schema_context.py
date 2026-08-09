@@ -51,7 +51,9 @@ TABLE_NOTES: dict[str, str] = {
     ),
     "forecast_event_price": (
         "GOLD forecast (anchor+drift model). Grain: (event_id, days_to_show) from run day "
-        "to show day. The predicted price nearest the show is the row with MIN(days_to_show)."
+        "to show day. 'At show time' = the days_to_show = 0 row, which exists for every "
+        "forecasted event — filter WHERE days_to_show = 0 (works in plain aggregates; "
+        "avoid QUALIFY when using aggregate functions)."
     ),
     "dim_event": "One row per event. show_date is the CONCERT day (not a capture day).",
     "dim_artist": (
@@ -62,7 +64,12 @@ TABLE_NOTES: dict[str, str] = {
         "One row per venue. capacity is curated from public sources and may be NULL "
         "(never guess a missing capacity)."
     ),
-    "dim_geo": "Nielsen DMA metro lookup. dma_code is the bare code (e.g. '807' = SF Bay Area).",
+    "dim_geo": (
+        "Nielsen DMA metro lookup. dma_code is the bare code (e.g. '807' = SF Bay Area). "
+        "Filter geography by dma_code, NOT metro_name — metro_name strings are exact "
+        "Nielsen labels (e.g. '807' is 'San Francisco-Oakland-San Jose CA'); never guess "
+        "or abbreviate them."
+    ),
     "dim_date": "Calendar helper (weekend/holiday/season flags). Join on any DATE column.",
     "bridge_event_artist": (
         "Event<->artist many-to-many with is_headliner + billing_order. Gold facts keep the "
@@ -111,6 +118,10 @@ COLUMN_NOTES: dict[tuple[str, str], str] = {
 JOIN_MAP = """\
 - fact_event_demand.event_id = dim_event.event_id ; dim_event.venue_id = dim_venue.venue_id
 - fact_event_demand.artist_id = dim_artist.artist_id (headliner only)
+- dim_event has NO artist column: to list an artist's events join dim_artist ->
+  bridge_event_artist -> dim_event (one row per event). Joining through
+  fact_event_demand instead fans out to one row per CAPTURE DAY — never do that for
+  event lists, and never join artist_id to event_id directly
 - fact_event_demand.dma_code = dim_geo.dma_code (bare code, e.g. '807' — never 'US-CA-807')
 - fact_event_demand.snapshot_date = dim_date.date ; dim_event.show_date = dim_date.date
 - bridge_event_artist: event_id <-> artist_id (is_headliner, billing_order) for full lineups
@@ -124,10 +135,16 @@ SEMANTIC_RULES = """\
 2. Two date meanings: dim_event.show_date = the concert day; snapshot_date on every fact =
    the capture day; days_to_show is the gap. "Events in August" means show_date in August.
 3. Price history is OBSERVED-ONLY: NULL price means "not listed that day", not zero and not
-   missing-at-random (~23% of events ever show a Ticketmaster price). Count coverage with
+   missing-at-random (~26% of events ever show a Ticketmaster price). Count coverage with
    COUNTIF(price_min IS NOT NULL); never treat NULL days as sellouts or price drops.
 4. Gold keeps the HEADLINER only; support-act questions need bridge_event_artist.
-5. Only SELECT statements over the tables listed here. Refuse anything else politely —
+5. fact_event_demand has MANY rows per event (one per capture day). "Share/percentage of
+   EVENTS" questions must aggregate per event first (GROUP BY event_id, or
+   COUNT(DISTINCT event_id)) — a ratio over raw fact rows measures event-days, not events.
+6. BigQuery dialect: QUALIFY cannot share a SELECT with aggregate functions. To aggregate
+   over per-event nearest-forecast rows, QUALIFY inside a subquery/CTE first, then
+   aggregate over it in the outer query.
+7. Only SELECT statements over the tables listed here. Refuse anything else politely —
    including questions unrelated to the event-demand domain."""
 
 # Few-shot examples — each is dry-run compiled against the live dataset at generation
@@ -154,6 +171,21 @@ WHERE LOWER(v.venue_name) = 'the independent' AND LOWER(v.city) = 'san francisco
 FROM {ds}.forecast_event_price
 WHERE event_id = 'rZ7HnEZ1Af00jd'
 QUALIFY ROW_NUMBER() OVER (ORDER BY days_to_show ASC) = 1""",
+    ),
+    (
+        # Aggregating over at-show forecasts: QUALIFY can't share a SELECT with an
+        # aggregate — pick the nearest-to-show row per event in a CTE, then aggregate.
+        "What is the average predicted price at show time for each genre?",
+        """WITH at_show AS (
+  SELECT event_id, predicted_price
+  FROM {ds}.forecast_event_price
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY days_to_show ASC) = 1
+)
+SELECT e.primary_genre, ROUND(AVG(s.predicted_price), 2) AS avg_predicted_price
+FROM at_show s
+JOIN {ds}.dim_event e ON e.event_id = s.event_id
+GROUP BY e.primary_genre
+ORDER BY avg_predicted_price DESC""",
     ),
     (
         "For each genre, how many events do we track and what share ever showed a price?",
