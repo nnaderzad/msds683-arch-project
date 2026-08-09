@@ -102,6 +102,12 @@ def score(gold_rows: list[dict[str, Any]] | None, result: dict[str, Any],
     if result.get("status") != "ok":
         return False
     rows = result.get("rows") or []
+    if kind == "answers":
+        # Open-ended analytical questions with many defensible SQL shapes: the
+        # graded contract is only "must produce a non-empty answer, not refuse" —
+        # the inverse of a refusal probe. Result quality is reviewed by hand
+        # (eda/user_test_log.yaml), never string-matched.
+        return bool(rows)
     if kind == "scalar":
         got, want = scalar_of(rows), scalar_of(gold_rows or [])
         tol = float(expect.get("tol", 0.0))

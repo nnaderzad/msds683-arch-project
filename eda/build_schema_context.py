@@ -35,9 +35,11 @@ from api.text2sql import ALLOWED_TABLES, ALLOWED_TABLES_SYNTH  # noqa: E402
 OUTPUT_PATH = REPO_ROOT / "api" / "schema_context.md"
 SYNTH_OUTPUT_PATH = REPO_ROOT / "api" / "schema_context_synth.md"
 SYNTH_DATASET = "event_demand_synth"
-# Hard prompt budget (~4k tokens at ~4 chars/token). Generation FAILS above this so
+# Hard prompt budget (~4.5k tokens at ~4 chars/token). Generation FAILS above this so
 # the context can never silently balloon past what a cheap Flash call handles well.
-MAX_CHARS = 16_000
+# Raised 16k -> 18k on 2026-08-09 for the lead-lag few-shot (a real user question the
+# agent wrongly refused); still a small fraction of Flash's window at ~$0.0005/question.
+MAX_CHARS = 18_000
 
 # ---------------------------------------------------------------------------
 # Curated semantics (transcribed from docs/data-model.md — keep the two in sync).
@@ -138,7 +140,11 @@ JOIN_MAP = """\
 SEMANTIC_RULES = """\
 1. Google Trends `interest` is normalized 0-100 WITHIN each pull. NEVER compare, rank, or
    average it across artists, and never across metros in fact_trends_daily. If a question
-   requires that comparison, refuse and explain the normalization.
+   requires that comparison, refuse and explain the normalization. But WITHIN one
+   (artist, metro) series, comparison OVER TIME is the intended use: questions about an
+   artist's interest rising or falling, or interest changes preceding price changes, are
+   ANSWERABLE (per-event lead-lag counts aggregate within-event comparisons, which is
+   safe — see the lead-lag example). Refuse only true cross-artist/cross-metro ranking.
 2. Two date meanings: dim_event.show_date = the concert day; snapshot_date on every fact =
    the capture day; days_to_show is the gap. "Events in August" means show_date in August.
 3. Price history is OBSERVED-ONLY: NULL price means "not listed that day", not zero and not
@@ -284,6 +290,49 @@ JOIN latest_subs s ON s.artist_id = a.artist_id
 WHERE v.dma_code = '807' AND e.show_date >= CURRENT_DATE()
 ORDER BY s.official_subscribers DESC
 LIMIT 15""",
+    ),
+    (
+        # Column-name pin: dim_venue has state_code (there is NO `state` column).
+        "Which state has the most upcoming shows?",
+        """SELECT v.state_code, COUNT(*) AS upcoming_shows
+FROM {ds}.dim_event e
+JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
+WHERE e.show_date >= CURRENT_DATE()
+GROUP BY v.state_code
+ORDER BY upcoming_shows DESC
+LIMIT 1""",
+    ),
+    (
+        # Lead-lag WITHIN each event's own series (rule 1's allowed direction):
+        # per-event window comparisons, then aggregate the verdicts — never the
+        # raw interest values — across events.
+        "Does rising search interest for an artist playing in San Francisco precede rising prices?",
+        """WITH price_rises AS (
+  SELECT event_id, MIN(snapshot_date) AS first_rise
+  FROM (
+    SELECT event_id, snapshot_date, price_min,
+           LAG(price_min) OVER (PARTITION BY event_id ORDER BY snapshot_date) AS prev_price
+    FROM {ds}.fact_event_demand
+    WHERE dma_code = '807' AND price_min IS NOT NULL
+  )
+  WHERE prev_price IS NOT NULL AND price_min > prev_price
+  GROUP BY event_id
+),
+interest_windows AS (
+  SELECT f.event_id,
+         AVG(IF(f.snapshot_date >= DATE_SUB(p.first_rise, INTERVAL 14 DAY)
+                AND f.snapshot_date < p.first_rise, f.local_interest, NULL)) AS pre_rise,
+         AVG(IF(f.snapshot_date < DATE_SUB(p.first_rise, INTERVAL 14 DAY),
+                f.local_interest, NULL)) AS baseline
+  FROM {ds}.fact_event_demand f
+  JOIN price_rises p ON f.event_id = p.event_id
+  GROUP BY f.event_id
+)
+SELECT COUNT(*) AS bay_area_events_with_a_price_rise,
+       COUNTIF(pre_rise > baseline) AS interest_was_rising_first,
+       ROUND(COUNTIF(pre_rise > baseline) / COUNT(*) * 100, 1) AS pct_interest_led
+FROM interest_windows
+WHERE pre_rise IS NOT NULL AND baseline IS NOT NULL""",
     ),
 ]
 

@@ -136,3 +136,16 @@ def test_write_report_renders_accuracy_and_failures(tmp_path):
     assert "result_mismatch" in text
     assert "SELECT 2" in text
     assert (tmp_path / "text_to_sql_eval.csv").exists()
+
+
+def test_answers_type_passes_on_any_rows():
+    expect = {"type": "answers"}
+    ok = {"status": "ok", "rows": [{"events": 3, "pct": 33.3}]}
+    assert ev.score(None, ok, expect) is True
+
+
+def test_answers_type_fails_on_refusal_or_empty():
+    expect = {"type": "answers"}
+    assert ev.score(None, {"status": "refused", "rows": []}, expect) is False
+    assert ev.score(None, {"status": "ok", "rows": []}, expect) is False
+    assert ev.classify_failure(expect, {"status": "refused"}, False) == "refused_wrongly"
