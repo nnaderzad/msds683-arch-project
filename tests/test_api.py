@@ -245,3 +245,31 @@ def test_show_filled_history_empty_without_continuous_table(client):
     )
     show = client.get("/show/event_soon").json()
     assert show["history_filled"] == []
+
+
+def test_concurrent_lazy_load_loads_once(monkeypatch):
+    import threading as _threading
+    import time as _time
+
+    from api import gold as gold_module
+
+    calls = []
+
+    def slow_load():
+        calls.append(1)
+        _time.sleep(0.05)
+        return fixture_frames()
+
+    monkeypatch.setattr(gold_module, "load_gold_frames", slow_load)
+    set_repository(None)
+    repos = []
+    threads = [
+        _threading.Thread(target=lambda: repos.append(gold_module.get_repository()))
+        for _ in range(4)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(calls) == 1
+    assert all(r is repos[0] for r in repos)

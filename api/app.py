@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,17 +30,25 @@ def _client_key(request: Request) -> str:
     )
 
 
+def _prewarm_gold() -> None:
+    try:
+        get_repository()
+        logger.info("Gold pre-warm complete.")
+    except Exception:  # noqa: BLE001 - never crash the warm thread; lazy load covers it
+        logger.exception("Gold pre-warm failed; falling back to lazy load on first request.")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Pre-warm the gold repository so the first user request isn't a cold SELECT *.
 
-    Pairs with Cloud Run ``--min-instances 1``: the one warm instance loads gold once at
-    startup. A transient BigQuery hiccup must not block startup — fall back to lazy load.
+    The load runs in a background thread so the port binds IMMEDIATELY — blocking
+    startup on the multi-minute BigQuery load made Cloud Run's 4-minute startup
+    probe kill the instance (2026-08-09 deploy failure). Requests that arrive
+    mid-warm block on the same lazy-load lock and are served when it finishes.
+    Pairs with ``--min-instances 1``: the warm instance loads gold once at boot.
     """
-    try:
-        get_repository()
-    except Exception:  # noqa: BLE001 - never fail startup on a transient gold-load error
-        logger.exception("Gold pre-warm failed; falling back to lazy load on first request.")
+    threading.Thread(target=_prewarm_gold, name="gold-prewarm", daemon=True).start()
     yield
 
 
