@@ -248,6 +248,48 @@ test("an ask-answer row with an event_id jumps from the ask view to the dashboar
   expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue(askShow.event_id);
 });
 
+test("a failed show fetch after an ask-row pick shows the error notice, not a spinner", async () => {
+  const user = userEvent.setup();
+  const askId = "ask-broken-show1";
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/genres")) {
+      return Promise.resolve(jsonResponse([]));
+    }
+    if (url.endsWith("/ask")) {
+      return Promise.resolve(
+        jsonResponse({
+          status: "ok",
+          question: "Which shows?",
+          sql: "SELECT event_id FROM fact_event_demand",
+          rows: [{ event_id: askId }],
+          answer: "One show.",
+          guardrails: [],
+        }),
+      );
+    }
+    if (url.endsWith(`/show/${defaultHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(defaultHero)));
+    }
+    // The picked show's dashboard data is unavailable.
+    return Promise.resolve(jsonResponse({ detail: "Server error" }, 500));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
+
+  await user.click(screen.getByRole("button", { name: "Ask the music warehouse" }));
+  await user.type(screen.getByLabelText("Question"), "Which shows?");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+  await user.click(await screen.findByRole("button", { name: `View show ${askId}` }));
+
+  // Back on the dashboard: a friendly inline notice, no indefinite loading state.
+  expect(await screen.findByRole("alert")).toHaveTextContent(/could not load the selected show/i);
+  expect(screen.queryByText(/loading selected show/i)).not.toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /demo show/i })).toBeEnabled();
+});
+
 test("shows a clear error when the selected show cannot be loaded", async () => {
   vi.stubGlobal(
     "fetch",
