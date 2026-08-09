@@ -21,6 +21,7 @@ Generated from `data-model.md` (do not hand-edit):
 
 | Doc | Decision |
 |---|---|
+| [`product-decisions.md`](product-decisions.md) | what users see: answer ordering, popularity definition, clickable answers, synth stance, the unpriced-shows question (open), QA/QC layers |
 | [`forecast_model_decision.md`](forecast_model_decision.md) | the anchor+drift forecast rework (2026-06-29): problem, evidence, rollback |
 | [`collection_efficiency_review.md`](collection_efficiency_review.md) | the 2026-07 collection review: TM 2×/day, Trends budget, 19hz/RA adoption (findings 1–12, decisions D1–D8) |
 | [`artist_links_enrichment.md`](artist_links_enrichment.md) | proposal (no code yet): artist external-links enrichment sizing + handoff |
