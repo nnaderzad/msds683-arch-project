@@ -10,7 +10,8 @@ Lakehouse course, which adds a guardrailed **text-to-SQL agent**, a **synthetic
 demand layer** (`event_demand_synth`), and **performance benchmarks** — roadmap
 and task board: [`docs/lakehouse-plan.md`](docs/lakehouse-plan.md).
 
-> **Current status, freshness, and incidents:** [`docs/REPO_STATE.md`](docs/REPO_STATE.md) ·
+> **Architecture & design decisions:** [`docs/architecture.md`](docs/architecture.md) ·
+> current status, freshness, and incidents: [`docs/REPO_STATE.md`](docs/REPO_STATE.md) ·
 > schema: [`docs/data-model.md`](docs/data-model.md) ·
 > pipeline walkthrough: [`docs/transformations_showcase.md`](docs/transformations_showcase.md)
 
