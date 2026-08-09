@@ -61,13 +61,50 @@ function PopularityAxisLabel({ viewBox }: { viewBox?: AxisLabelViewBox }) {
       fontSize={12}
       fontWeight={600}
     >
-      <tspan fill="#3f8f5f">Local</tspan>
+      <tspan fill="#3f8f5f">Local interest</tspan>
       <tspan fill="#475569">{" & "}</tspan>
-      <tspan fill="#dd6b20">Global</tspan>
-      <tspan fill="#475569"> popularity (0–100)</tspan>
+      <tspan fill="#dd6b20">YouTube</tspan>
+      <tspan fill="#475569"> (0–100)</tspan>
     </text>
   );
 }
+
+type LegendSwatchProps = {
+  color: string;
+  dash?: string | null;
+  marker?: boolean;
+  hollow?: boolean;
+};
+
+// Legend swatch drawn with the same stroke/dash/marker as the series it names,
+// so "dashed line" and "line with circles" are answerable from the legend itself.
+function LegendSwatch({ color, dash, marker, hollow }: LegendSwatchProps) {
+  return (
+    <svg className="legend-swatch" width={28} height={12} viewBox="0 0 28 12" aria-hidden="true">
+      <line
+        x1={2}
+        y1={6}
+        x2={26}
+        y2={6}
+        stroke={color}
+        strokeWidth={hollow ? 2 : 3}
+        strokeDasharray={dash ?? undefined}
+        strokeLinecap="round"
+      />
+      {marker &&
+        (hollow ? (
+          <circle cx={14} cy={6} r={4} fill="#ffffff" stroke={color} strokeWidth={2} />
+        ) : (
+          <circle cx={14} cy={6} r={4} fill={color} />
+        ))}
+    </svg>
+  );
+}
+
+// Tooltip/series names come from the same legend entries so the two never drift.
+const signalLabels = Object.fromEntries(
+  signalOptions.map((signal) => [signal.key, signal.label]),
+) as Record<SignalKey, string>;
 
 const defaultVisibility: SignalVisibility = {
   price: true,
@@ -181,11 +218,11 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
               <label key={signal.key} className={disabled ? "is-disabled" : undefined}>
                 <input
                   type="checkbox"
-                  style={{ accentColor: signal.color }}
                   checked={signalAvailability[signal.key] && visibleSignals[signal.key]}
                   disabled={disabled}
                   onChange={() => toggleSignal(signal.key)}
                 />
+                <LegendSwatch color={signal.color} dash={signal.dash} marker={signal.marker} />
                 <span>{signal.label}</span>
               </label>
             );
@@ -231,7 +268,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="price"
                 yAxisId="price"
-                name="Observed lowest price"
+                name={signalLabels.price}
                 stroke="#2f6f96"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -244,7 +281,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="forecast"
                 yAxisId="price"
-                name="Forecast lowest price"
+                name={signalLabels.forecast}
                 stroke="#2f6f96"
                 strokeWidth={3}
                 strokeDasharray="8 6"
@@ -258,7 +295,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="trends"
                 yAxisId="index"
-                name="Local popularity"
+                name={signalLabels.trends}
                 stroke="#3f8f5f"
                 strokeWidth={3}
                 dot={{ r: 4 }}
@@ -271,7 +308,7 @@ export function DemandSignalsChart({ show }: DemandSignalsChartProps) {
                 type="monotone"
                 dataKey="youtube"
                 yAxisId="index"
-                name="Global popularity"
+                name={signalLabels.youtube}
                 stroke="#dd6b20"
                 strokeWidth={3}
                 dot={{ r: 4 }}

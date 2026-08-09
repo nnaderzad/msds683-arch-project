@@ -248,6 +248,11 @@ h3 {
   height: 14px;
 }
 
+.legend-swatch {
+  display: block;
+  flex: 0 0 auto;
+}
+
 .combined-chart {
   position: relative;
   width: 100%;

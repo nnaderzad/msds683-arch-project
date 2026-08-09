@@ -87,10 +87,10 @@ test("renders the dashboard from the pre-cached heroes and the live show detail"
 
   // The chart and all three signal series come from the live /show/{id} detail.
   expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
-  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeChecked();
-  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /observed ticket price/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /price forecast/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /local search interest/i })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeChecked();
 
   // Only the selected show is fetched — never the full /shows list.
   expect(fetchMock).toHaveBeenCalledWith(
@@ -121,7 +121,7 @@ test("signal toggles can hide and show chart series", async () => {
   render(<App />);
 
   await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
-  const trendsToggle = await screen.findByRole("checkbox", { name: /local popularity/i });
+  const trendsToggle = await screen.findByRole("checkbox", { name: /local search interest/i });
 
   expect(trendsToggle).toBeChecked();
   await user.click(trendsToggle);
@@ -175,9 +175,9 @@ test("missing signals are disabled instead of crashing the chart", () => {
 
   render(<DemandSignalsChart show={missingSignalShow} />);
 
-  expect(screen.getByRole("checkbox", { name: /observed lowest price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /forecast lowest price/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /local popularity/i })).toBeDisabled();
-  expect(screen.getByRole("checkbox", { name: /global popularity/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /observed ticket price/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /price forecast/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /local search interest/i })).toBeDisabled();
+  expect(screen.getByRole("checkbox", { name: /youtube views/i })).toBeDisabled();
   expect(screen.getByText(/no selected signals are available/i)).toBeInTheDocument();
 });

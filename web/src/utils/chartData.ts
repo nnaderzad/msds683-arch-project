@@ -1,11 +1,13 @@
 import type { HistoryPoint, ShowDetail } from "../types";
 import { formatShortDate } from "./formatters";
 
+// One entry per visible encoding; label/dash/marker drive both the drawn series
+// and its legend swatch so the legend always matches the actual line style.
 export const signalOptions = [
-  { key: "price", label: "Observed lowest price", color: "#2f6f96" },
-  { key: "forecast", label: "Forecast lowest price", color: "#2f6f96" },
-  { key: "trends", label: "Local popularity", color: "#3f8f5f" },
-  { key: "youtube", label: "Global popularity", color: "#dd6b20" },
+  { key: "price", label: "Observed ticket price (lowest)", color: "#2f6f96", dash: null, marker: true },
+  { key: "forecast", label: "Price forecast", color: "#2f6f96", dash: "8 6", marker: false },
+  { key: "trends", label: "Local search interest (Google Trends)", color: "#3f8f5f", dash: null, marker: true },
+  { key: "youtube", label: "YouTube views (indexed 0–100)", color: "#dd6b20", dash: null, marker: true },
 ] as const;
 
 export type SignalKey = (typeof signalOptions)[number]["key"];
