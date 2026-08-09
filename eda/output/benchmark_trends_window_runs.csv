@@ -40,3 +40,11 @@ gold-refresh-z4ltz,2026-08-04T23:30:12.361419+00:00,trends_silver,3599,timeout,t
 gold-refresh-gfbdr,2026-08-05T23:30:45.376136+00:00,trends_silver,3599,timeout,timeout
 gold-refresh-l22k6,2026-08-06T23:30:20.811230+00:00,trends_silver,3600,timeout,timeout
 gold-refresh-dpmnt,2026-08-07T23:30:21.060168+00:00,trends_silver,3594,timeout,timeout
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,trends_silver,1988,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,trends_series_silver,23,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,youtube_silver,94,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,scene_silver,9,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,dimensions,38,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,dbt_build,38,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,forecast_export,237,ok,completed
+gold-refresh-9mlf8,2026-08-08T23:30:54.371826+00:00,validate_forecast,12,ok,completed
