@@ -74,14 +74,30 @@ function App() {
     return () => controller.abort();
   }, [selectedId]);
 
+  // Ask-result rows carry only an event_id: select it (the effect above fetches
+  // /show/{id}) and make sure the dashboard view is the one showing.
+  const openShowById = (eventId: string) => {
+    setSelectedId(eventId);
+    setView("dashboard");
+  };
+
   // Search picks join the dropdown so a non-hero show selected from the search
-  // results still renders as the current selection.
+  // results still renders as the current selection. Ask-result picks arrive as a
+  // bare id, so the loaded detail joins the dropdown once it exists.
   const dropdownShows = useMemo(() => {
+    const extras: ShowSummary[] = [];
     if (searchPick && !shows.some((show) => show.event_id === searchPick.event_id)) {
-      return [...shows, searchPick];
+      extras.push(searchPick);
     }
-    return shows;
-  }, [shows, searchPick]);
+    if (
+      selectedShow &&
+      !shows.some((show) => show.event_id === selectedShow.event_id) &&
+      !extras.some((show) => show.event_id === selectedShow.event_id)
+    ) {
+      extras.push(selectedShow);
+    }
+    return extras.length > 0 ? [...shows, ...extras] : shows;
+  }, [shows, searchPick, selectedShow]);
 
   const selectedSummary = useMemo(
     () => dropdownShows.find((show) => show.event_id === selectedId) ?? null,
@@ -146,7 +162,7 @@ function App() {
         </div>
       </header>
 
-      {view === "ask" && <AskPanel />}
+      {view === "ask" && <AskPanel onOpenShow={openShowById} />}
 
       {view === "docs" && (
         <Suspense
@@ -201,7 +217,7 @@ function App() {
 
           {/* Same panel as the dedicated view (shared component), embedded so a
               viewer can ask questions in context without switching views. */}
-          <AskPanel compact />
+          <AskPanel compact onOpenShow={openShowById} />
         </>
       )}
     </main>

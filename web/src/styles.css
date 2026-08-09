@@ -584,8 +584,78 @@ h3 {
   font-size: 1.02rem;
 }
 
+/* Non-scrolling anchor for the hover stats card, so the card is not clipped by
+   the scrollable table wrap. */
+.ask-table-shell {
+  position: relative;
+}
+
 .ask-table-wrap {
   overflow-x: auto;
+}
+
+.ask-row-linkable {
+  cursor: pointer;
+}
+
+.ask-row-linkable:hover td {
+  background: #eef6f5;
+}
+
+.ask-row-linkable:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: -2px;
+}
+
+.ask-view-hint {
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ask-show-card {
+  position: absolute;
+  z-index: 10;
+  min-width: 260px;
+  max-width: 340px;
+  border: 1px solid #c6ddec;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px 14px;
+  box-shadow: 0 10px 28px rgb(27 87 124 / 16%);
+}
+
+.ask-show-card strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #111827;
+  font-size: 0.92rem;
+}
+
+.ask-show-card p {
+  margin: 0 0 4px;
+  color: #4b5563;
+  font-size: 0.85rem;
+}
+
+.ask-show-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+}
+
+.ask-show-card dt {
+  color: #667085;
+}
+
+.ask-show-card dd {
+  margin: 0;
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
 }
 
 .ask-table {

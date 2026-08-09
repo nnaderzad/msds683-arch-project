@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { askQuestion, sendAskFeedback } from "../api/client";
 import type { AskExchange, AskFeedbackVerdict, AskResponse } from "../types";
+import { AskResultsTable } from "./AskResultsTable";
 
 // Demo insurance: one easy lookup, one aggregate, and one guardrail probe so the
 // live audience sees a real answer, a real number, and a refusal in three clicks.
@@ -31,44 +32,14 @@ function formatBytes(bytes: number | null | undefined): string | null {
   return `${(bytes / 1024).toFixed(1)} KiB`;
 }
 
-function ResultsTable({ rows }: { rows: Record<string, unknown>[] }) {
-  if (rows.length === 0) {
-    return null;
-  }
-  const columns = Object.keys(rows[0]);
-  const visible = rows.slice(0, 20);
-  return (
-    <div className="ask-table-wrap">
-      <table className="ask-table">
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {visible.map((row, index) => (
-            <tr key={index}>
-              {columns.map((column) => (
-                <td key={column}>{row[column] == null ? "—" : String(row[column])}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {rows.length > visible.length && (
-        <p className="ask-table-note">Showing first {visible.length} of {rows.length} rows.</p>
-      )}
-    </div>
-  );
-}
-
 const SYNTH_EXAMPLE = "Which sold-out shows have the highest resale markup?";
 
 type AskPanelProps = {
   // Embedded-below-the-dashboard mode: fewer example chips, tighter spacing.
   compact?: boolean;
+  // Opens a show in the dashboard view; result rows carrying an event_id column
+  // become clickable (with a hover stats card) when this is provided.
+  onOpenShow?: (eventId: string) => void;
 };
 
 // Feedback is offered on every completed agent verdict, not just answered ones.
@@ -88,7 +59,7 @@ function historyFromTurns(turns: AskTurn[]): AskExchange[] {
     .map((turn) => ({ question: turn.question, answer: turn.response.answer as string }));
 }
 
-export function AskPanel({ compact = false }: AskPanelProps) {
+export function AskPanel({ compact = false, onOpenShow }: AskPanelProps) {
   const [question, setQuestion] = useState("");
   const [phase, setPhase] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [turns, setTurns] = useState<AskTurn[]>([]);
@@ -282,7 +253,9 @@ export function AskPanel({ compact = false }: AskPanelProps) {
 
           {response.answer && <p className="ask-answer">{response.answer}</p>}
 
-          {response.status === "ok" && <ResultsTable rows={response.rows ?? []} />}
+          {response.status === "ok" && (
+            <AskResultsTable rows={response.rows ?? []} onOpenShow={onOpenShow} />
+          )}
 
           {FEEDBACK_STATUSES.includes(response.status) && (
             <div className="ask-feedback">
