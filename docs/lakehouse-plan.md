@@ -142,7 +142,9 @@ Format:
    - Built: terraform apply (2 jobs, 2 schedulers, scene SA, project-wide job-failure
      alert); smoke execution landed `nineteenhz/dt=2026-08-08` + `ticketpages/dt=2026-08-08`.
    - ▶ Verified: RA fires on schedule 08:15 PT Sat (1 req/day agreement — never manual-run same day).
-- [ ] **R4 · Gold full-refresh + forecast re-export + GX gate** · Owner: `TK`
+- [x] **R4 · Gold full-refresh + forecast re-export + GX gate** · Owner: `TK`
+   - ▶ Verified 08-08 (NN): freshness SQL — all five facts at 2026-08-08; 13,956
+     shows serve non-null `forecast_price` via `/shows`.
    - Prereqs: R2 trends backfill finishing.
    - Build: `dbt build --full-refresh -s fact_event_demand fact_event_demand_continuous`,
      then `pipeline/gold/export_predictions_table.py`, then GX checkpoints.
@@ -151,7 +153,7 @@ Format:
 
 ### AGENT — Text-to-SQL deep dive (branch `tk/text2sql-agent`) · ⭐ HIGH
 
-- [ ] **AGENT-1 · Schema-context generator** · Owner: `____`
+- [x] **AGENT-1 · Schema-context generator** · Owner: `TK` (PR #61)
    - Prereqs: none — ready (Vertex API enabled, `aiplatform.user` granted, model
      verified: `gemini-2.5-flash` @ `location=global` needs `thinking_budget=0`).
    - Build: `eda/build_schema_context.py` → committed `api/schema_context.md` from
@@ -160,7 +162,7 @@ Format:
      name-hash `artist_id`, `bare_dma()` joins) + dry-run-validated few-shots.
      Hard-fail >16k chars.
    - Tests / done-when: generator re-runs deterministically; context file committed.
-- [ ] **AGENT-2 · `api/text2sql.py` + `POST /ask`** · Owner: `____`
+- [x] **AGENT-2 · `api/text2sql.py` + `POST /ask`** · Owner: `TK` (PR #62)
    - Prereqs: AGENT-1.
    - Build: injectable `LlmClient`/`QueryRunner` (mirror `api/gold.py` seam);
      guardrail pipeline (prompt refusal → sqlglot AST SELECT-only + allow-list →
@@ -169,7 +171,10 @@ Format:
      `status/sql/rows/answer/guardrails[]/bytes/latency`.
    - Tests / done-when: `tests/test_text2sql.py` offline (FakeLlm/FakeRunner): DROP
      blocked, allow-list, CTE aliases, LIMIT injection, refusal, retry, `/ask` contract.
-- [ ] **AGENT-3 · Eval set + harness + committed report** · Owner: `____`
+- [ ] **AGENT-3 · Eval set + harness + committed report** · Owner: `TK` (PR #64)
+   - Remaining: harness + eval set merged, but the report
+     (`eda/output/text_to_sql_eval.md`) is not committed yet — regenerate with
+     `--runs 3` against the refreshed warehouse.
    - Prereqs: AGENT-2.
    - Build: `eda/text2sql_eval_set.yaml` (~24 q: easy/join/aggregate/trick — tricks
      probe the semantic landmines incl. expected refusals);
@@ -177,19 +182,25 @@ Format:
      `eda/output/text_to_sql_eval.md` (accuracy by tier + failure taxonomy).
    - Tests / done-when: scoring logic offline-tested; report committed; failure
      section written (rubric item d).
-- [ ] **AGENT-4 · AskPanel UI** · Owner: `____`
+- [x] **AGENT-4 · AskPanel UI** · Owner: `TK` (PR #65)
    - Prereqs: AGENT-2.
    - Build: `web/src/components/AskPanel.tsx` (question box, example chips, guardrail
      badges, SQL block prominent, results table, answer, bytes/model/latency footer)
      + header toggle + `askQuestion()` client + vitest.
-- [ ] **AGENT-5 · Deploy + demo hardening** · Owner: `____`
+- [ ] **AGENT-5 · Deploy + demo hardening** · Owner: `NN`
+   - ▶ 08-08 (NN): service live on image `git-5f71ebb` (functionally current —
+     only README changes after it) with `TEXT2SQL_MODEL`/`VERTEX_LOCATION`,
+     `min-instances 1`, `max-instances 2`, startup-cpu-boost. Live smoke passed:
+     easy question ok (all guardrail badges), `DROP` refused, synth mode answers.
+   - Remaining: $10 billing budget alert — blocked on billing-account perms
+     (account `01EB77-...` is TK's; needs TK or a Costs Manager grant).
    - Prereqs: AGENT-2 (AGENT-4 ideally), R4 (fresh hero shows).
    - Build: rebuild service image (includes regenerated `heroShows.ts`), deploy with
      `TEXT2SQL_MODEL`/`VERTEX_LOCATION`, `--max-instances 2`, `--min-instances 1`
      **through Monday** (kills the measured 152s cold start; revert after), $10
      billing budget alert.
    - ▶ Run: live smoke — easy question, blocked `DROP`, off-domain refusal.
-- [ ] **AGENT-6 · Synth-mode toggle** · Owner: `____`
+- [x] **AGENT-6 · Synth-mode toggle** · Owner: `TK` (PR #85)
    - Prereqs: AGENT-2, SYNTH-3.
    - Build: request flag `dataset: real|synth` switching the allow-list + context to
      `event_demand_synth` tables; every synth answer labeled synthetic in the UI.
@@ -205,39 +216,39 @@ sellout speed → resale multiplier. Undersold big rooms resell **below** face
 fast and resell **above** face (MGMT @ Public Works); festival day tickets anchor to
 the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $500 resale).
 
-- [ ] **SYNTH-1 · Real venue capacities (curated, NOT synthetic)** · Owner: `____`
+- [x] **SYNTH-1 · Real venue capacities (curated, NOT synthetic)** · Owner: `TK` (PR #81)
    - Prereqs: none — ready. `dim_venue.capacity` exists and is **0% filled**.
    - Build: researched capacities w/ source URLs for all Bay Area venues in
      `fact_nineteenhz` + top ~150 venues by priced-event count →
      `data/reference/venue_capacities.csv` (committed) + idempotent loader filling
      `dim_venue.capacity`; remaining venues get **tier estimates only in the synth
      dataset**, labeled `capacity_source='tier_estimate'`.
-- [ ] **SYNTH-2 · Seeded generator** · Owner: `____`
+- [x] **SYNTH-2 · Seeded generator** · Owner: `TK` (PR #82)
    - Prereqs: SYNTH-1.
    - Build: `synth/heuristics.py` (pure functions, offline-tested) +
      `synth/generate.py` (numpy seeded RNG, committed config; same seed → identical
      output); copies the real star into `event_demand_synth` and infills:
      `synth_event_demand` (sellout_date, sold_out flag, resale_price_min/max series,
      demand_score), calibrated from real price/genre/DMA distributions.
-- [ ] **SYNTH-3 · Load + QC** · Owner: `____`
+- [x] **SYNTH-3 · Load + QC** · Owner: `TK` (PR #83, `eda/output/synth_review.md`)
    - Prereqs: SYNTH-2.
    - Build: BQ load with provenance columns; `eda/synth_review.py` — real-vs-synth
      distribution comparison (deterministic md + plots).
    - ▶ Run: generate twice, diff outputs byte-identical; verify zero writes outside
      `event_demand_synth`.
-- [ ] **SYNTH-4 · 50x scale table for benchmarking** · Owner: `____`
+- [x] **SYNTH-4 · 50x scale table for benchmarking** · Owner: `TK` (used by BENCH-2)
    - Prereqs: SYNTH-2.
    - Build: ~50x replication with jittered keys/dates → few-GB
      `event_demand_synth.fact_event_demand_50x` (+ unpartitioned twin for BENCH-2).
 
 ### BENCH — performance benchmark (before/after numbers for slide + blog)
 
-- [ ] **BENCH-1 · trends_silver windowing (primary)** · Owner: `____`
+- [x] **BENCH-1 · trends_silver windowing (primary)** · Owner: `TK` (PR #66, `eda/output/benchmark_trends_window.md`)
    - Prereqs: R1 verified (need one post-fix nightly run).
    - Build: `eda/benchmark_trends_window.py` — before: incident evidence (47 min
      2026-07-08, 52→59 min growth, then 28 consecutive 3600s timeouts, from logs);
      after: post-deploy step duration + objects/MiB read → committed md + chart.
-- [ ] **BENCH-2 · Partitioning/clustering at 50x scale (secondary)** · Owner: `____`
+- [x] **BENCH-2 · Partitioning/clustering at 50x scale (secondary)** · Owner: `TK` (PR #84, `eda/output/benchmark_partitioning.md`)
    - Prereqs: SYNTH-4.
    - Build: `eda/benchmark_partitioning.py` — fixed query suite (incl. real agent-
      generated queries) against partitioned vs unpartitioned 50x tables; dry-run
@@ -245,21 +256,21 @@ the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $50
 
 ### DOCS — public-repo readiness
 
-- [ ] **DOCS-1 · REPO_STATE incident entry + status refresh** · Owner: `TK` (in progress)
-- [ ] **DOCS-2 · Root README refresh** · Owner: `____`
+- [x] **DOCS-1 · REPO_STATE incident entry + status refresh** · Owner: `TK`
+- [x] **DOCS-2 · Root README refresh** · Owner: `TK` (PR #88)
    - Stale: 683-only framing, missing scene sources/web/continuous table, "every 4h"
      TM cadence, CI web job, cost section. Reframe for the lakehouse class.
-- [ ] **DOCS-3 · Dir READMEs** · Owner: `____`
+- [x] **DOCS-3 · Dir READMEs** · Owner: `TK` (PR #88)
    - Short runbook-style for `pipeline/`, `model/`, `common/`, `terraform/`,
      `terraform/gtrends/`, `web/`, `eda/`, `docs/`; fix stale `dbt/README.md`.
-- [ ] **DOCS-4 · data-model.md additions** · Owner: `____`
+- [x] **DOCS-4 · data-model.md additions** · Owner: `TK` (PR #86)
    - Scene facts columns, `tm_observations`/`tm_events`/`fact_trends_daily`/
      `forecast_event_price` tables, join-key normalization notes (currently only in
      gitignored CLAUDE.md), `event_demand_synth` section with provenance rules.
 
 ### DEMO — Monday presentation support (slides = TK/team, not agents)
 
-- [ ] **DEMO-1 · Demo runbook** · Owner: `____`
+- [x] **DEMO-1 · Demo runbook** · Owner: `TK` (PR #87, `docs/demo-runbook.md`)
    - Pre-warm checks, click path (dashboard hero → AskPanel: good question → blocked
      DROP → semantic refusal → eval table), Swagger fallback, revert list
      (min-instances → 0 after Monday).
@@ -276,8 +287,10 @@ the **sum of headliners' typical solo prices** (Outside Lands: $250 face → $50
 
 ## Dependency quick-reference (what's unblocked)
 
-> **Frontier (Sat AM):** R4 (once trends backfill lands) · AGENT-1 → AGENT-2 ·
-> SYNTH-1 (capacity research) · DOCS-2/3/4 anytime.
+> **Frontier (Sat eve, post-merge of PRs #59–#88):** AGENT-3 report (`--runs 3`
+> vs fresh warehouse, commit md) · AGENT-5 budget alert (needs TK's billing
+> access) · DEMO-2 dry run Sunday · then BLOG. Everything else is merged,
+> deployed, and verified (see checked boxes).
 
 - After AGENT-2: AGENT-3 (eval), AGENT-4 (UI) in parallel.
 - After SYNTH-2: SYNTH-3 + SYNTH-4 → BENCH-2.

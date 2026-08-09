@@ -152,7 +152,9 @@ resource "google_cloud_run_v2_job" "gold_refresh" {
       service_account = google_service_account.gold_refresh_job.email
       # The full chain (silver scans + dbt build + train/predict over all events) is a
       # minutes-long batch; give it headroom and never retry a partial write in place.
-      timeout     = "3600s"
+      # 5400s matches the 2026-08-08 recovery setting (windowed reads keep real runtime
+      # far below this; the headroom guards backfill-sized days).
+      timeout     = "5400s"
       max_retries = 0
 
       containers {

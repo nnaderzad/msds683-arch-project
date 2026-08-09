@@ -1,6 +1,6 @@
 # Benchmark — `trends_silver` full-bronze read vs 14-day window
 
-Generated 2026-08-08T20:13:13+00:00 by `eda/benchmark_trends_window.py --report`.
+Generated 2026-08-09T04:06:22+00:00 by `eda/benchmark_trends_window.py --report`.
 Optimization under test: PR #55 windows the gold-refresh `trends_silver` step to
 the trailing 14 days of ibr bronze instead of re-reading the entire
 prefix nightly. Deployed 2026-08-08 (image git-ab65e00) after the un-windowed
@@ -50,7 +50,7 @@ runtime is *at least* the shown value; the job was killed mid-step.
 
 | started (UTC) | execution | trends_silver runtime | run outcome |
 |---|---|---|---|
-| _no post-fix scheduled runs captured yet — re-run --capture-logs after 16:30 PT_ ||||
+| 2026-08-08T23:30 | gold-refresh-9mlf8 | 33.1 min | completed |
 
 ## Data volume the step reads (GCS listing, deterministic)
 
