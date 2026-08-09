@@ -163,7 +163,15 @@ SEMANTIC_RULES = """\
    show_date >= CURRENT_DATE()).
 10. When listing or naming specific shows/events, ALSO select the event_id column —
    the UI turns rows carrying event_id into clickable links to that show's dashboard
-   page. Leave event_id out of pure aggregates (counts, averages, shares)."""
+   page. Leave event_id out of pure aggregates (counts, averages, shares).
+11. Listing defaults (product rules) — apply ONLY when the answer returns rows of
+   individual shows; NEVER add joins to counts or other aggregates (aggregate on the
+   fewest tables the filters need — extra joins silently drop events with missing
+   links). Show listings include artist_name and venue_name where those joins are
+   cheap, and ORDER BY show_date ASC (soonest upcoming first) unless the user asks
+   otherwise. "Biggest / most popular / big-name" questions rank by WORLDWIDE
+   popularity = the headliner's latest fact_youtube.official_subscribers (latest
+   snapshot per artist) — never by Trends interest (rule 1)."""
 
 # Deterministic slang -> canonical-genre translations (Ticketmaster segment labels).
 # Curated by hand — extend when live questions surface a new alias.
@@ -256,6 +264,26 @@ JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
 WHERE e.primary_genre = 'Dance/Electronic' AND v.dma_code = '807'
   AND e.show_date >= CURRENT_DATE()
 ORDER BY e.show_date""",
+    ),
+    (
+        # Popularity ranking (rule 11): "biggest" = the headliner's latest worldwide
+        # YouTube subscribers — never cross-artist Trends interest (rule 1).
+        "What are the biggest shows coming to the Bay Area?",
+        """WITH latest_subs AS (
+  SELECT artist_id, official_subscribers
+  FROM {ds}.fact_youtube
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY artist_id ORDER BY snapshot_date DESC) = 1
+)
+SELECT e.event_id, e.event_name, a.artist_name, e.show_date, v.venue_name,
+       s.official_subscribers
+FROM {ds}.dim_event e
+JOIN {ds}.dim_venue v ON e.venue_id = v.venue_id
+JOIN {ds}.bridge_event_artist b ON b.event_id = e.event_id AND b.is_headliner
+JOIN {ds}.dim_artist a ON a.artist_id = b.artist_id
+JOIN latest_subs s ON s.artist_id = a.artist_id
+WHERE v.dma_code = '807' AND e.show_date >= CURRENT_DATE()
+ORDER BY s.official_subscribers DESC
+LIMIT 15""",
     ),
 ]
 
