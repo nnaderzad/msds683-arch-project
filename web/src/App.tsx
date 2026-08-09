@@ -111,7 +111,7 @@ function App() {
               className={view === "ask" ? "is-active" : ""}
               onClick={() => setView("ask")}
             >
-              Ask the warehouse
+              Ask the music warehouse
             </button>
           </nav>
           {view === "dashboard" && (

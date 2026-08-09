@@ -19,6 +19,14 @@ afterEach(() => {
 });
 
 describe("AskPanel", () => {
+  it("is titled Ask the music warehouse", () => {
+    render(<AskPanel />);
+    expect(screen.getByRole("heading", { name: "Ask the music warehouse" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Ask the music warehouse" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the generated SQL, answer, rows, and green guardrail badges", async () => {
     mockAskResponse({
       status: "ok",

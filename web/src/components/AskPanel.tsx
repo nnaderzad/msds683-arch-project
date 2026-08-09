@@ -97,10 +97,10 @@ export function AskPanel({ compact = false }: AskPanelProps) {
   const exampleQuestions = compact ? EXAMPLE_QUESTIONS.slice(0, 2) : EXAMPLE_QUESTIONS;
 
   return (
-    <section className={compact ? "ask-panel is-compact" : "ask-panel"} aria-label="Ask the warehouse">
+    <section className={compact ? "ask-panel is-compact" : "ask-panel"} aria-label="Ask the music warehouse">
       <div className="combined-heading">
         <div>
-          <h3>Ask the warehouse</h3>
+          <h3>Ask the music warehouse</h3>
           <p>
             Natural-language questions become guardrailed BigQuery SQL over the gold star
             schema (Gemini on Vertex AI). The generated SQL is always shown.
