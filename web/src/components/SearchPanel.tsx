@@ -146,12 +146,26 @@ export function SearchPanel({ onPick }: Props) {
                 <th>Date</th>
                 <th>Observed</th>
                 <th>Projected</th>
-                <th />
               </tr>
             </thead>
             <tbody>
               {results.map((show) => (
-                <tr key={show.event_id}>
+                // The whole row opens the show's combined-signal view; role=button +
+                // Enter/Space keep it keyboard-operable without a nested control.
+                <tr
+                  key={show.event_id}
+                  className="search-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${show.event_name}`}
+                  onClick={() => onPick(show)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onPick(show);
+                    }
+                  }}
+                >
                   <td>{show.event_name}</td>
                   <td>{show.artist_name ?? "—"}</td>
                   <td>{show.venue_name}</td>
@@ -161,11 +175,6 @@ export function SearchPanel({ onPick }: Props) {
                   <td>{formatDate(show.show_date)}</td>
                   <td>{formatPrice(show.price_min)}</td>
                   <td>{formatPrice(show.forecast_price)}</td>
-                  <td>
-                    <button type="button" className="search-view" onClick={() => onPick(show)}>
-                      View
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>

@@ -130,6 +130,58 @@ test("signal toggles can hide and show chart series", async () => {
   expect(trendsToggle).toBeChecked();
 });
 
+test("clicking a search result row loads the full view for a non-hero show", async () => {
+  const user = userEvent.setup();
+  const nonHero: ShowSummary = {
+    event_id: "not-a-hero",
+    event_name: "Warehouse Rave",
+    artist_name: "DJ Fixture",
+    venue_name: "Public Works",
+    city: "San Francisco",
+    state_code: "CA",
+    show_date: "2026-08-15",
+    status_code: "onsale",
+    price_min: 30,
+    price_max: 60,
+    local_interest: 80,
+    yt_subscribers: 5000,
+    yt_views: 12000,
+    forecast_price: 45,
+  };
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes("/genres")) {
+      return Promise.resolve(jsonResponse(["Dance/Electronic"]));
+    }
+    if (url.includes("/search")) {
+      return Promise.resolve(jsonResponse([nonHero]));
+    }
+    if (url.endsWith(`/show/${defaultHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(defaultHero)));
+    }
+    if (url.endsWith(`/show/${nonHero.event_id}`)) {
+      return Promise.resolve(jsonResponse(detailFor(nonHero)));
+    }
+    return Promise.resolve(jsonResponse({ detail: "Not found" }, 404));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await screen.findByRole("heading", { name: rx(defaultHero.artist_name!) });
+
+  await user.click(screen.getByRole("button", { name: "Search" }));
+  await user.click(await screen.findByRole("button", { name: "View Warehouse Rave" }));
+
+  // The arbitrary (non-hero) event is fetched live and rendered as the full view.
+  expect(await screen.findByRole("heading", { name: /warehouse rave/i })).toBeInTheDocument();
+  expect(await screen.findByText(/demand signals over time/i)).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith(
+    `http://127.0.0.1:8000/show/${nonHero.event_id}`,
+    expect.any(Object),
+  );
+  expect(screen.getByRole("combobox", { name: /demo show/i })).toHaveValue(nonHero.event_id);
+});
+
 test("shows a clear error when the selected show cannot be loaded", async () => {
   vi.stubGlobal(
     "fetch",

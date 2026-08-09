@@ -645,17 +645,15 @@ h3 {
   color: #64748b;
 }
 
-.search-view {
-  border: 1px solid #0f766e;
-  background: #ffffff;
-  color: #0f766e;
-  border-radius: 6px;
-  padding: 4px 10px;
+.search-row {
   cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
 }
 
-.search-view:hover {
+.search-row:hover td {
   background: #eef6f5;
+}
+
+.search-row:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: -2px;
 }
