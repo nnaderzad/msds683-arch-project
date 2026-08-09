@@ -116,7 +116,36 @@ def fixture_frames() -> GoldFrames:
             {"artist_id": "artist_2", "artist_name": "Artist Two"},
         ]
     )
-    return GoldFrames(fact, forecast, dim_event, dim_venue, dim_artist)
+    continuous = pd.DataFrame(
+        [
+            {
+                "event_id": "event_soon",
+                "snapshot_date": "2026-06-24",
+                "days_to_show": 10,
+                "price_min": 80.0,
+                "price_max": 160.0,
+                "price_is_filled": False,
+            },
+            {
+                # interior gap day: price carried forward from 06-24
+                "event_id": "event_soon",
+                "snapshot_date": "2026-06-25",
+                "days_to_show": 9,
+                "price_min": 80.0,
+                "price_max": 160.0,
+                "price_is_filled": True,
+            },
+            {
+                "event_id": "event_soon",
+                "snapshot_date": "2026-06-26",
+                "days_to_show": 8,
+                "price_min": 85.0,
+                "price_max": 170.0,
+                "price_is_filled": False,
+            },
+        ]
+    )
+    return GoldFrames(fact, forecast, dim_event, dim_venue, dim_artist, continuous)
 
 
 @pytest.fixture(autouse=True)
@@ -184,3 +213,35 @@ def test_show_returns_404_for_missing_event(client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Show not found: does-not-exist"
+
+
+def test_show_returns_filled_history(client):
+    show = client.get("/show/event_soon").json()
+    filled = show["history_filled"]
+    assert [point["snapshot_date"][:10] for point in filled] == [
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+    ]
+    assert [point["price_is_filled"] for point in filled] == [False, True, False]
+    # the carried-forward day repeats the last observed price
+    assert filled[1]["price_min"] == 80.0
+    # observed history is untouched by the filled series
+    assert len(show["history"]) == 2
+
+
+def test_show_filled_history_empty_without_continuous_table(client):
+    frames = fixture_frames()
+    set_repository(
+        GoldRepository(
+            GoldFrames(
+                frames.fact,
+                frames.forecast,
+                frames.dim_event,
+                frames.dim_venue,
+                frames.dim_artist,
+            )
+        )
+    )
+    show = client.get("/show/event_soon").json()
+    assert show["history_filled"] == []
