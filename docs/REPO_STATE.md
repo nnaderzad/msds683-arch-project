@@ -37,7 +37,7 @@ after the previous account closed (see incident log).
 | `youtube-daily` (Cloud Run job) | channel stats + topic views → bronze + `fact_youtube` | 15:00 (D8) | `terraform/gtrends/` |
 | `gold-refresh` (Cloud Run job) | silver loaders (windowed reads, image `git-ab65e00`, task-timeout 5400s) → dbt build → forecast → GX gate | 16:30 (D8) — **broken 06-30→08-08, redeployed 2026-08-08**, see incident log | `terraform/` (image via gcloud, 08-08) |
 | `nineteenhz-daily` + `ra-daily` (Cloud Run jobs) | scene listings → bronze (`nineteenhz/`, `ticketpages/`, `ra/`) | 08:00 / 08:15 — **live since 2026-08-08** (terraform apply + smoke run; the 07-08→08-07 listings gap is permanent) | `terraform/gtrends/scene.tf` |
-| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex; multi-turn follow-ups, 👍/👎 feedback, canonical-vocab context)** + `/search` browse + **"How it works" docs page** (renders the committed md bundled per deploy) + filled-vs-observed price toggle, reads gold live | min-instances 1 through Mon 08-11, then revert to 0 (**measured cold start 152 s**) | gcloud only (not yet in terraform); image `git-87afd36` (08-09) |
+| `event-demand-api` (Cloud Run service) | FastAPI + React demo + **`POST /ask` text-to-SQL agent (Gemini via Vertex; multi-turn follow-ups, 👍/👎 feedback, canonical-vocab context, answer rows link into the dashboard)** + `/search` browse + **"How it works" docs page** (renders the committed md bundled per deploy) + filled-vs-observed price toggle, reads gold live | min-instances 1 through Mon 08-11, then revert to 0 (cold start **~30 s** since 08-09 — was 152 s; see incident log) | gcloud only (not yet in terraform); image `git-87afd36` (08-09). SA roles: BQ jobUser + dataset dataViewer + `aiplatform.user` + **`readSessionUser`** (Storage reads) + dataEditor on `event_demand_ops` only |
 
 **Ops telemetry:** `/ask` answers carry thumbs-up/down buttons; votes stream into
 **`event_demand_ops.ask_feedback`** (separate dataset — the service SA has
@@ -228,6 +228,23 @@ Still open (weekend handoff):
 
 ## Incident log
 
+- **2026-08-09: service deploy failed on the startup probe (no user impact).**
+  Revision `00011` never became healthy: the FastAPI lifespan **blocked the
+  port** on the full gold pre-warm, which ran through BigQuery's paginated REST
+  path (the Storage client was never installed — the "152 s cold start" was
+  mostly REST pagination), and adding the continuous-price frame pushed it past
+  Cloud Run's 4-minute probe. Traffic stayed on the old healthy revision
+  throughout. Fix (PR #99): pre-warm in a daemon thread (port binds in seconds;
+  requests mid-warm block on a thread-safe lazy-load lock) +
+  `google-cloud-bigquery-storage` (Arrow streaming). Follow-on: the Storage path
+  needs `bigquery.readsessions.create` → granted **`roles/bigquery.readSessionUser`**
+  to the service SA (read-only; the never-writes invariant holds). Full gold
+  load measured at **30 s** post-fix. Lesson: a "startup pre-warm" that blocks
+  serving is a probe timeout waiting for its tables to grow.
+- **2026-08-09 ops note:** this machine's `gcloud` default project changed
+  externally mid-session (to an unrelated project) — one deploy failed with
+  SERVICE_DISABLED against the wrong project. All deploy/log commands should
+  pass `--project data-architecture-498123` explicitly.
 - **2026-07-05 → 2026-08-08: month-long gold-refresh outage (36 consecutive
   failed nightly runs), unnoticed for four weeks.** The team paused after
   2026-07-08 with PRs #54–#58 merged-ready but **never merged or deployed**; the
