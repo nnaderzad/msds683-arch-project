@@ -477,3 +477,8 @@ def test_empty_result_answer_prompt_names_the_filters():
     prompt = t2s.build_answer_prompt("What EDM shows?", EMPTY_FILTER_SQL, [])
     assert prompt.startswith("Summarize")
     assert "matched nothing" in prompt or "no records matched" in prompt
+
+
+def test_nineteenhz_on_the_allowlist():
+    sql = f"SELECT title, price_min FROM {DS}.fact_nineteenhz` WHERE price_min IS NOT NULL"
+    assert all(v.passed for v in t2s.validate_sql(sql))

@@ -77,6 +77,9 @@ ALLOWED_TABLES: frozenset[str] = frozenset(
         "fact_trends",
         "fact_trends_daily",
         "fact_youtube",
+        # Bay Area club/warehouse listings (19hz.info) — silver-only, NOT joined to
+        # the star (no event_id); the source that covers the club shows TM lacks.
+        "fact_nineteenhz",
     }
 )
 

@@ -38,8 +38,9 @@ SYNTH_DATASET = "event_demand_synth"
 # Hard prompt budget (~4.5k tokens at ~4 chars/token). Generation FAILS above this so
 # the context can never silently balloon past what a cheap Flash call handles well.
 # Raised 16k -> 18k on 2026-08-09 for the lead-lag few-shot (a real user question the
-# agent wrongly refused); still a small fraction of Flash's window at ~$0.0005/question.
-MAX_CHARS = 18_000
+# agent wrongly refused), then -> 20k on 2026-08-10 for the fact_nineteenhz section
+# (club-show coverage); still a small fraction of Flash's window at ~$0.0006/question.
+MAX_CHARS = 21_000
 
 # ---------------------------------------------------------------------------
 # Curated semantics (transcribed from docs/data-model.md — keep the two in sync).
@@ -90,6 +91,13 @@ TABLE_NOTES: dict[str, str] = {
         "= the interest day). interest compares DAYS for one (artist, metro)."
     ),
     "fact_youtube": "SILVER daily YouTube channel stats per artist (subscribers, views).",
+    "fact_nineteenhz": (
+        "SILVER Bay Area club/warehouse listings scraped daily from 19hz.info — the shows "
+        "Ticketmaster misses (~75% carry a face price). SELF-CONTAINED: no event_id, no "
+        "joins to the star; rows repeat per capture day, so ALWAYS dedupe with QUALIFY "
+        "ROW_NUMBER() OVER (PARTITION BY title, venue, event_date ORDER BY snapshot_date "
+        "DESC) = 1. event_date is the show day; genres is free text (match with LIKE)."
+    ),
 }
 
 COLUMN_NOTES: dict[tuple[str, str], str] = {
@@ -120,6 +128,10 @@ COLUMN_NOTES: dict[tuple[str, str], str] = {
         "or average across artists or metros"
     ),
     ("fact_ticketmaster", "n_captures"): "intra-day captures collapsed into this row",
+    ("fact_nineteenhz", "event_date"): "the show day (this table has no show_date column)",
+    ("fact_nineteenhz", "price_min"): "face price from the listing; NULL = not stated",
+    ("fact_nineteenhz", "genres"): "free-text genre tags — filter with LIKE '%house%' etc.",
+    ("fact_nineteenhz", "is_free"): "TRUE for free/donation events",
     ("fact_ticketmaster", "price_disagreed"): "captures that day disagreed on price",
     ("fact_youtube", "official_subscribers"): "channel subscribers on snapshot_date",
 }
@@ -177,7 +189,17 @@ SEMANTIC_RULES = """\
    cheap, and ORDER BY show_date ASC (soonest upcoming first) unless the user asks
    otherwise. "Biggest / most popular / big-name" questions rank by WORLDWIDE
    popularity = the headliner's latest fact_youtube.official_subscribers (latest
-   snapshot per artist) — never by Trends interest (rule 1)."""
+   snapshot per artist) — never by Trends interest (rule 1).
+12. Ranking or filtering by ANY metric ("cheapest", "most expensive", "highest
+   interest") REQUIRES `<metric> IS NOT NULL` in the WHERE — NULL means not-listed
+   (rule 3) and NULLs sort FIRST ascending, so an unfiltered "cheapest" list is all
+   blanks. "Current price" of an event = its LATEST snapshot's price (QUALIFY
+   ROW_NUMBER per event ORDER BY snapshot_date DESC), never an arbitrary fact row.
+13. "Cheap / club / warehouse / underground / small-venue" Bay Area questions:
+   PREFER fact_nineteenhz — Ticketmaster structurally misses most club shows, so
+   the star is thin there. Its rows have NO event_id (they won't link in the UI);
+   say the listings come from 19hz.info. Big-venue/mainstream questions stay on
+   the star."""
 
 # Deterministic slang -> canonical-genre translations (Ticketmaster segment labels).
 # Curated by hand — extend when live questions surface a new alias.
@@ -301,6 +323,19 @@ WHERE e.show_date >= CURRENT_DATE()
 GROUP BY v.state_code
 ORDER BY upcoming_shows DESC
 LIMIT 1""",
+    ),
+    (
+        # Club-show coverage lives in fact_nineteenhz (rule 13): self-contained,
+        # dedupe to the latest capture, price ranking needs IS NOT NULL (rule 12).
+        "What are some cheap club shows in the Bay Area in the next two weeks?",
+        """SELECT title, venue, city, event_date, price_min
+FROM {ds}.fact_nineteenhz
+WHERE event_date BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 14 DAY)
+  AND price_min IS NOT NULL
+QUALIFY ROW_NUMBER() OVER (PARTITION BY title, venue, event_date
+                           ORDER BY snapshot_date DESC) = 1
+ORDER BY price_min
+LIMIT 15""",
     ),
     (
         # Lead-lag WITHIN each event's own series (rule 1's allowed direction):
