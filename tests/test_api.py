@@ -273,3 +273,21 @@ def test_concurrent_lazy_load_loads_once(monkeypatch):
         t.join()
     assert len(calls) == 1
     assert all(r is repos[0] for r in repos)
+
+
+def test_genres_dropdown_excludes_non_music_segments(client):
+    frames = fixture_frames()
+    golf_event = frames.dim_event.copy()
+    golf_event.loc[golf_event["event_id"] == "event_later", "primary_genre"] = "Golf"
+    set_repository(
+        GoldRepository(
+            GoldFrames(
+                frames.fact,
+                frames.forecast,
+                golf_event,
+                frames.dim_venue,
+                frames.dim_artist,
+            )
+        )
+    )
+    assert client.get("/genres").json() == ["Dance/Electronic"]
