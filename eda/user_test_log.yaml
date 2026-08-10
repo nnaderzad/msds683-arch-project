@@ -48,3 +48,19 @@
   root_cause: ""
   disposition: works
   held_out: true
+
+- date: 2026-08-10
+  question: "What are some relatively inexpensive EDM shows coming up in the bay area in the next two weeks?"
+  observed: "One show (correct but thin): the agent lives on the TM star, where only 4 EDM shows exist in the window and 1 has a forecast — while fact_nineteenhz held 112 club shows (91 under $40) invisible to it."
+  root_cause: "Scene facts stop at silver (star spine is TM-only, documented gap) AND fact_nineteenhz was not on the agent allow-list."
+  disposition: fixed
+  held_out: false
+  fix: "fact_nineteenhz added to the allow-list + rule 13 (club/cheap Bay Area questions prefer 19hz, self-contained, no event_id) + club-show few-shot with snapshot dedupe. Star-joining scene events into gold remains the real fix (post-demo design)."
+
+- date: 2026-08-10
+  question: "What are some cheap shows coming up in the Bay Area in the next two weeks?"
+  observed: "Top-10 list where every price_min was NULL — NULLs sort first ascending, so 'cheapest' surfaced only unpriced shows."
+  root_cause: "No IS NOT NULL guard on the ranking metric; also no latest-snapshot dedupe on the fact join."
+  disposition: fixed
+  held_out: false
+  fix: "Rule 12: ranking/filtering on a metric requires IS NOT NULL + current price = latest snapshot. Question now returns 15 priced club listings via 19hz."
