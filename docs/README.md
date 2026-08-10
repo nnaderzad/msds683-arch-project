@@ -9,6 +9,7 @@ deploys anything, or moves data coverage.
 
 | Doc | What |
 |---|---|
+| [`architecture.md`](architecture.md) | **start here for design**: system overview, tech-stack decisions + rejected alternatives, implementation patterns, and the topic→doc detail map |
 | [`lakehouse-plan.md`](lakehouse-plan.md) | the current task board: lakehouse-class roadmap (text-to-SQL agent, synthetic layer, benchmarks, demo, blog) |
 | [`data-model.md`](data-model.md) | the locked schema — silver constellation + gold star (Mermaid, renders on GitHub) |
 | [`transformations_showcase.md`](transformations_showcase.md) | stage-by-stage pipeline walkthrough: every transform with sample input/output schemas + SQL |
