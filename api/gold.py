@@ -48,6 +48,54 @@ HISTORY_COLUMNS = [
 
 FORECAST_COLUMNS = ["days_to_show", "predicted_price"]
 
+# The nationwide TM sweep ingests EVERY segment, so the warehouse honestly holds
+# sports/theatre/expo events — but the dashboard is a music product, so its genre
+# dropdown excludes the clearly-non-music segments. Ambiguous ones (Other, Holiday,
+# Fairs & Festivals) stay in: they routinely contain music events. The warehouse
+# and the agent are unaffected — non-music events remain queryable.
+NON_MUSIC_GENRES = frozenset(
+    {
+        "Aquatics",
+        "Athletic Races",
+        "Baseball",
+        "Basketball",
+        "Boxing",
+        "Comedy",
+        "Community/Civic",
+        "Cultural",
+        "Equestrian",
+        "Extreme",
+        "Family",
+        "Fine Art",
+        "Food & Drink",
+        "Football",
+        "Golf",
+        "Gymnastics",
+        "Hobby/Special Interest Expos",
+        "Hockey",
+        "Ice Skating",
+        "Lacrosse",
+        "Magic & Illusion",
+        "Martial Arts",
+        "Miscellaneous",
+        "Miscellaneous Theatre",
+        "Motorsports/Racing",
+        "Multimedia",
+        "Performance Art",
+        "Puppetry",
+        "Rodeo",
+        "Rugby",
+        "Soccer",
+        "Spectacular",
+        "Tennis",
+        "Theatre",
+        "Tourist Attraction",
+        "Undefined",
+        "Variety",
+        "Wrestling",
+    }
+)
+
 # The gap-filled price series (fact_event_demand_continuous): real observed prices
 # carried forward across interior gaps, every carried row flagged price_is_filled.
 HISTORY_FILLED_COLUMNS = [
@@ -206,10 +254,15 @@ class GoldRepository:
         return _records(self._latest, SUMMARY_COLUMNS)
 
     def genres(self) -> list[str]:
-        """Distinct primary genres present in the gold layer, sorted."""
+        """Distinct MUSIC genres present in the gold layer, sorted (dropdown feed).
+
+        Non-music TM segments (sports, theatre, expos) are excluded here only —
+        they remain in the warehouse and queryable via the agent.
+        """
         if "primary_genre" not in self._latest.columns:
             return []
         values = self._latest["primary_genre"].dropna().astype(str)
+        values = values[~values.isin(NON_MUSIC_GENRES)]
         return sorted({v for v in values if v.strip()})
 
     def search(
